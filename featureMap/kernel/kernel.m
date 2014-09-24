@@ -6,7 +6,9 @@ classdef kernel < handle
     end
     
     methods ( Abstract )
+        %obj = kernel();
         init(obj , X , Y);
+        compute(obj , sigma);
     end
 end
 
