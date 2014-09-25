@@ -1,10 +1,11 @@
-classdef rlsTikhonov < algorithm
+classdef rls < algorithm
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         kernelType
         kernel
+        W % Weights matrix
     end
     
     methods 
@@ -12,12 +13,13 @@ classdef rlsTikhonov < algorithm
             obj.kernelType = kerTy;
         end
         
-        function train(obj , X , Y);
-            
+        function train(obj , X , Y)
+            obj.W = ...;    %% TODO: implement
         end
         
-        function test(obj , X , Y );
+        function Ypred = test( obj , X )
 
+            Ypred = obj.W * X;
         end
         
         function crossVal(obj , X , Y)

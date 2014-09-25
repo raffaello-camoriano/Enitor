@@ -19,7 +19,7 @@ classdef dataset < handle
             obj.d = size(data.X , 2);
             obj.t = size(data.y , 2);
         end
-        function perf = performanceMeasure(obj , Y , Yhat)
+        function perf = performanceMeasure(obj , Y , Ypred)
             
         end
    end % methods
