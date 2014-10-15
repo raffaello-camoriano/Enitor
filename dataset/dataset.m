@@ -1,13 +1,17 @@
 
 classdef dataset < handle
    
-   % Define an event
    properties
         n
         d
         t
+        
         X
         Y
+        
+        trainIdx
+        testIdx
+        shuffledTrainIdx
    end
    
    methods
@@ -18,8 +22,12 @@ classdef dataset < handle
             obj.n = size(data.X , 1);
             obj.d = size(data.X , 2);
             obj.t = size(data.y , 2);
-        end
-        function perf = performanceMeasure(obj , Y , Ypred)
+        end       
+        
+        function perf = performanceMeasure(obj , Y , Ypred  'rm)
+            % Error Rate is computed
+            
+            
             
         end
    end % methods
