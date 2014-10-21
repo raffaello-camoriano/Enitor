@@ -1,5 +1,4 @@
-alg = rlsTikhonov();
-alg.init('gaussian');
+alg = rls('gaussian');
 
 trainValSet = dataset('trainValSet.mat');
 testSet = dataset('testSet.mat');

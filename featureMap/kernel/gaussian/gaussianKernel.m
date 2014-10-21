@@ -3,11 +3,10 @@ classdef gaussianKernel < kernel
     %   Detailed explanation goes here
     
     properties
-        K
+        
         SqDistMat
         n
         m
-        rng
     end
     
     methods
@@ -16,8 +15,8 @@ classdef gaussianKernel < kernel
             
             obj.n = size(X1 , 1);
             obj.m = size(X2 , 1);
-            
             obj.computeSqDistMat(X1,X2);
+            
             if  nargin > 2
                 obj.compute(sigma);
             end
@@ -43,8 +42,8 @@ classdef gaussianKernel < kernel
             end
         end
         
-        % Computes the kernel matrix SqDistMat based on SqDistMat and sigma
-        function range(obj , numGuesses)
+        % Computes the range for the sigma parameter guesses
+        function rng = range(obj , numGuesses)
             if( nargin < 2 )
                 numGuesses = 20;    % Default guesses number
                 disp('Number of guesses not specified! Set to 20 by default...');
@@ -72,7 +71,7 @@ classdef gaussianKernel < kernel
                 maxGuess = eps;
             end	
             
-            obj.rng = linspace(minGuess, maxGuess , numGuesses);
+            rng = linspace(minGuess, maxGuess , numGuesses);
         end        
     end
 end

@@ -4,6 +4,7 @@ classdef experiment < handle
     
     properties
         name
+        result
     end
     
     methods
@@ -12,13 +13,16 @@ classdef experiment < handle
             obj.name = name_;
         end
         
-        function run (obj , algo , trainValSet , testSet)
+        function obj = run (obj , algo , ds)
             assert(isa(algo,'algorithm') , '1st argument is not of class algorithm');
-            assert(isa(trainValSet,'dataset') , '2nd argument is not of class dataset');
-            assert(isa(testSet,'dataset') , '3rd argument is not of class dataset');
+            assert(isa(ds,'dataset') , '2nd argument is not of class dataset');
 
-            algo.train(trainValSet);
-            algo.test(testSet);
+            algo.crossVal(ds);
+            
+            algo.train(ds.X(ds.trainIdx) , ds.Y(ds.trainIdx), algo.kerParStar, algo.filterParStar);
+            obj.result.Ypred = algo.test(ds.X(ds.trainIdx,:) , ds.X(ds.testIdx,:) , algo.kerParStar);
+                        
+            obj.result.perf = ds.performanceMeasure( ds.Y(ds.testIdx) , obj.result.Ypred );
         end
     end
     

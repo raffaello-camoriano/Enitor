@@ -1,36 +1,48 @@
 
-classdef USPS < handle
+classdef USPS < dataset
    
    properties
-        n
-        d
-        t
-        X
-        Y
+   
    end
    
    methods
-
-        function obj = dataset()
+        function obj = USPS
             data = load('USPS.mat');
-            data = data.data;
             
-            obj.X = zeros(size(data,2)*size(data,3),size(data,1));
-            for i = 1:size(data , 3)
-              obj.X((i-1)*size(data,2)+1:i*size(data,2),:) = data(:,:,i)';
-            end
-            
-            obj.Y = 1:size(data , 3);
-            obj.Y = interp1(obj.Y , obj.Y, linspace(0.5, size(data , 3)+0.5, size(obj.X,1)), 'nearest'  , 'extrap');
+            obj.X = data.fea;
+            obj.Y = data.gnd;
             obj.n = size(obj.X , 1);
+            obj.nTr = 7291;
+            obj.nTe = 2007;
             obj.d = size(obj.X , 2);
-            obj.t = size(data , 3);
+            obj.t = max(obj.Y);
+            
+            obj.trainIdx = 1:obj.nTr;
+            obj.shuffledTrainIdx = obj.trainIdx;
+            obj.testIdx = obj.nTr+1:obj.nTr+obj.nTe;
         end
+        
+        % Compute performance measure on the given outputs according to the
+        % USPS dataset-specific ranking standard measure
         function perf = performanceMeasure(obj , Y , Ypred)
             % Error rate
             equal = (Y == Ypred);
             numCorrect = sum(equal);
             perf = numCorrect / size(Y,1);
         end
+        
+        % Compute random permutation of the training set indexes
+        function shuffleTrainIdx(obj)
+            obj.shuffledTrainIdx = randperm(7291);
+        end
+        
+        function getTrainSet(obj)
+            
+        end
+        
+        function getTestSet(obj)
+            
+        end
+        
    end % methods
 end % classdef

@@ -9,7 +9,7 @@ classdef kernel < handle
     
     methods ( Abstract )
         %obj = kernel();
-        init(obj , X , Y);
+        %init(obj , X , Y);
         range(obj, numGuesses);
         compute(obj , sigma);
     end

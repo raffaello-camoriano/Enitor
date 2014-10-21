@@ -3,6 +3,8 @@ classdef dataset < handle
    
    properties
         n
+        nTr
+        nTe
         d
         t
         
@@ -15,16 +17,19 @@ classdef dataset < handle
    end
    
    methods
+        
         function obj = dataset(fname)
-            data = load(fname);
-            obj.X = data.X;
-            obj.Y = data.Y;
-            obj.n = size(data.X , 1);
-            obj.d = size(data.X , 2);
-            obj.t = size(data.y , 2);
+            if  nargin > 0            
+                data = load(fname);
+                obj.X = data.X;
+                obj.Y = data.Y;
+                obj.n = size(data.X , 1);
+                obj.d = size(data.X , 2);
+                obj.t = size(data.y , 2);
+            end
         end       
         
-        function perf = performanceMeasure(obj , Y , Ypred  'rm)
+        function perf = performanceMeasure(obj , Y , Ypred )
             % Error Rate is computed
             
             
