@@ -4,17 +4,17 @@ classdef tikhonov < filter
 
     properties
         U, T, Y0
-        rng, Yreg
+        coeffs
     end
     
-    methods ( Abstract )
-        %obj = kernel();
+    methods %( Abstract )
+        %obj = tikhonov();
         function init(obj , K , Y)
             [obj.U, obj.T] = hess(K);
             obj.Y0 = obj.U'*Y;
         end
         
-        function range(obj, numGuesses)
+        function rng = range(obj, numGuesses)
             
             % TODO: @Ale: Smart computation of eigmin and eigmax starting from the
             % tridiagonal matrix U
@@ -32,15 +32,13 @@ classdef tikhonov < filter
 
             lmin = max(min(lmax*opt.smallnumber, eigmin), 200*sqrt(eps));
 
-            powers = linspace(0,1,opt.nlambda);
-            obj.rng = lmin.*(lmax/lmin).^(powers);
-            obj.rng = obj.rng/n;
-            
+            powers = linspace(0,1,numGuesses);
+            rng = (lmin.*(lmax/lmin).^(powers))/n;            
         end
         
         function compute(obj , lambda)
             n = size(obj.T,1);
-            obj.Yreg = obj.U*((obj.T+lambda*n*eye(n))\obj.Y0);
+            obj.coeffs = obj.U*((obj.T+lambda*n*eye(n))\obj.Y0);
         end
     end
 end

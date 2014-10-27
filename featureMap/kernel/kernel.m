@@ -3,7 +3,7 @@ classdef kernel < handle
     %   Detailed explanation goes here
     
     properties
-        rng
+        %rng
         K
     end
     

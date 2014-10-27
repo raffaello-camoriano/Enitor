@@ -12,12 +12,23 @@ classdef gaussianKernel < kernel
     methods
         
         function obj = gaussianKernel( X1 , X2 , sigma )
+
+            if  nargin > 0
+                if  nargin > 2
+                    obj.init( X1 , X2 , sigma );
+                else            
+                    obj.init( X1 , X2 );
+                end
+            end
+        end
+        
+        function init( obj , X1 , X2 , sigma )
             
             obj.n = size(X1 , 1);
             obj.m = size(X2 , 1);
             obj.computeSqDistMat(X1,X2);
             
-            if  nargin > 2
+            if  nargin > 3
                 obj.compute(sigma);
             end
         end
@@ -56,6 +67,7 @@ classdef gaussianKernel < kernel
             % Compute max and min sigma guesses (same strategy used by
             % GURLS)
             
+             
             D = sort(obj.SqDistMat(tril(true(obj.n),-1)));
             firstPercentile = round(0.01*numel(D)+0.5);
             minGuess = sqrt(D(firstPercentile));

@@ -3,7 +3,7 @@ classdef filter < handle
     %   Detailed explanation goes here
     
     properties
-        rng
+        %rng
         Yreg
     end
     

@@ -10,25 +10,55 @@ classdef USPS < dataset
             data = load('USPS.mat');
             
             obj.X = data.fea;
-            obj.Y = data.gnd;
+            
             obj.n = size(obj.X , 1);
             obj.nTr = 7291;
             obj.nTe = 2007;
             obj.d = size(obj.X , 2);
-            obj.t = max(obj.Y);
+            obj.t = max(data.gnd);
+            
+            % reformat output columns
+            obj.Y = zeros(obj.n,obj.t);
+            
+            for i = 1:obj.n
+                
+                obj.Y(i , data.gnd(i)) = 1;
+            
+            end
             
             obj.trainIdx = 1:obj.nTr;
             obj.shuffledTrainIdx = obj.trainIdx;
             obj.testIdx = obj.nTr+1:obj.nTr+obj.nTe;
+            
+            % Set problem type
+                
+            obj.problemType = 'classification';
+            for i = 1:size(obj.Y,1)
+                for j = 1:size(obj.Y,2)
+
+                    if mod(obj.Y(i,j),1) ~= 0
+                        obj.problemType = 'regression';
+                    end
+
+                end
+            end
         end
         
         % Compute performance measure on the given outputs according to the
         % USPS dataset-specific ranking standard measure
         function perf = performanceMeasure(obj , Y , Ypred)
+            
             % Error rate
-            equal = (Y == Ypred);
-            numCorrect = sum(equal);
-            perf = numCorrect / size(Y,1);
+
+            numCorrect = 0;
+            
+            for i = 1:size(Y,1)
+                if sum(Y(i,:) == Ypred(i,:)) == size(Y,2)
+                    numCorrect = numCorrect +1;
+                end
+            end
+            
+            perf = 1 - (numCorrect / size(Y,1));
         end
         
         % Compute random permutation of the training set indexes

@@ -28,7 +28,9 @@ ds = USPS;
 
 %% Experiment setup
 
-alg = regls('gaussian', 4, 10);
+ker = gaussianKernel;
+fil = tikhonov;
+alg = regls(ker, fil, 4, 10, 10);
 
 exp = experiment('Experiment_USPS_RLS');
 exp.run(alg , ds)
