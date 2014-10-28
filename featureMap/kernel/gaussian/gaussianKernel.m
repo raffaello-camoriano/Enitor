@@ -4,6 +4,10 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
     
     properties
         
+        rng             % Parameter ranges cell array 
+        numGuesses      % Number of guesses for the parameters
+        currentParIdx   % Current parameter combination indexes
+        
         SqDistMat
         n
         m
@@ -11,24 +15,46 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
     
     methods
         
-        function obj = gaussianKernel( X1 , X2 , sigma )
+        function obj = gaussianKernel( X1 , X2 , numGuesses , sigma )
 
             if  nargin > 0
-                if  nargin > 2
-                    obj.init( X1 , X2 , sigma );
-                else            
-                    obj.init( X1 , X2 );
+                if  nargin > 3
+                    obj.init( X1 , X2 , numGuesses, sigma );
+                elseif nargin > 2
+                    obj.init( X1 , X2 , numGuesses);
+                else
+                    obj.init( X1 , X2);
                 end
             end
         end
         
-        function init( obj , X1 , X2 , sigma )
+        function init( obj , X1 , X2 , numGuesses , sigma )
+            
+            if( nargin > 3 )
+                if numGuesses > 0
+                    obj.numGuesses = numGuesses;
+                else
+                    obj.numGuesses = 1;
+                end            
+
+                % Initialize range map
+                rangeKeySet = {'sigma'};
+                rangeValueSet = cell(size(rangeKeySet,1));
+                rangeValueSet{:,:} = zeros(obj.numGuesses,1);
+                obj.rng = containers.Map(rangeKeySet,rangeValueSet);
+
+                % Initialize current parameter combination indexes
+                currentParIdxKeySet = rangeKeySet;
+                currentParIdxValueSet = cell(size(currentParIdxKeySet,1));
+                currentParIdxValueSet{:,:} = 0;
+                obj.currentParIdx = containers.Map(currentParIdxKeySet,currentParIdxValueSet);
+            end
             
             obj.n = size(X1 , 1);
             obj.m = size(X2 , 1);
             obj.computeSqDistMat(X1,X2);
             
-            if  nargin > 3
+            if  nargin > 4
                 obj.compute(sigma);
             end
         end
@@ -54,11 +80,7 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
         end
         
         % Computes the range for the sigma parameter guesses
-        function rng = range(obj , numGuesses)
-            if( nargin < 2 )
-                numGuesses = 20;    % Default guesses number
-                disp('Number of guesses not specified! Set to 20 by default...');
-            end
+        function obj = range(obj)
             
             if (obj.m ~= obj.n)
                 error('Error, the distance matrix is not squared! Aborting...');
@@ -67,13 +89,9 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
             % Compute max and min sigma guesses (same strategy used by
             % GURLS)
             
-             
             D = sort(obj.SqDistMat(tril(true(obj.n),-1)));
             firstPercentile = round(0.01*numel(D)+0.5);
             minGuess = sqrt(D(firstPercentile));
-
-            %D = sort(opt.kernel.distance);
-            %opt.sigmamax = median(D(n,:));
             maxGuess = sqrt(max(max(obj.SqDistMat)));
 
             if minGuess <= 0
@@ -83,8 +101,36 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
                 maxGuess = eps;
             end	
             
-            rng = linspace(minGuess, maxGuess , numGuesses);
-        end        
+            obj.rng('sigma') = linspace(minGuess, maxGuess , obj.numGuesses);
+        end
+        
+        % returns true if the next parameter combination is available and
+        % updates the current parameter combination 'currentPar'
+        function available = next(obj)
+            
+            % If any range for any of the parameters is not available, recompute all ranges.
+            if sum(cellfun(@isempty,values(obj.rng))) == 0
+                obj.range
+            end
+            
+            %idxToBeIncremented = cellfun(@(x,y) length(x) >= y , values(obj.rng) , obj.currentParIdx + 1);
+            
+            available = false;
+            for key = keys(obj.rng)
+                keyStr = key{1};
+                if length(obj.rng(keyStr)) >= obj.currentParIdx(keyStr) + 1
+                    obj.currentParIdx(keyStr) = obj.currentParIdx(keyStr) + 1;
+                    available = true;
+                end
+            end
+            
+%             if length(obj.rng('sigma')) >= (obj.currentParIdx('sigma') + 1)
+%                 obj.currentParIdx('sigma') = obj.currentParIdx('sigma') + 1;
+%                 available = true;
+%             else
+%                 available = false;
+%             end
+
+        end
     end
 end
-
