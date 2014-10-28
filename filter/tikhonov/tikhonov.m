@@ -5,13 +5,21 @@ classdef tikhonov < filter
     properties
         U, T, Y0
         coeffs
+        n % Number of samples
     end
     
-    methods %( Abstract )
-        %obj = tikhonov();
-        function init(obj , K , Y)
+    methods
+        
+        function obj = tikhonov( K , Y )
+            obj.init(K , Y );
+        end
+        
+        function init(obj , K , Y )
             [obj.U, obj.T] = hess(K);
+            
             obj.Y0 = obj.U'*Y;
+            
+            obj.n = size(K,1);
         end
         
         function rng = range(obj, numGuesses)
@@ -23,22 +31,42 @@ classdef tikhonov < filter
             
             % GURLS code below, set 'eigmax' and 'eigmin' variables
             
-            % maximum eigenvalue
+            
+            %===================================================
+            % DEBUG: Dumb computation of min and max eigenvalues
+            
+%             % Reconstruct kernel matrix
+%             K = obj.U * obj.T * obj.U';
+%             
+%             % Perform SVD of K
+%             e = eig(K);
+%             
+%             % Grab min and max eigs
+%             eigmax = max(e);
+%             eigmin = min(e);
+            
+            eigmax = 1;
+            eigmin = 10e-7;
+            %===================================================
+            
+            % maximum lambda
             lmax = eigmax;
+            
+            smallnumber = 1e-8;
 
             % just in case, when r = min(n,d) and r x r has some zero eigenvalues
             % we take a max; 200*sqrt(eps) is the legacy number used in the previous
             % code, so i am just continuing it.
 
-            lmin = max(min(lmax*opt.smallnumber, eigmin), 200*sqrt(eps));
+            lmin = max(min(lmax*smallnumber, eigmin), 200*sqrt(eps));
 
             powers = linspace(0,1,numGuesses);
-            rng = (lmin.*(lmax/lmin).^(powers))/n;            
+            rng = (lmin.*(lmax/lmin).^(powers))/obj.n;            
         end
         
         function compute(obj , lambda)
-            n = size(obj.T,1);
-            obj.coeffs = obj.U*((obj.T+lambda*n*eye(n))\obj.Y0);
+
+            obj.coeffs = obj.U*((obj.T+lambda*obj.n*eye(obj.n))\obj.Y0);
         end
     end
 end

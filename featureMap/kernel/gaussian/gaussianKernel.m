@@ -1,4 +1,4 @@
-classdef gaussianKernel < kernel
+classdef gaussianKernel < kernel & matlab.mixin.Copyable
     %GAUSSIAN Summary of this class goes here
     %   Detailed explanation goes here
     

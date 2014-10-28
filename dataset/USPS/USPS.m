@@ -6,29 +6,46 @@ classdef USPS < dataset
    end
    
    methods
-        function obj = USPS
+        function obj = USPS(nTr , nTe)
+            
             data = load('USPS.mat');
             
             obj.X = data.fea;
-            
+
             obj.n = size(obj.X , 1);
-            obj.nTr = 7291;
-            obj.nTe = 2007;
             obj.d = size(obj.X , 2);
             obj.t = max(data.gnd);
             
             % reformat output columns
             obj.Y = zeros(obj.n,obj.t);
-            
+
             for i = 1:obj.n
-                
                 obj.Y(i , data.gnd(i)) = 1;
-            
             end
+                
+            if nargin == 0
+                
+                obj.nTr = 7291;
+                obj.nTe = 2007;
+
+                obj.trainIdx = 1:obj.nTr;
+                obj.shuffledTrainIdx = obj.trainIdx;
+                obj.testIdx = obj.nTr+1:obj.nTr+obj.nTe;
+                
+            elseif (nargin >1) && (nTr > 1) && (nTe > 0)
             
-            obj.trainIdx = 1:obj.nTr;
-            obj.shuffledTrainIdx = obj.trainIdx;
-            obj.testIdx = obj.nTr+1:obj.nTr+obj.nTe;
+                obj.nTr = nTr;
+                obj.nTe = nTe;
+                
+                if (nTr > 7291) || (nTe > 2007)
+                    error('(nTr > 7291) || (nTe > 2007)');
+                end
+                
+                obj.trainIdx = 1:obj.nTr;
+                obj.shuffledTrainIdx = obj.trainIdx;
+                obj.testIdx = 7292:7291+obj.nTe;
+                
+            end
             
             % Set problem type
                 
