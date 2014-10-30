@@ -3,10 +3,10 @@ clearAllButBP
 %% Dataset initialization
 
 % Load full dataset
-%ds = USPS;
+ds = USPS;
 
 % Load small dataset
-ds = USPS(1000,500);
+%ds = USPS(500,500);
 
 % dataset.n
 % dataset.nTr

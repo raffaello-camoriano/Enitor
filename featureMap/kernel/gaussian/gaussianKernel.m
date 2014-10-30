@@ -1,12 +1,13 @@
-classdef gaussianKernel < kernel & matlab.mixin.Copyable
+classdef gaussianKernel < kernel
     %GAUSSIAN Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         
-        rng             % Parameter ranges cell array 
         numGuesses      % Number of guesses for the parameters
-        currentParIdx   % Current parameter combination indexes
+        rng             % Parameter ranges map container
+        currentParIdx   % Current parameter combination indexes map container
+        currentPar      % Current parameter combination map container
         
         SqDistMat
         n
@@ -15,11 +16,11 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
     
     methods
         
-        function obj = gaussianKernel( X1 , X2 , numGuesses , sigma )
+        function obj = gaussianKernel( X1 , X2 , numGuesses , kerPar )
 
             if  nargin > 0
                 if  nargin > 3
-                    obj.init( X1 , X2 , numGuesses, sigma );
+                    obj.init( X1 , X2 , numGuesses, kerPar );
                 elseif nargin > 2
                     obj.init( X1 , X2 , numGuesses);
                 else
@@ -28,9 +29,14 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
             end
         end
         
-        function init( obj , X1 , X2 , numGuesses , sigma )
+        function init( obj , X1 , X2 , numGuesses , kerPar )
             
-            if( nargin > 3 )
+            % Set dimensions and compute square distances matrix
+            obj.n = size(X1 , 1);
+            obj.m = size(X2 , 1);
+            obj.computeSqDistMat(X1,X2);
+            
+            if( nargin == 4 )
                 if numGuesses > 0
                     obj.numGuesses = numGuesses;
                 else
@@ -43,20 +49,20 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
                 rangeValueSet{:,:} = zeros(obj.numGuesses,1);
                 obj.rng = containers.Map(rangeKeySet,rangeValueSet);
 
-                % Initialize current parameter combination indexes
+                % Initialize current parameter combination indexes map
                 currentParIdxKeySet = rangeKeySet;
                 currentParIdxValueSet = cell(size(currentParIdxKeySet,1));
                 currentParIdxValueSet{:,:} = 0;
                 obj.currentParIdx = containers.Map(currentParIdxKeySet,currentParIdxValueSet);
-            end
+                
+                % Initialize current parameter combination map
+                currentParKeySet = rangeKeySet;
+                currentParValueSet = cell(size(currentParIdxKeySet,1));
+                obj.currentPar = containers.Map(currentParKeySet,currentParValueSet);
             
-            obj.n = size(X1 , 1);
-            obj.m = size(X2 , 1);
-            obj.computeSqDistMat(X1,X2);
-            
-            if  nargin > 4
-                obj.compute(sigma);
-            end
+            elseif  nargin > 4
+                obj.compute(kerPar);
+            end            
         end
         
         % Computes the squared distance matrix SqDistMat based on X1, X2
@@ -70,16 +76,23 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
         
         end
         
-        % Computes the kernel matrix SqDistMat based on SqDistMat and sigma
-        function compute(obj , sigma)
+        % Computes the kernel matrix SqDistMat based on SqDistMat and
+        % kernel parameters
+        function compute(obj , kerPar)
             if( nargin > 1 )
-                obj.K = exp(-obj.SqDistMat/(2*sigma^2));
+                obj.K = exp(-obj.SqDistMat / (2 * kerPar('sigma')^2));
+            
+            % If any current value for any of the parameters is not available, abort.
+            elseif (nargin == 1) && (sum(cellfun(@isempty,values(obj.currentPar))) > 0)
+                error('Kernel parameter(s) not explicitly specified, and no internal current parameter available. Exiting...');
             else
-                disp('sigma parameter not specified! Exiting...');
+                disp('Kernel will be computed according to the internal current hyperparameter(s)');
+                obj.currentPar('sigma')
+                obj.K = exp(-obj.SqDistMat / (2 * obj.currentPar('sigma')^2));
             end
         end
         
-        % Computes the range for the sigma parameter guesses
+        % Computes the range for the hyperparameter guesses
         function obj = range(obj)
             
             if (obj.m ~= obj.n)
@@ -109,28 +122,22 @@ classdef gaussianKernel < kernel & matlab.mixin.Copyable
         function available = next(obj)
             
             % If any range for any of the parameters is not available, recompute all ranges.
-            if sum(cellfun(@isempty,values(obj.rng))) == 0
+            if sum(cellfun(@isempty,values(obj.rng))) > 0
                 obj.range
             end
-            
-            %idxToBeIncremented = cellfun(@(x,y) length(x) >= y , values(obj.rng) , obj.currentParIdx + 1);
-            
+                        
             available = false;
             for key = keys(obj.rng)
                 keyStr = key{1};
                 if length(obj.rng(keyStr)) >= obj.currentParIdx(keyStr) + 1
                     obj.currentParIdx(keyStr) = obj.currentParIdx(keyStr) + 1;
+                    
+                    tmp = obj.rng(keyStr);
+                    obj.currentPar(keyStr) = tmp(obj.currentParIdx(keyStr));
+                    
                     available = true;
                 end
             end
-            
-%             if length(obj.rng('sigma')) >= (obj.currentParIdx('sigma') + 1)
-%                 obj.currentParIdx('sigma') = obj.currentParIdx('sigma') + 1;
-%                 available = true;
-%             else
-%                 available = false;
-%             end
-
         end
     end
 end

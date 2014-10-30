@@ -133,13 +133,9 @@ classdef regls < algorithm
 
             while kernel.next
                 
-                %Get current parameter(s)
-                tmp = kernel.rng('sigma');
-                kerPar = tmp(kernel.currentParIdx('sigma'));
-                
-                % Compute kernel
-                kernel.compute(kerPar);
-                kernelVal.compute(kerPar);
+                % Compute kernel according to current hyperparameters
+                kernel.compute;
+                kernelVal.compute(kernel.currentPar);
                 
                 filter = obj.filterType(kernel.K, Ytrain);
 
@@ -147,7 +143,7 @@ classdef regls < algorithm
                 
                 for filterPar = obj.filterParGuesses
                     
-                    filterPar
+                    %filterPar
                     
                     filter.compute(filterPar);
 
@@ -168,14 +164,16 @@ classdef regls < algorithm
                     
                     if valPerf < valM
                         
-                        % Update best kernel parameter
-                        obj.kerParStar = kerPar;
+                        % Update best kernel parameter combination
+                        % WARNING: containers.Map is a handle class. We
+                        % need to instantiate obj.kerParStar by value!
+                        obj.kerParStar = containers.Map(keys(kernel.currentPar),values(kernel.currentPar));
                         
                         %Update best filter parameter
                         obj.filterParStar = filterPar;
                         
                         %Update best validation performance measurement
-                        valM = valPerf;
+                        valM = valPerf
                         
                         if ~recompute
                             
@@ -196,6 +194,13 @@ classdef regls < algorithm
 %             obj.kerParStar = obj.kerParGuesses
 %             obj.filterParStar = ...  
             
+            % Print best kernel hyperparameter(s)
+            keys(obj.kerParStar)
+            values(obj.kerParStar)
+
+            % Print best filter parameter
+            obj.filterParStar
+
             if (nargin > 4) && (recompute)
                 
                 % Recompute kernel on the whole training set with the best
