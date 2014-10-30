@@ -65,7 +65,7 @@ classdef regls < algorithm
             kernelVal = obj.kernelType(Xval,Xtrain);
             
             % Train kernel
-            kernel = obj.kernelType(Xtrain,Xtrain, 5);
+            kernel = obj.kernelType(Xtrain,Xtrain, obj.numKerParGuesses);
             
             % Compute kernel parameter range(s)
             kernel.range;
@@ -75,61 +75,6 @@ classdef regls < algorithm
             % Full matrices for performance storage
 %             trainPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
 %             valPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
-            
-%             for kerPar = obj.kerParGuesses
-%                 
-%                 kerPar
-%                 
-%                 kernel.compute(kerPar);
-%                 kernelVal.compute(kerPar);
-%                 
-%                 filter = obj.filterType(kernel.K, Ytrain);
-% 
-%                 obj.filterParGuesses = filter.range(5);
-%                 
-%                 for filterPar = obj.filterParGuesses
-%                     
-%                     filterPar
-%                     
-%                     filter.compute(filterPar);
-% 
-%                     % Populate full performance matrices
-%                     %trainPerformance(i,j) = perfm( kernel.K * filter.coeffs, Ytrain);
-%                     %valPerformance(i,j) = perfm( kernelVal.K * filter.coeffs, Yval);
-%                     
-%                     % Compute predictions matrix
-%                     YvalScores = kernelVal.K * filter.coeffs;
-%                     YvalPred = zeros(size(YvalScores));
-%                     for i = 1:size(YvalPred,1)
-%                         [~,maxIdx] = max(YvalScores(i,:));
-%                         YvalPred(i,maxIdx) = 1;
-%                     end
-%                     
-%                     % Compute performance
-%                     valPerf = performanceMeasure( YvalPred, Yval );
-%                     
-%                     if valPerf < valM
-%                         
-%                         % Update best kernel parameter
-%                         obj.kerParStar = kerPar;
-%                         
-%                         %Update best filter parameter
-%                         obj.filterParStar = filterPar;
-%                         
-%                         %Update best validation performance measurement
-%                         valM = valPerf;
-%                         
-%                         if ~recompute
-%                             
-%                             % Update internal model samples matrix
-%                             obj.Xmodel = Xtrain;
-%                             
-%                             % Update coefficients vector
-%                             obj.c = filter.coeffs;
-%                         end
-%                     end
-%                 end
-%             end
 
             while kernel.next
                 
@@ -137,15 +82,13 @@ classdef regls < algorithm
                 kernel.compute;
                 kernelVal.compute(kernel.currentPar);
                 
-                filter = obj.filterType(kernel.K, Ytrain);
-
-                obj.filterParGuesses = filter.range(5);
+                filter = obj.filterType(kernel.K, Ytrain , obj.numFilterParGuesses);
+                filter.range;
                 
-                for filterPar = obj.filterParGuesses
+                while filter.next
                     
-                    %filterPar
-                    
-                    filter.compute(filterPar);
+                    % Compute filter according to current hyperparameters
+                    filter.compute;
 
                     % Populate full performance matrices
                     %trainPerformance(i,j) = perfm( kernel.K * filter.coeffs, Ytrain);
@@ -170,7 +113,7 @@ classdef regls < algorithm
                         obj.kerParStar = containers.Map(keys(kernel.currentPar),values(kernel.currentPar));
                         
                         %Update best filter parameter
-                        obj.filterParStar = filterPar;
+                        obj.filterParStar = containers.Map(keys(filter.currentPar),values(filter.currentPar));
                         
                         %Update best validation performance measurement
                         valM = valPerf
@@ -195,12 +138,15 @@ classdef regls < algorithm
 %             obj.filterParStar = ...  
             
             % Print best kernel hyperparameter(s)
+            display('Best kernel hyperparameter(s):')
             keys(obj.kerParStar)
             values(obj.kerParStar)
 
-            % Print best filter parameter
-            obj.filterParStar
-
+            % Print best filter hyperparameter(s)
+            display('Best filter hyperparameter(s):')
+            keys(obj.filterParStar)
+            values(obj.filterParStar)
+            
             if (nargin > 4) && (recompute)
                 
                 % Recompute kernel on the whole training set with the best

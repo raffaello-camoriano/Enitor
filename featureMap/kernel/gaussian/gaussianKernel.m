@@ -62,7 +62,7 @@ classdef gaussianKernel < kernel
             
             elseif  nargin > 4
                 obj.compute(kerPar);
-            end            
+            end
         end
         
         % Computes the squared distance matrix SqDistMat based on X1, X2
@@ -74,22 +74,6 @@ classdef gaussianKernel < kernel
             
             obj.SqDistMat = repmat(Sx1 , 1 , obj.m) -2*Sx1x2 + repmat(Sx2 , obj.n , 1);
         
-        end
-        
-        % Computes the kernel matrix SqDistMat based on SqDistMat and
-        % kernel parameters
-        function compute(obj , kerPar)
-            if( nargin > 1 )
-                obj.K = exp(-obj.SqDistMat / (2 * kerPar('sigma')^2));
-            
-            % If any current value for any of the parameters is not available, abort.
-            elseif (nargin == 1) && (sum(cellfun(@isempty,values(obj.currentPar))) > 0)
-                error('Kernel parameter(s) not explicitly specified, and no internal current parameter available. Exiting...');
-            else
-                disp('Kernel will be computed according to the internal current hyperparameter(s)');
-                obj.currentPar('sigma')
-                obj.K = exp(-obj.SqDistMat / (2 * obj.currentPar('sigma')^2));
-            end
         end
         
         % Computes the range for the hyperparameter guesses
@@ -115,6 +99,22 @@ classdef gaussianKernel < kernel
             end	
             
             obj.rng('sigma') = linspace(minGuess, maxGuess , obj.numGuesses);
+        end
+        
+        % Computes the kernel matrix SqDistMat based on SqDistMat and
+        % kernel parameters
+        function compute(obj , kerPar)
+            if( nargin > 1 )
+                obj.K = exp(-obj.SqDistMat / (2 * kerPar('sigma')^2));
+            
+            % If any current value for any of the parameters is not available, abort.
+            elseif (nargin == 1) && (sum(cellfun(@isempty,values(obj.currentPar))) > 0)
+                error('Kernel parameter(s) not explicitly specified, and no internal current parameter available. Exiting...');
+            else
+                disp('Kernel will be computed according to the internal current hyperparameter(s)');
+                obj.currentPar('sigma')
+                obj.K = exp(-obj.SqDistMat / (2 * obj.currentPar('sigma')^2));
+            end
         end
         
         % returns true if the next parameter combination is available and
