@@ -15,20 +15,16 @@ classdef tikhonov < filter
     
     methods
         
-        function obj = tikhonov( K , Y , numGuesses , filterPar)
+        function obj = tikhonov( K , Y , numGuesses )
             
-            if  nargin > 0
-                if  nargin > 3
-                    obj.init( K , Y , numGuesses, filterPar );
-                elseif nargin > 2
+            if nargin > 2
                     obj.init( K , Y , numGuesses );
-                elseif nargin > 1
+            elseif nargin > 1
                     obj.init( K , Y );
-                end
             end
         end
         
-        function init(obj , K , Y , numGuesses, filterPar)
+        function init(obj , K , Y , numGuesses)
             
             % Get number of samples
             obj.n = size(K,1);
@@ -44,26 +40,27 @@ classdef tikhonov < filter
                     obj.numGuesses = 1;
                 end            
 
-                % Initialize range map
-                rangeKeySet = {'lambda'};
-                rangeValueSet = cell(size(rangeKeySet,1));
-                rangeValueSet{:,:} = zeros(obj.numGuesses,1);
-                obj.rng = containers.Map(rangeKeySet,rangeValueSet);
+%                 % Initialize range map
+%                 rangeKeySet = {'lambda'};
+%                 rangeValueSet = cell(size(rangeKeySet,1));
+%                 rangeValueSet{:,:} = zeros(obj.numGuesses,1);
+%                 obj.rng = containers.Map(rangeKeySet,rangeValueSet);
+% 
+%                 % Initialize current parameter combination indexes map
+%                 currentParIdxKeySet = rangeKeySet;
+%                 currentParIdxValueSet = cell(size(currentParIdxKeySet,1));
+%                 currentParIdxValueSet{:,:} = 0;
+%                 obj.currentParIdx = containers.Map(currentParIdxKeySet,currentParIdxValueSet);
+%                 
+%                 % Initialize current parameter combination map
+%                 currentParKeySet = rangeKeySet;
+%                 currentParValueSet = cell(size(currentParIdxKeySet,1));
+%                 obj.currentPar = containers.Map(currentParKeySet,currentParValueSet);      
 
-                % Initialize current parameter combination indexes map
-                currentParIdxKeySet = rangeKeySet;
-                currentParIdxValueSet = cell(size(currentParIdxKeySet,1));
-                currentParIdxValueSet{:,:} = 0;
-                obj.currentParIdx = containers.Map(currentParIdxKeySet,currentParIdxValueSet);
-                
-                % Initialize current parameter combination map
-                currentParKeySet = rangeKeySet;
-                currentParValueSet = cell(size(currentParIdxKeySet,1));
-                obj.currentPar = containers.Map(currentParKeySet,currentParValueSet);
-            
-            elseif  nargin > 4
-                obj.compute(filterPar);
-            end            
+                obj.range();    % Compute range
+                obj.currentParIdx = 0;
+                obj.currentPar = [];
+            end
         end
         
         function obj = range(obj)
@@ -106,45 +103,64 @@ classdef tikhonov < filter
             lmin = max(min(lmax*smallnumber, eigmin), 200*sqrt(eps));
 
             powers = linspace(0,1,obj.numGuesses);
-            obj.rng('lambda') = (lmin.*(lmax/lmin).^(powers))/obj.n;            
+            tmp = (lmin.*(lmax/lmin).^(powers))/obj.n;        
+            obj.rng = mat2cell(tmp,1);
         end
         
         function compute(obj , filterPar)
 
             if( nargin > 1 )
-                obj.coeffs = obj.U * (( obj.T + filterPar('lambda') * obj.n * eye(obj.n)) \ obj.Y0);
+                obj.coeffs = obj.U * (( obj.T + filterPar(1) * obj.n * eye(obj.n)) \ obj.Y0);
             
             % If any current value for any of the parameters is not available, abort.
-            elseif (nargin == 1) && (sum(cellfun(@isempty,values(obj.currentPar))) > 0)
+            elseif (nargin == 1) && (isempty(obj.currentPar))
                 error('Filter parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
             else
                 disp('Filter will be computed according to the internal current hyperparameter(s)');
-                obj.currentPar('lambda')
-                obj.coeffs = obj.U * (( obj.T + obj.currentPar('lambda') * obj.n * eye(obj.n)) \ obj.Y0);
+                obj.currentPar
+                obj.coeffs = obj.U * (( obj.T + obj.currentPar(1) * obj.n * eye(obj.n)) \ obj.Y0);
             end
         end
+        
         
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'
         function available = next(obj)
-            
+
             % If any range for any of the parameters is not available, recompute all ranges.
-            if sum(cellfun(@isempty,values(obj.rng))) > 0
-                obj.range
+            if cellfun(@isempty,obj.rng)
+                obj.range();
             end
-                        
+
             available = false;
-            for key = keys(obj.rng)
-                keyStr = key{1};
-                if length(obj.rng(keyStr)) >= obj.currentParIdx(keyStr) + 1
-                    obj.currentParIdx(keyStr) = obj.currentParIdx(keyStr) + 1;
-                    
-                    tmp = obj.rng(keyStr);
-                    obj.currentPar(keyStr) = tmp(obj.currentParIdx(keyStr));
-                    
-                    available = true;
-                end
+            if length(obj.rng) > obj.currentParIdx
+                obj.currentParIdx = obj.currentParIdx + 1;
+                obj.currentPar = obj.rng{obj.currentParIdx};
+                available = true;
             end
-        end        
+        end
+        
+%         % returns true if the next parameter combination is available and
+%         % updates the current parameter combination 'currentPar'
+%         function available = next(obj)
+%             
+%             % If any range for any of the parameters is not available, recompute all ranges.
+%             if sum(cellfun(@isempty,values(obj.rng))) > 0
+%                 obj.range
+%             end
+%                         
+%             available = false;
+%             for key = keys(obj.rng)
+%                 keyStr = key{1};
+%                 if length(obj.rng(keyStr)) >= obj.currentParIdx(keyStr) + 1
+%                     obj.currentParIdx(keyStr) = obj.currentParIdx(keyStr) + 1;
+%                     
+%                     tmp = obj.rng(keyStr);
+%                     obj.currentPar(keyStr) = tmp(obj.currentParIdx(keyStr));
+%                     
+%                     available = true;
+%                 end
+%             end
+%         end        
     end
 end

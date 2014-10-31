@@ -17,7 +17,8 @@ classdef regls < algorithm
         numFilterParGuesses        
         
 %         trainIdx    % Training indexes used internally in the actually performed training
-%         valIdx      % Validation indexes used internally in the actually performed training
+%         valIdx      % Validation indexes used internally in the actually
+%         performed validation
         
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
@@ -51,8 +52,9 @@ classdef regls < algorithm
             
             % Training/validation sets splitting
             shuffledIdx = randperm(size(Xtr,1));
-            trainIdx = shuffledIdx(1:floor(size(Xtr,1)*(1-validationPart)));
-            valIdx = shuffledIdx(ceil(size(Xtr,1)*(1-validationPart):size(Xtr,1)));
+            tmp1 = floor(size(Xtr,1)*(1-validationPart));
+            trainIdx = shuffledIdx(1 : tmp1);
+            valIdx = shuffledIdx(tmp1 + 1 : end);
             
             Xtrain = Xtr(trainIdx,:);
             Ytrain = Ytr(trainIdx,:);
@@ -67,56 +69,45 @@ classdef regls < algorithm
             % Train kernel
             kernel = obj.kernelType(Xtrain,Xtrain, obj.numKerParGuesses);
             
-            % Compute kernel parameter range(s)
-            kernel.range;
-            
             valM = inf;     % Keeps track of the lowest validation error
             
             % Full matrices for performance storage
 %             trainPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
 %             valPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
 
-            while kernel.next
+            while kernel.next()
                 
                 % Compute kernel according to current hyperparameters
-                kernel.compute;
+                kernel.compute();
                 kernelVal.compute(kernel.currentPar);
                 
                 filter = obj.filterType(kernel.K, Ytrain , obj.numFilterParGuesses);
-                filter.range;
                 
-                while filter.next
+                while filter.next()
                     
                     % Compute filter according to current hyperparameters
-                    filter.compute;
+                    filter.compute();
 
                     % Populate full performance matrices
                     %trainPerformance(i,j) = perfm( kernel.K * filter.coeffs, Ytrain);
                     %valPerformance(i,j) = perfm( kernelVal.K * filter.coeffs, Yval);
                     
                     % Compute predictions matrix
-                    YvalScores = kernelVal.K * filter.coeffs;
-                    YvalPred = zeros(size(YvalScores));
-                    for i = 1:size(YvalPred,1)
-                        [~,maxIdx] = max(YvalScores(i,:));
-                        YvalPred(i,maxIdx) = 1;
-                    end
+                    YvalPred = kernelVal.K * filter.coeffs;
                     
                     % Compute performance
-                    valPerf = performanceMeasure( YvalPred, Yval );
+                    valPerf = performanceMeasure( Yval , YvalPred );
                     
                     if valPerf < valM
                         
                         % Update best kernel parameter combination
-                        % WARNING: containers.Map is a handle class. We
-                        % need to instantiate obj.kerParStar by value!
-                        obj.kerParStar = containers.Map(keys(kernel.currentPar),values(kernel.currentPar));
+                        obj.kerParStar = kernel.currentPar;
                         
                         %Update best filter parameter
-                        obj.filterParStar = containers.Map(keys(filter.currentPar),values(filter.currentPar));
+                        obj.filterParStar = filter.currentPar;
                         
                         %Update best validation performance measurement
-                        valM = valPerf
+                        valM = valPerf;
                         
                         if ~recompute
                             
@@ -139,13 +130,11 @@ classdef regls < algorithm
             
             % Print best kernel hyperparameter(s)
             display('Best kernel hyperparameter(s):')
-            keys(obj.kerParStar)
-            values(obj.kerParStar)
+            obj.kerParStar
 
             % Print best filter hyperparameter(s)
             display('Best filter hyperparameter(s):')
-            keys(obj.filterParStar)
-            values(obj.filterParStar)
+            obj.filterParStar
             
             if (nargin > 4) && (recompute)
                 
@@ -170,17 +159,12 @@ classdef regls < algorithm
         function Ypred = test( obj , Xte )
 
             % Get kernel type and instantiate kernel (including sigma)
-            kernelTest = obj.kernelType(Xte , obj.Xmodel , 0 , obj.kerParStar);
+            kernelTest = obj.kernelType(Xte , obj.Xmodel);
+            kernelTest.compute(obj.kerParStar);
             
             % Compute scores
-            Yscores = kernelTest.K * obj.c;
-            
-            % Compute predictions matrix
-            Ypred = zeros(size(Yscores));
-            for i = 1:size(Ypred,1)
-                [~,maxIdx] = max(Yscores(i,:));
-                Ypred(i,maxIdx) = 1;
-            end
+            Ypred = kernelTest.K * obj.c;
+
         end
         
         

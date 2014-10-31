@@ -3,10 +3,10 @@ clearAllButBP
 %% Dataset initialization
 
 % Load full dataset
-ds = USPS;
+%ds = USPS;
 
 % Load small dataset
-%ds = USPS(500,500);
+ds = USPS(500,500);
 
 % dataset.n
 % dataset.nTr
@@ -38,7 +38,7 @@ ds = USPS;
 ker = @gaussianKernel;
 fil = @tikhonov;
 
-alg = regls(ker, fil, 10, 10);
+alg = regls(ker, fil,  20, 20);
 
 exp = experiment('Experiment_USPS_RLS');
 exp.run(alg , ds)
