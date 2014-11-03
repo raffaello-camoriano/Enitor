@@ -11,7 +11,7 @@ classdef randomFeaturesMapper
     
     methods
         function obj = randomFeaturesMapper( d , numRF , mappingType)
-            obj.init(d, unmRF, mappingType);
+            obj.init(d, numRF, mappingType);
         end
         
         function obj = init(obj,d,numRF,mappingType)

@@ -104,7 +104,7 @@ classdef tikhonov < filter
 
             powers = linspace(0,1,obj.numGuesses);
             tmp = (lmin.*(lmax/lmin).^(powers))/obj.n;        
-            obj.rng = mat2cell(tmp,1);
+            obj.rng = num2cell(tmp);
         end
         
         function compute(obj , filterPar)

@@ -2,11 +2,11 @@
 classdef USPS < dataset
    
    properties
-   
+        outputFormat
    end
    
    methods
-        function obj = USPS(nTr , nTe)
+        function obj = USPS(nTr , nTe, outputFormat)
             
             data = load('USPS.mat');
             
@@ -15,13 +15,6 @@ classdef USPS < dataset
             obj.n = size(obj.X , 1);
             obj.d = size(obj.X , 2);
             obj.t = max(data.gnd);
-            
-            % reformat output columns
-            obj.Y = zeros(obj.n,obj.t);
-
-            for i = 1:obj.n
-                obj.Y(i , data.gnd(i)) = 1;
-            end
                 
             if nargin == 0
                 
@@ -47,8 +40,27 @@ classdef USPS < dataset
                 
             end
             
+            % Reformat output columns
+            if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
+                obj.outputFormat = outputFormat;
+            else
+                display('Wrong or missing output format, set to plusMinusOne by default');
+                obj.outputFormat = 'plusMinusOne';
+            end
+            
+            if strcmp(obj.outputFormat, 'zeroOne')
+                obj.Y = zeros(obj.n,obj.t);
+            elseif strcmp(obj.outputFormat, 'plusMinusOne')
+                obj.Y = -1 * ones(obj.n,obj.t);
+            elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
+                obj.Y = -1/(obj.t - 1) * ones(obj.n,obj.t);
+            end
+               
+            for i = 1:obj.n
+                obj.Y(i , data.gnd(i)) = 1;
+            end
+            
             % Set problem type
-                
             if obj.hasRealValues(obj.Y)
                 obj.problemType = 'regression';
             else
@@ -74,7 +86,14 @@ classdef USPS < dataset
         % Compute predictions matrix from real-valued scores matrix
         function Ypred = scoresToClasses(obj , Yscores)    
             
-            Ypred = zeros(size(Yscores));
+            if strcmp(obj.outputFormat, 'zeroOne')
+                Ypred = zeros(size(Yscores));
+            elseif strcmp(obj.outputFormat, 'plusMinusOne')
+                Ypred = -1 * ones(size(Yscores));
+            elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
+                Ypred = -1/(obj.t - 1) * ones(size(Yscores));
+            end
+            
             for i = 1:size(Ypred,1)
                 [~,maxIdx] = max(Yscores(i,:));
                 Ypred(i,maxIdx) = 1;

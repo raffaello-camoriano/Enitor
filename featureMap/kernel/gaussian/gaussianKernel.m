@@ -99,7 +99,7 @@ classdef gaussianKernel < kernel
             end	
             
             tmp = linspace(minGuess, maxGuess , obj.numGuesses);
-            obj.rng = mat2cell(tmp,1);
+            obj.rng = num2cell(tmp);
         end
 %         % Computes the range for the hyperparameter guesses
 %         function obj = range(obj)
