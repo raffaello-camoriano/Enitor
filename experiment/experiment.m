@@ -12,6 +12,7 @@ classdef experiment < handle
         time            % Struct containing the stored computational time
         saveResult      % Flag for result structure saving
         resdir          % Results saving directory
+        memoryProfiler  % Flag for memory profiling
         
         %name
         customStr
@@ -21,7 +22,7 @@ classdef experiment < handle
     
     methods
         
-        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir)
+        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir , memoryProfiler)
             %obj.name = name_;
             
             assert(isa(algo,'algorithm') , '1st argument is not of class algorithm');
@@ -55,6 +56,14 @@ classdef experiment < handle
                obj.resdir = '';
             end
             
+            if nargin > 7
+               obj.memoryProfiler = memoryProfiler;
+            end
+            
+            if obj.memoryProfiler && obj.measureTime
+                warning('Both time and memory profiling have been activated. Time measurements may not be reliable!')
+            end
+                
             % get handle to the performanceMeasure function specific of the
             % dataset, to be passed to the algo.train method
             obj.performanceMeasure = @ds.performanceMeasure;
@@ -78,6 +87,10 @@ classdef experiment < handle
                 tic;
             end
             
+            if obj.memoryProfiler
+                profile -memory on
+            end
+
                 obj.algo.train( Xtr , Ytr, obj.performanceMeasure , true , 0.2);
                 
             if obj.measureTime
@@ -92,11 +105,41 @@ classdef experiment < handle
             
             obj.result.Ypred = obj.algo.test(Xte);   
             
+            if obj.memoryProfiler
+                profile off;
+            end
+            
             if obj.measureTime
                 obj.time.test = toc;
                 obj.result.time = obj.time;
             end
             
+            if obj.memoryProfiler
+                p = profile('info');
+                
+                %obj.result.memoryProfile = cell(size(p.FunctionTable,1),4);
+                
+                obj.result.memoryProfile = struct;
+                
+%                 for i = 1:size(p.FunctionTable,1)
+%                     obj.result.memoryProfile{i,1} = p.FunctionTable(i).FunctionName;
+%                     obj.result.memoryProfile{i,2} = p.FunctionTable(i).TotalMemAllocated;
+%                     obj.result.memoryProfile{i,3} = p.FunctionTable(i).TotalMemFreed;
+%                     obj.result.memoryProfile{i,4} = p.FunctionTable(i).PeakMem;
+%                 end
+
+                for i = 1:size(p.FunctionTable,1)
+                    obj.result.memoryProfile(i).FunctionName = p.FunctionTable(i).FunctionName;
+                    obj.result.memoryProfile(i).TotalMemAllocated = p.FunctionTable(i).TotalMemAllocated;
+                    obj.result.memoryProfile(i).TotalMemFreed = p.FunctionTable(i).TotalMemFreed;
+                    obj.result.memoryProfile(i).PeakMem = p.FunctionTable(i).PeakMem;
+                end
+
+%                 obj.result.memoryProfile.FunctionName = p.FunctionTable.FunctionName;
+%                 obj.result.memoryProfile.TotalMemAllocated = p.FunctionTable.TotalMemAllocated;
+%                 obj.result.memoryProfile.TotalMemFreed = p.FunctionTable.TotalMemFreed;
+%                 obj.result.memoryProfile.PeakMem = p.FunctionTable.PeakMem;
+            end
             
             obj.result.perf = obj.ds.performanceMeasure( Yte , obj.result.Ypred );
             
@@ -107,6 +150,7 @@ classdef experiment < handle
             if isprop(obj.algo,'filterParStar')
                 obj.result.filterParStar = obj.algo.filterParStar;
             end
+            
             
             % Save result structure
             if obj.saveResult
