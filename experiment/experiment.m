@@ -74,6 +74,13 @@ classdef experiment < handle
             obj.result.algorithm = class(obj.algo);
             obj.result.dataset = class(obj.ds);
             obj.result.numRep = obj.numRep;
+            obj.result.numKerParGuesses = algo.numKerParGuesses;
+            obj.result.numFilterParGuesses = algo.numFilterParGuesses;
+            obj.result.nTr = ds.nTr;
+            obj.result.nTe = ds.nTe;
+            obj.result.d = ds.d;
+            obj.result.t = ds.t;
+            
         end
         
         function obj = run (obj )

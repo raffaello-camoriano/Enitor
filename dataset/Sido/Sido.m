@@ -19,6 +19,10 @@ classdef Sido < dataset
             
             obj.Y = Ytr;    % NO Yte available!
             
+            % If necessary, balance obj.Y
+%             if (abs(sum(obj.Y))/length(obj.Y)) > 0.5 % NOTE: arbitrary threshold
+%                 obj.Y = obj.balanceLabels(obj.Y);
+%             end
             
             obj.X = [Xtr ; Xte];
 
@@ -97,6 +101,23 @@ classdef Sido < dataset
             end
         end
         
+        function Ybal = balanceLabels(obj, Y)
+            
+            nplus = sum(Y == 1);
+            nminus = sum(Y == -1);
+        
+            Ybal = Y;
+            
+            if nplus > nminus
+               Ybal(Y == -1) =  (nplus/nminus) * Y(Y == -1);
+%                Ybal(Y == 1) =  1;
+            else
+               Ybal(Y == 1) =  (nminus/nplus) * Y(Y == 1);
+%                Ybal(Y == -1) =  -1;
+            end
+
+        end
+        
         % Compute predictions matrix from real-valued scores matrix
         function Ypred = scoresToClasses(obj , Yscores)    
             
@@ -120,6 +141,10 @@ classdef Sido < dataset
             % Check if Ypred is real-valued. If yes, convert it.
             if obj.hasRealValues(Ypred)
                 Ypred = obj.scoresToClasses(Ypred);
+            end
+            % Check if Y is real-valued. If yes, convert it.
+            if obj.hasRealValues(Ypred)
+                Y = obj.scoresToClasses(Y);
             end
             
             % Compute error rate
