@@ -22,7 +22,7 @@ classdef experiment < handle
     
     methods
         
-        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir , memoryProfiler)
+        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir)
             %obj.name = name_;
             
             assert(isa(algo,'algorithm') , '1st argument is not of class algorithm');
@@ -38,6 +38,7 @@ classdef experiment < handle
             if nargin > 3
                obj.measureTime = measureTime;
                obj.time = struct;
+               obj.memoryProfiler = 1-measureTime;
             end
             
             if nargin > 4
@@ -56,9 +57,9 @@ classdef experiment < handle
                obj.resdir = '';
             end
             
-            if nargin > 7
-               obj.memoryProfiler = memoryProfiler;
-            end
+%             if nargin > 7
+%                obj.memoryProfiler = memoryProfiler;
+%             end
             
             if obj.memoryProfiler && obj.measureTime
                 warning('Both time and memory profiling have been activated. Time measurements may not be reliable!')
