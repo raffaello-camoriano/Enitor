@@ -41,7 +41,7 @@ fil = @tikhonov;
 
 alg = kregls(ker, fil,  5, 5);
 
-exp = experiment(alg , ds , 1 , true , true , '' , resdir, true);
+exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 
 exp.run();
 

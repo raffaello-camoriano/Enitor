@@ -7,10 +7,10 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-ds = Sido;
+%ds = Sido;
 
 % Load small dataset
-% ds = Sido(500,500);
+ ds = Sido(500,500);
 
 % dataset.n
 % dataset.nTr

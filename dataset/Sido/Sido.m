@@ -54,7 +54,6 @@ classdef Sido < dataset
                 obj.nTe = nTe;
                 
                 obj.trainIdx = 1:obj.nTr;
-                obj.shuffledTrainIdx = obj.trainIdx;
                 obj.testIdx = 10001:10000 + obj.nTe;
             end
             
@@ -159,10 +158,10 @@ classdef Sido < dataset
             perf = 1 - (numCorrect / size(Y,1));
         end
         
-        % Compute random permutation of the training set indexes
-        function shuffleTrainIdx(obj)
-            obj.shuffledTrainIdx = randperm(obj.nTr);
-        end
+%         % Compute random permutation of the training set indexes
+%         function shuffleTrainIdx(obj)
+%             obj.shuffledTrainIdx = randperm(obj.nTr);
+%         end
         
         function getTrainSet(obj)
             

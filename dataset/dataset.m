@@ -8,6 +8,8 @@ classdef dataset < handle
         n
         nTr
         nTe
+        nTrTot
+        nTeTot
         d
         t
 
@@ -16,7 +18,7 @@ classdef dataset < handle
 
         trainIdx
         testIdx
-        shuffledTrainIdx
+        %shuffledTrainIdx
    end
    
    methods
@@ -43,12 +45,16 @@ classdef dataset < handle
                 end
             end
         end       
+
         
-        function perf = performanceMeasure(obj , Y , Ypred )
-            % Error Rate is computed
-            
-            
-            
+        % Compute random permutation of the training set indexes
+        function shuffleTrainIdx(obj)
+            obj.trainIdx = obj.trainIdx(randperm(obj.nTr));
         end
-   end % methods
+     
+        % Compute random permutation of the test set indexes
+        function shuffleTestIdx(obj)
+            obj.testIdx = obj.testIdx(randperm(obj.nTe));
+        end
+    end % methods
 end % classdef

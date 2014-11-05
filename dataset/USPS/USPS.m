@@ -22,7 +22,6 @@ classdef USPS < dataset
                 obj.nTe = 2007;
 
                 obj.trainIdx = 1:obj.nTr;
-                obj.shuffledTrainIdx = obj.trainIdx;
                 obj.testIdx = obj.nTr+1:obj.nTr+obj.nTe;
                 
             elseif (nargin >1) && (nTr > 1) && (nTe > 0)
@@ -121,10 +120,10 @@ classdef USPS < dataset
             perf = 1 - (numCorrect / size(Y,1));
         end
         
-        % Compute random permutation of the training set indexes
-        function shuffleTrainIdx(obj)
-            obj.shuffledTrainIdx = randperm(7291);
-        end
+%         % Compute random permutation of the training set indexes
+%         function shuffleTrainIdx(obj)
+%             obj.shuffledTrainIdx = randperm(7291);
+%         end
         
         function getTrainSet(obj)
             
