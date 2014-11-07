@@ -1,4 +1,4 @@
-classdef randomFeaturesMapper
+classdef randomFeatures
     %RANDOMFEATURES Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -10,7 +10,7 @@ classdef randomFeaturesMapper
     end
     
     methods
-        function obj = randomFeaturesMapper( d , numRF , mappingType)
+        function obj = randomFeatures( d , numRF , mappingType)
             obj.init(d, numRF, mappingType);
         end
         

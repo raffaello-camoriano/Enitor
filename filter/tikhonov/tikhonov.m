@@ -5,6 +5,7 @@ classdef tikhonov < filter
     properties
         U, T, Y0
         coeffs
+        weights
         n % Number of samples
         
         numGuesses      % number of filter hyperparameters guesses
@@ -15,17 +16,23 @@ classdef tikhonov < filter
     
     methods
         
-        function obj = tikhonov( K , Y , numGuesses )
+        function obj = tikhonov(  primalDual , K , Y , numGuesses )
             
-            if nargin > 2
-                    obj.init( K , Y , numGuesses );
-            elseif nargin > 1
-                    obj.init( K , Y );
+            if nargin > 3
+                obj.init( primalDual ,K , Y , numGuesses );
+            elseif nargin > 2
+                obj.init( primalDual , K , Y );
             end
         end
         
-        function init(obj , K , Y , numGuesses)
-            
+        function init(obj , primalDual ,  K , Y , numGuesses)
+                        
+            if strcmp( primalDual , 'primal' ) || strcmp( primalDual , 'primal' )
+                obj.primalDual = primalDual;
+            else
+                error('primalDual not set to "primal" or "dual"');
+            end
+                
             % Get number of samples
             obj.n = size(K,1);
 
@@ -33,30 +40,12 @@ classdef tikhonov < filter
             [obj.U, obj.T] = hess(K);
             obj.Y0 = obj.U'*Y;
             
-            if( nargin == 4 )
+            if( nargin == 5 )
                 if numGuesses > 0
                     obj.numGuesses = numGuesses;
                 else
                     obj.numGuesses = 1;
                 end            
-
-%                 % Initialize range map
-%                 rangeKeySet = {'lambda'};
-%                 rangeValueSet = cell(size(rangeKeySet,1));
-%                 rangeValueSet{:,:} = zeros(obj.numGuesses,1);
-%                 obj.rng = containers.Map(rangeKeySet,rangeValueSet);
-% 
-%                 % Initialize current parameter combination indexes map
-%                 currentParIdxKeySet = rangeKeySet;
-%                 currentParIdxValueSet = cell(size(currentParIdxKeySet,1));
-%                 currentParIdxValueSet{:,:} = 0;
-%                 obj.currentParIdx = containers.Map(currentParIdxKeySet,currentParIdxValueSet);
-%                 
-%                 % Initialize current parameter combination map
-%                 currentParKeySet = rangeKeySet;
-%                 currentParValueSet = cell(size(currentParIdxKeySet,1));
-%                 obj.currentPar = containers.Map(currentParKeySet,currentParValueSet);      
-
                 obj.range();    % Compute range
                 obj.currentParIdx = 0;
                 obj.currentPar = [];
@@ -107,21 +96,45 @@ classdef tikhonov < filter
             obj.rng = num2cell(tmp);
         end
         
-        function compute(obj , filterPar)
+        function compute(obj , filterPar )
 
             if( nargin > 1 )
+                
+            if strcmp(obj.primalDual , 'primal')
+                
+                % Check!!!
+                obj.weights = (( obj.T + filterPar(1) * obj.n * eye(obj.d)) * (obj.U)' \ obj.Y0);
+                
+                
+            elseif strcmp(obj.primalDual , 'dual')
+                
                 obj.coeffs = obj.U * (( obj.T + filterPar(1) * obj.n * eye(obj.n)) \ obj.Y0);
-            
+                
+            end
+
             % If any current value for any of the parameters is not available, abort.
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 error('Filter parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
             else
+                
                 disp('Filter will be computed according to the internal current hyperparameter(s)');
                 obj.currentPar
-                obj.coeffs = obj.U * (( obj.T + obj.currentPar(1) * obj.n * eye(obj.n)) \ obj.Y0);
+                
+                if strcmp(obj.primalDual , 'primal')
+
+                    % Check!!!
+                    obj.weights = (( obj.T + obj.currentPar(1) * obj.n * eye(obj.d)) * (obj.U)' \ obj.Y0);
+
+                elseif strcmp(obj.primalDual , 'dual')
+                    obj.coeffs = obj.U * (( obj.T + obj.currentPar(1) * obj.n * eye(obj.n)) \ obj.Y0);
+                end
+
             end
+                
+                
+            
+
         end
-        
         
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'

@@ -1,14 +1,8 @@
-classdef kregls < algorithm
+classdef lrls < algorithm
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
-        
-        % Kernel props
-        kernelType
-        kerParGuesses
-        kerParStar
-        numKerParGuesses
 
         % Filter props
         filterType
@@ -16,25 +10,15 @@ classdef kregls < algorithm
         filterParGuesses
         numFilterParGuesses        
         
-%         trainIdx    % Training indexes used internally in the actually performed training
-%         valIdx      % Validation indexes used internally in the actually
-%         performed validation
-        
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
     end
     
     methods
         
-        function obj = kregls(kerTy, filtTy,  numKerParGuesses , numFilterParGuesses)
+        function obj = lrls(filtTy, numFilterParGuesses)
             init( obj , kerTy, filtTy)
             
-%             obj.numFolds = numFolds;
-%             if numFolds < 2
-%                 display('Minimum number of folds: 2. numFolds set to 2.')
-%                 obj.numFolds = 2;
-%             end
-
             obj.numKerParGuesses = numKerParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
         end
