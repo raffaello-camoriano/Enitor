@@ -34,7 +34,6 @@ classdef USPS < dataset
                 end
                 
                 obj.trainIdx = 1:obj.nTr;
-                obj.shuffledTrainIdx = obj.trainIdx;
                 obj.testIdx = 7292:7291+obj.nTe;
                 
             end
@@ -101,7 +100,7 @@ classdef USPS < dataset
             
         % Compute performance measure on the given outputs according to the
         % USPS dataset-specific ranking standard measure
-        function perf = performanceMeasure(obj , Y , Ypred)
+        function perf = performanceMeasure(obj , Y , Ypred , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.
             if obj.hasRealValues(Ypred)
@@ -118,19 +117,6 @@ classdef USPS < dataset
             end
             
             perf = 1 - (numCorrect / size(Y,1));
-        end
-        
-%         % Compute random permutation of the training set indexes
-%         function shuffleTrainIdx(obj)
-%             obj.shuffledTrainIdx = randperm(7291);
-%         end
-        
-        function getTrainSet(obj)
-            
-        end
-        
-        function getTestSet(obj)
-            
         end
         
    end % methods

@@ -41,23 +41,6 @@ classdef gaussianKernel < kernel
                     obj.numGuesses = 1;
                 end            
 
-%                 % Initialize range map
-%                 rangeKeySet = {'sigma'};
-%                 rangeValueSet = cell(size(rangeKeySet,1));
-%                 rangeValueSet{:,:} = zeros(obj.numGuesses,1);
-%                 obj.rng = containers.Map(rangeKeySet,rangeValueSet);
-% 
-%                 % Initialize current parameter combination indexes map
-%                 currentParIdxKeySet = rangeKeySet;
-%                 currentParIdxValueSet = cell(size(currentParIdxKeySet,1));
-%                 currentParIdxValueSet{:,:} = 0;
-%                 obj.currentParIdx = containers.Map(currentParIdxKeySet,currentParIdxValueSet);
-%                 
-%                 % Initialize current parameter combination map
-%                 currentParKeySet = rangeKeySet;
-%                 currentParValueSet = cell(size(currentParIdxKeySet,1));
-%                 obj.currentPar = containers.Map(currentParKeySet,currentParValueSet);
-                
                 obj.range();    % Compute range
                 obj.currentParIdx = 0;
                 obj.currentPar = [];
@@ -101,30 +84,6 @@ classdef gaussianKernel < kernel
             tmp = linspace(minGuess, maxGuess , obj.numGuesses);
             obj.rng = num2cell(tmp);
         end
-%         % Computes the range for the hyperparameter guesses
-%         function obj = range(obj)
-%             
-%             if (obj.m ~= obj.n)
-%                 error('Error, the distance matrix is not squared! Aborting...');
-%             end
-%             
-%             % Compute max and min sigma guesses (same strategy used by
-%             % GURLS)
-%             
-%             D = sort(obj.SqDistMat(tril(true(obj.n),-1)));
-%             firstPercentile = round(0.01*numel(D)+0.5);
-%             minGuess = sqrt(D(firstPercentile));
-%             maxGuess = sqrt(max(max(obj.SqDistMat)));
-% 
-%             if minGuess <= 0
-%                 minGuess = eps;
-%             end
-%             if maxGuess <= 0
-%                 maxGuess = eps;
-%             end	
-%             
-%             obj.rng('sigma') = linspace(minGuess, maxGuess , obj.numGuesses);
-%         end
         
         % Computes the kernel matrix SqDistMat based on SqDistMat and
         % kernel parameters

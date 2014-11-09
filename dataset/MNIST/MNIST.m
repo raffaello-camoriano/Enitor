@@ -44,8 +44,8 @@ classdef MNIST < dataset
                 
             elseif (nargin >1)
                 
-                if (nTr < 2) || (nTe < 1) ||(nTr > 7291) || (nTe > 2007)
-                    error('(nTr > 7291) || (nTe > 2007)');
+                if (nTr < 2) || (nTe < 1) ||(nTr > obj.nTrTot) || (nTe > obj.nTeTot)
+                    error('(nTr > obj.nTrTot) || (nTe > obj.nTeTot)');
                 end
                 
                 obj.nTr = nTr;
@@ -54,7 +54,7 @@ classdef MNIST < dataset
                 tmp = randperm( obj.nTrTot);                            
                 obj.trainIdx = tmp(1:obj.nTr);          
                 
-                tmp = obj.nTrTot + 1 + randperm( obj.nTeTot -1 );
+                tmp = obj.nTrTot + randperm( obj.nTeTot );
                 obj.testIdx = tmp(1:obj.nTe);
             end
             
@@ -123,7 +123,7 @@ classdef MNIST < dataset
             
         % Compute performance measure on the given outputs according to the
         % USPS dataset-specific ranking standard measure
-        function perf = performanceMeasure(obj , Y , Ypred)
+        function perf = performanceMeasure(obj , Y , Ypred , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.
             if obj.hasRealValues(Ypred)

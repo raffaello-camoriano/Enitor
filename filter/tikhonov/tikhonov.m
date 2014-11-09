@@ -6,12 +6,14 @@ classdef tikhonov < filter
         U, T, Y0
         coeffs
         weights
-        n % Number of samples
+        sz      % Size of the K or C matrix
         
         numGuesses      % number of filter hyperparameters guesses
         rng             % Parameter ranges map container
         currentParIdx   % Current parameter combination indexes map container
         currentPar      % Current parameter combination map container
+        
+        primalDual      % Flag indiccating either 'primal' or 'dual' case.
     end
     
     methods
@@ -19,7 +21,7 @@ classdef tikhonov < filter
         function obj = tikhonov(  primalDual , K , Y , numGuesses )
             
             if nargin > 3
-                obj.init( primalDual ,K , Y , numGuesses );
+                obj.init( primalDual , K , Y , numGuesses );
             elseif nargin > 2
                 obj.init( primalDual , K , Y );
             end
@@ -27,18 +29,18 @@ classdef tikhonov < filter
         
         function init(obj , primalDual ,  K , Y , numGuesses)
                         
-            if strcmp( primalDual , 'primal' ) || strcmp( primalDual , 'primal' )
+            if strcmp( primalDual , 'primal' ) || strcmp( primalDual , 'dual' )
                 obj.primalDual = primalDual;
             else
                 error('primalDual not set to "primal" or "dual"');
             end
                 
-            % Get number of samples
-            obj.n = size(K,1);
+            % Get kernel/covariance matrix size
+            obj.sz = size(K,1);
 
             % Compute Hessenberger decomposition
             [obj.U, obj.T] = hess(K);
-            obj.Y0 = obj.U'*Y;
+            obj.Y0 = obj.U' * Y;
             
             if( nargin == 5 )
                 if numGuesses > 0
@@ -92,7 +94,7 @@ classdef tikhonov < filter
             lmin = max(min(lmax*smallnumber, eigmin), 200*sqrt(eps));
 
             powers = linspace(0,1,obj.numGuesses);
-            tmp = (lmin.*(lmax/lmin).^(powers))/obj.n;        
+            tmp = (lmin.*(lmax/lmin).^(powers))/obj.sz;        
             obj.rng = num2cell(tmp);
         end
         
@@ -102,13 +104,11 @@ classdef tikhonov < filter
                 
             if strcmp(obj.primalDual , 'primal')
                 
-                % Check!!!
-                obj.weights = (( obj.T + filterPar(1) * obj.n * eye(obj.d)) * (obj.U)' \ obj.Y0);
-                
+                obj.weights = obj.U * (( obj.T + filterPar(1) * obj.sz * eye(obj.sz)) \ obj.Y0);
                 
             elseif strcmp(obj.primalDual , 'dual')
                 
-                obj.coeffs = obj.U * (( obj.T + filterPar(1) * obj.n * eye(obj.n)) \ obj.Y0);
+                obj.coeffs = obj.U * (( obj.T + filterPar(1) * obj.sz * eye(obj.sz)) \ obj.Y0);
                 
             end
 
@@ -122,18 +122,14 @@ classdef tikhonov < filter
                 
                 if strcmp(obj.primalDual , 'primal')
 
-                    % Check!!!
-                    obj.weights = (( obj.T + obj.currentPar(1) * obj.n * eye(obj.d)) * (obj.U)' \ obj.Y0);
+                    obj.weights = obj.U * (( obj.T +  obj.currentPar(1) * obj.sz * eye(obj.sz)) \ obj.Y0);
 
                 elseif strcmp(obj.primalDual , 'dual')
-                    obj.coeffs = obj.U * (( obj.T + obj.currentPar(1) * obj.n * eye(obj.n)) \ obj.Y0);
+    
+                    obj.coeffs = obj.U * (( obj.T + obj.currentPar(1) * obj.sz * eye(obj.sz)) \ obj.Y0);
+                
                 end
-
             end
-                
-                
-            
-
         end
         
         % returns true if the next parameter combination is available and

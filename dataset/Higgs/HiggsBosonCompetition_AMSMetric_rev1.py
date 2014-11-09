@@ -38,11 +38,8 @@ def check_submission(submission, Nelements):
         sub.next() # header
         for row in sub:
             rankOrderSet.add(row[1])
-            
-    if len(rankOrderSet) != Nelements:
-        print 'RankOrder column must contain unique values'
-        exit()
-    elif rankOrderSet.isdisjoint(set(xrange(1,Nelements+1))) == False:
+    
+    if rankOrderSet.isdisjoint(set(xrange(1,Nelements+1))) == False:
         print 'RankOrder column must contain all numbers from [1..NTestSset]'
         exit()
     else:
@@ -83,22 +80,23 @@ def AMS_metric(solution, submission):
             sub = csv.reader(f)
             sub.next() # header row
             for row in sub:
-                if row[2] == 's': # only events predicted to be signal are scored
-                    if solutionDict[row[0]][0] == 's':
+                if row[2] == '1': # only events predicted to be signal are scored
+                    if solutionDict[row[0]][0] == '1':
                         signal += float(solutionDict[row[0]][1])
-                    elif solutionDict[row[0]][0] == 'b':
+                    elif solutionDict[row[0]][0] == '-1':
                         background += float(solutionDict[row[0]][1])
      
-        print 'signal = {0}, background = {1}'.format(signal, background)
+        """print 'signal = {0}, background = {1}'.format(signal, background)
         print 'AMS = ' + str(AMS(signal, background))
-
+"""
+        print str(AMS(signal, background))
 
 if __name__ == "__main__":
 
     # enter path and file names here    
     path = ""
-    solutionFile = ""
-    submissionFile = ""
+    solutionFile = "dataset/Higgs/tmp/solutionFile.csv"
+    submissionFile = "dataset/Higgs/tmp/submissionFile.csv"
     
     AMS_metric(solutionFile, submissionFile)
     

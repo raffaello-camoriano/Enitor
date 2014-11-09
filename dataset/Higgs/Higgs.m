@@ -3,6 +3,10 @@ classdef Higgs < dataset
    
    properties
         %outputFormat
+        
+        weights
+        EventId
+        
    end
    
    methods
@@ -11,8 +15,12 @@ classdef Higgs < dataset
             warning('Test labels not available!');
             
             trainTab = readtable('training.csv');
-            testTab = readtable('training.csv');
+            testTab = readtable('test.csv');
                         
+            % Store event ids
+            obj.EventId = [ trainTab{:,1} ; testTab{:,1} ];
+            
+            % Store samples
             Xtr = trainTab{:,2:end-2};
             Xte = testTab{:,2:31};
             
@@ -30,6 +38,9 @@ classdef Higgs < dataset
 %             end
             
             obj.X = [Xtr ; Xte];
+            
+            % Store weights vector
+            obj.weights = trainTab{:,end - 1};
 
             %obj.n = size(Xtr , 1) + size(Xte , 1);
             obj.n = size(Xtr , 1);
@@ -42,23 +53,23 @@ classdef Higgs < dataset
 %                 obj.nTr = size(Xtr , 1);
 %                 obj.nTe = size(Xte , 1);
 
-                obj.nTr = 10000;
-                obj.nTe = 2678;
+                obj.nTr = 200000;
+                obj.nTe = 50000;
                 
                 obj.trainIdx = 1:obj.nTr;
                 obj.testIdx = obj.nTr + 1 : obj.nTr + obj.nTe;
                 
             elseif (nargin > 1) && (nTr > 1) && (nTe > 0)
                 
-                if (nTr > 10000) || (nTe > 2678)
-                    error('(nTr > 10000) || (nTe > 2678)');
+                if (nTr > 200000) || (nTe > 50000)
+                    error('(nTr > 200000) || (nTe > 50000)');
                 end
                 
                 obj.nTr = nTr;
                 obj.nTe = nTe;
                 
                 obj.trainIdx = 1:obj.nTr;
-                obj.testIdx = 10001:10000 + obj.nTe;
+                obj.testIdx = 200001 : 200000 + obj.nTe;
             end
             
             % Reformat output columns
@@ -138,47 +149,75 @@ classdef Higgs < dataset
             
         % Compute performance measure on the given outputs according to the
         % dataset-specific ranking standard measure
-        function perf = performanceMeasure(obj , Y , Ypred)
+        %function perf = performanceMeasure(obj , Y , Ypred)
+        function perf = performanceMeasure(obj, Y , Ypred, Yidx)
             
+            % Yidx is the vector of row indexes on the dataset Y matrix to
+            % which prediction matrix Ypred corresponds
+            
+            if (length(Yidx) ~= size(Ypred,1)) || (length(Yidx) ~= size(Y,1))
+                error('Ground truth cardinality and predictions cardinality do not match.');
+            end
+               
             % Check if Ypred is real-valued. If yes, convert it.
             if obj.hasRealValues(Ypred)
                 %Yscores = Ypred;
                 Ypred = obj.scoresToClasses(Ypred);
             end
+            
+            %YpredChar = 
+            
             % Check if Y is real-valued. If yes, convert it.
-            if obj.hasRealValues(Ypred)
+            if obj.hasRealValues(Y)
                 Y = obj.scoresToClasses(Y);
             end
             
-%             %Create submission table and save it to file
-%             submissionTable = table([],[],Ypred, ...
-%                          'VariableNames',{'EventId' 'RankOrder' 'Class'})
+            localWeights = obj.weights(Yidx);
+            localEventId = obj.EventId(Yidx);
+            
+            warning('RankOrder not computed properly. TODO');
+%             localRankOrder = ones(length(Yidx),1);
 %             
+            localRankOrder = (1:length(Yidx))';
+
+            
+            % Get current dir
+            current_dir = cd;
+            target_dir = [current_dir , '/dataset/Higgs/tmp/' ];
+            
+            %Create submission table and save it to file
+            submissionTable = table(localEventId , localRankOrder , Ypred, ...
+                         'VariableNames',{'EventId' 'RankOrder' 'Class'});
+            
 %             writetable(submissionTable, 'dataset/Higgs/tmp/submissionFile.csv');
-%             
-%             %Create solution table and save it to file
-%             solutionTable = table([],Y, [], ...
-%                          'VariableNames',{ 'EventId', 'Class', 'Weight'})
-%             
-%             writetable(solutionTable , 'dataset/Higgs/tmp/solutionFile.csv');
-%             
-%             % Compute AMS
-%             [status, perf]  = system('dataset/Higgs/HiggsBosonCompetition_AMSMetric_rev1.py dataset/Higgs/tmp/solutionFile.csv dataset/Higgs/tmp/submissionFile.csv');
-%             
-%             if status ~= 0
-%                 error('Python AMS computation failed');
-%             end  
+            writetable(submissionTable, [target_dir , 'submissionFile.csv']);
             
-            % Compute error rate
-            numCorrect = 0;
+            %Create solution table and save it to file
+            solutionTable = table(localEventId , Y , localWeights, ...
+                         'VariableNames',{ 'EventId', 'Class', 'Weight'});
             
-            for i = 1:size(Y,1)
-                if Y(i) == Ypred(i)
-                    numCorrect = numCorrect +1;
-                end
-            end
+            writetable(solutionTable , [ target_dir , 'solutionFile.csv' ] );
             
-            perf = 1 - (numCorrect / size(Y,1));            
+            % Compute AMS
+            [status, perf]  = system('python dataset/Higgs/HiggsBosonCompetition_AMSMetric_rev1.py tmp/solutionFile.csv tmp/submissionFile.csv');
+            
+            perf = - str2double(perf);
+            
+            if status ~= 0
+                error('Python AMS computation failed');
+            end  
+            
+%             % Compute error rate
+%             numCorrect = 0;
+%             
+%             for i = 1:size(Y,1)
+%                 if Y(i) == Ypred(i)
+%                     numCorrect = numCorrect +1;
+%                 end
+%             end
+%             
+%             perf = 1 - (numCorrect / size(Y,1));            
+
         end
     end % methods
 end % classdef

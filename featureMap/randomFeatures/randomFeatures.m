@@ -1,45 +1,175 @@
-classdef randomFeatures
+classdef randomFeatures < handle
     %RANDOMFEATURES Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
-        mappingType
+        kerType
         d
+        
         numRF
+        kerPar
+        rng
+        
         proj
+        numMapParGuesses
+        numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
+        
+        currentPar
+        currentParIdx
+        
+        X
+        Xrf
     end
     
     methods
-        function obj = randomFeatures( d , numRF , mappingType)
-            obj.init(d, numRF, mappingType);
+        % Constructor
+        function obj = randomFeatures( X , numMapParGuesses , numKerParRangeSamples , kerType)
+            
+            obj.init( X , numMapParGuesses , numKerParRangeSamples , kerType);
+            
         end
         
-        function obj = init(obj,d,numRF,mappingType)
+        % Initialization function
+        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , kerType)
             
-            if strcmp(mappingType,'gaussian')
-                obj.mappingType = mappingType;
+            if strcmp(kerType,'gaussian')
+                obj.kerType = kerType;
             else
-                error('mapping Type not available');
+                error('This kernel type approximate mapping is not available');
             end
             
-            obj.numRF = numRF;
-            obj.d = d;
-            obj.proj = generateProj();            
+            obj.X = X;
+            obj.numMapParGuesses = numMapParGuesses;
+            obj.numKerParRangeSamples = numKerParRangeSamples;
+            obj.d = size(X , 2);     
+            
+            % Compute range
+            obj.range();
+            obj.currentParIdx = 0;
+            obj.currentPar = [];
+        end
+
+        % Computes the squared distance matrix SqDistMat based on X1, X2
+        function SqDistMat = computeSqDistMat(obj , X1 , X2)
+            
+            p = size(X1,1);
+            q = size(X2,1);
+            
+            Sx1 = sum( X1.*X1 , 2);
+            Sx2 = sum( X2.*X2 , 2)';
+            Sx1x2 = X1 * X2';
+            
+            SqDistMat = repmat(Sx1 , 1 , p) -2 * Sx1x2 + repmat(Sx2 , q , 1);
+        
         end
         
-        function obj = generateProj(obj)
+        function mappedSample = map(obj , inputSample)
+            V = inputSample * obj.proj;
+            mappedSample = [cos(V) , sin(V)];
+        end
+        
+        function obj = range(obj)
+            %% Range of the number of Random Fourier Features
             
-            if strcmp(obj.mappingType,'gaussian')
-                obj.proj = sqrt(2) * randn(obj.d, obj.numRF);
+            tmpNumRF = linspace(obj.d, 2000 , obj.numMapParGuesses);   
+            
+            %% Approximated kernel parameter range
+            
+            % Compute max and min sigma guesses (same strategy used by
+            % GURLS)
+            
+%             firstPercentileIdx = round(0.01 * obj.d * (obj.d - 1) + 0.5);
+%             minBuff = zeros(1,firstPercentileIdx);
+            
+%             minGuess = inf;
+%             maxGuess = -inf;
+            
+%             for i = 1 : obj.obj.numKerParRangeSamples
+%                 for j = 1 : obj.obj.numKerParRangeSamples
+%                     dist = sqrt(X(i)^2 - Y(j)^2);
+%                 end 
+%             end
+
+            %Compute partial square distances matrix
+            SqDistMat = obj.computeSqDistMat( obj.X(1:obj.numKerParRangeSamples,:) , obj.X(1:obj.numKerParRangeSamples,:) );
+            
+            D = sort(SqDistMat(tril(true(obj.numKerParRangeSamples),-1)));
+            firstPercentile = round(0.01*numel(D)+0.5);
+            minGuess = sqrt(D(firstPercentile));
+            maxGuess = sqrt(max(max(SqDistMat)));
+
+            if minGuess <= 0
+                minGuess = eps;
+            end
+            if maxGuess <= 0
+                maxGuess = eps;
+            end	
+            
+            tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
+            
+            %% Generate all possible parameters combinatins            
+            
+            [p,q] = meshgrid(tmpNumRF, tmpKerPar);
+            tmp = [p(:) q(:)]';
+            
+            obj.rng = num2cell(tmp , 1);
+            
+        end
+        
+        function compute(obj , mapPar)
+            
+            if( nargin > 1 )
+                
+                disp('Mapping will be computed according to the provided hyperparameter(s)');
+                mapPar
+                
+                obj.proj = generateProj(mapPar);        %TODO    
+            % If any current value for any of the parameters is not available, abort.
+            elseif (nargin == 1) && (isempty(obj.currentPar))
+                error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
+            else
+                
+                disp('Mapping will be computed according to the internal current hyperparameter(s)');
+                obj.currentPar
+                
+                obj.generateProj(obj.currentPar);        %TODO    
+            end
+            
+            %%% TODO: Apply projections!!!
+            
+            V =  obj.X * obj.proj;
+            obj.Xrf = [cos(V) , sin(V)];
+        end        
+        
+        function obj = generateProj(obj , mapPar)
+            
+            if strcmp(obj.kerType,'gaussian')
+                % TODO: Vary sigma parameter!!!
+                %obj.proj = sqrt(2) * randn(obj.d, mapPar(1));
+                
+                obj.proj = sqrt(2) * mapPar(2) * randn(obj.d, mapPar(1));
+                
             else
                 error('mapping type not available');
             end
         end
         
-        function mappedSample = map(inputSample)
-            V = inputSample * obj.proj;
-            mappedSample = [cos(V); sin(V)];
-        end
+        % returns true if the next parameter combination is available and
+        % updates the current parameter combination 'currentPar'
+        function available = next(obj)
+
+            % If any range for any of the parameters is not available, recompute all ranges.
+            if cellfun(@isempty , obj.rng)
+                obj.range();
+            end
+
+            available = false;
+            if length(obj.rng) > obj.currentParIdx
+                obj.currentParIdx = obj.currentParIdx + 1;
+                obj.currentPar = obj.rng{obj.currentParIdx};
+                available = true;
+            end
+        end        
     end
 end
 

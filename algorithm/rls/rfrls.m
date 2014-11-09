@@ -9,27 +9,34 @@ classdef rfrls < algorithm
         mapParGuesses
         mapParStar
         numMapParGuesses
+        rfMapper
+        
+        kerTy   % Approximated kernel type
+        numKerParRangeSamples
 
         % Filter props
         filterType
         filterParStar
         filterParGuesses
-        numFilterParGuesses        
+        numFilterParGuesses
+        filter
         
-        Xmodel     % Training samples actually used for training. they are part of the learned model
+%         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
         w       % Weights vector
     end
     
     methods
         
-        function obj = rfrls(mapTy, filtTy,  numMapParGuesses , numFilterParGuesses)
-            init( obj , mapTy, filtTy,  numMapParGuesses , numFilterParGuesses)
+        function obj = rfrls(mapTy, kerTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses)
+            init( obj , mapTy, kerTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses)
         end
         
-        function init( obj , mapTy, filtTy,  numMapParGuesses , numFilterParGuesses)
+        function init( obj , mapTy, kerTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses)
             obj.mapType = mapTy;
+            obj.kerTy = kerTy;
             obj.filterType = filtTy;
+            obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
         end
@@ -46,36 +53,44 @@ classdef rfrls < algorithm
             trainIdx = shuffledIdx(1 : tmp1);
             valIdx = shuffledIdx(tmp1 + 1 : end);
                         
-            % mapping instantiation
-            map = obj.mapType(Xtr);
+            % mapper instantiation
+            obj.rfMapper = obj.mapType(Xtr , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.kerTy);
             
+            Ytrain = Ytr(trainIdx,:);
+            Yval = Ytr(valIdx,:);                
+
             valM = inf;     % Keeps track of the lowest validation error
             
             % Full matrices for performance storage
 %             trainPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
 %             valPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
 
-            while map.next()
+            while obj.rfMapper.next()
                 
-                Xtrain = map.XtrRF(trainIdx,:);
-                Ytrain = map.YtrRF(trainIdx,:);
-                C = Xtrain' * Xtrain;   % Covariance matrix of the training samples
-                Xval = map.XtrRF(valIdx,:);
-                Yval = map.YtrRF(valIdx,:);                
+                % Map samples with new hyperparameters
+                obj.rfMapper.compute();
                 
-                filter = obj.filterType( C , Ytrain , obj.numFilterParGuesses);
+                % Get mapped samples according to the new map parameters
+                % combination
+                Xtrain = obj.rfMapper.Xrf(trainIdx,:);
+                Xval = obj.rfMapper.Xrf(valIdx,:);
                 
-                while filter.next()
+                % Compute covariance matrix of the training samples
+                C = Xtrain' * Xtrain;   
+                
+                obj.filter = obj.filterType( 'primal' , C , Xtrain' * Ytrain , obj.numFilterParGuesses );
+                
+                while obj.filter.next()
                     
                     % Compute filter according to current hyperparameters
-                    filter.compute();
+                    obj.filter.compute();
 
                     % Populate full performance matrices
-                    %trainPerformance(i,j) = perfm( kernel.K * filter.coeffs, Ytrain);
-                    %valPerformance(i,j) = perfm( kernelVal.K * filter.coeffs, Yval);
+                    %trainPerformance(i,j) = perfm( kernel.K * obj.filter.coeffs, Ytrain);
+                    %valPerformance(i,j) = perfm( kernelVal.K * obj.filter.coeffs, Yval);
                     
                     % Compute predictions matrix
-                    YvalPred = obj.test( Xval );
+                    YvalPred = Xval * obj.filter.weights;
                     
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred );
@@ -83,21 +98,21 @@ classdef rfrls < algorithm
                     if valPerf < valM
                         
                         % Update best kernel parameter combination
-                        obj.mapParStar = map.currentPar;
+                        obj.mapParStar = obj.rfMapper.currentPar;
                         
                         %Update best filter parameter
-                        obj.filterParStar = filter.currentPar;
+                        obj.filterParStar = obj.filter.currentPar;
                         
                         %Update best validation performance measurement
                         valM = valPerf;
                         
                         if ~recompute
                             
-                            % Update internal model samples matrix
-                            obj.Xmodel = Xtrain;
+%                             % Update internal model samples matrix
+%                             obj.Xmodel = Xtrain;
                             
                             % Update coefficients vector
-                            obj.c = filter.coeffs;
+                            obj.w = obj.filter.weights;
                         end
                     end
                 end
@@ -122,28 +137,29 @@ classdef rfrls < algorithm
                 
                 % Recompute kernel on the whole training set with the best
                 % kernel parameter
-                C = map.XtrRF' * map.XtrRF;
-%                 map.init(Xtr, Xtr);
+                C = obj.rfMapper.Xrf' * obj.rfMapper.Xrf;
+
+%                 obj.rfMapper.init(Xtr, Xtr);
 %                 kernel.compute(obj.kerParStar);
 
                 % Recompute filter on the whole training set with the best
                 % filter parameter
-                filter.init(C,Ytr);
-                filter.compute(obj.filterParStar);
+                obj.filter.init('primal' , C , obj.rfMapper.Xrf' * Ytr);
+                obj.filter.compute(obj.filterParStar);
                 
-                % Update internal model samples matrix
-                obj.Xmodel = Xtr;
+%                 % Update internal model samples matrix
+%                 obj.Xmodel = Xtr;
                 
                 % Update coefficients vector
-                obj.c = filter.coeffs;
-                obj.w = filter.weights; ???
+                obj.w = obj.filter.weights;
             end        
         end
         
         function Ypred = test( obj , Xte )
 
             % Compute scores
-            Ypred = Xte * obj.w;
+            XteRF = obj.rfMapper.map(Xte);
+            Ypred = XteRF * obj.w;
 
         end
     end

@@ -7,32 +7,14 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = MNIST;
+%ds = Higgs;
 
 % Load small dataset
-ds = MNIST(2000,10000,'plusMinusOne');
+ds = Higgs(5000,5000);
 
-% dataset.n
-% dataset.nTr
-% dataset.nTe
-% dataset.d
-% dataset.t
-% 
-% dataset.X
-% dataset.Y
-% 
-% dataset.trainIdx
-% dataset.testIdx
-
-% Shuffled training set indexes
-% dataset.shuffledTrainIdx      
-% dataset.shuffleTrainIdx();
-% dataset.shuffledTrainIdx
-
-% Perf
-% Y = (1:10)';
-% Ypred = (10:-1:1)';
-% dataset.performanceMeasure(Y , Ypred)l;
+warning('Higgs performance measure set to Error Rate.AUC to be implemented');
+warning('Higgs contains missing values, which are not dealt with at the moment. Results may be invalidated!');
+warning('The dataset is unbalanced, proper classification methods have to be implemented');
 
 %% Experiment 1 setup, Gaussian kernel
 

@@ -23,7 +23,6 @@ classdef experiment < handle
     methods
         
         function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir)
-            %obj.name = name_;
             
             assert(isa(algo,'algorithm') , '1st argument is not of class algorithm');
             assert(isa(ds,'dataset') , '2nd argument is not of class dataset');
@@ -74,7 +73,7 @@ classdef experiment < handle
             obj.result.algorithm = class(obj.algo);
             obj.result.dataset = class(obj.ds);
             obj.result.numRep = obj.numRep;
-            obj.result.numKerParGuesses = algo.numKerParGuesses;
+            obj.result.numMapParGuesses = algo.numMapParGuesses;
             obj.result.numFilterParGuesses = algo.numFilterParGuesses;
             obj.result.nTr = ds.nTr;
             obj.result.nTe = ds.nTe;
@@ -149,7 +148,8 @@ classdef experiment < handle
 %                 obj.result.memoryProfile.PeakMem = p.FunctionTable.PeakMem;
             end
             
-            obj.result.perf = obj.ds.performanceMeasure( Yte , obj.result.Ypred );
+            obj.result.perf = abs(obj.ds.performanceMeasure( Yte , obj.result.Ypred , obj.ds.testIdx));
+            %obj.result.perf = abs(obj.ds.performanceMeasure( Yte , Yte , obj.ds.testIdx));
             
             if isprop(obj.algo,'kerParStar')
                 obj.result.kerParStar = obj.algo.kerParStar;

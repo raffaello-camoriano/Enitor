@@ -8,7 +8,7 @@ classdef krls < algorithm
         kernelType
         kerParGuesses
         kerParStar
-        numKerParGuesses
+        numMapParGuesses
 
         % Filter props
         filterType
@@ -26,7 +26,7 @@ classdef krls < algorithm
     
     methods
         
-        function obj = krls(kerTy, filtTy,  numKerParGuesses , numFilterParGuesses)
+        function obj = krls(kerTy, filtTy,  numMapParGuesses , numFilterParGuesses)
             init( obj , kerTy, filtTy)
             
 %             obj.numFolds = numFolds;
@@ -35,7 +35,7 @@ classdef krls < algorithm
 %                 obj.numFolds = 2;
 %             end
 
-            obj.numKerParGuesses = numKerParGuesses;
+            obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
         end
         
@@ -67,7 +67,7 @@ classdef krls < algorithm
             kernelVal = obj.kernelType(Xval,Xtrain);
             
             % Train kernel
-            kernel = obj.kernelType(Xtrain,Xtrain, obj.numKerParGuesses);
+            kernel = obj.kernelType(Xtrain,Xtrain, obj.numMapParGuesses);
             
             valM = inf;     % Keeps track of the lowest validation error
             
@@ -81,7 +81,7 @@ classdef krls < algorithm
                 kernel.compute();
                 kernelVal.compute(kernel.currentPar);
                 
-                filter = obj.filterType(kernel.K, Ytrain , obj.numFilterParGuesses);
+                filter = obj.filterType( 'dual' , kernel.K, Ytrain , obj.numFilterParGuesses);
                 
                 while filter.next()
                     
@@ -96,7 +96,7 @@ classdef krls < algorithm
                     YvalPred = kernelVal.K * filter.coeffs;
                     
                     % Compute performance
-                    valPerf = performanceMeasure( Yval , YvalPred );
+                    valPerf = performanceMeasure( Yval , YvalPred , valIdx );
                     
                     if valPerf < valM
                         
@@ -145,7 +145,7 @@ classdef krls < algorithm
                 
                 % Recompute filter on the whole training set with the best
                 % filter parameter
-                filter.init(kernel.K,Ytr);
+                filter.init('dual' , kernel.K , Ytr);
                 filter.compute(obj.filterParStar);
                 
                 % Update internal model samples matrix
@@ -166,72 +166,6 @@ classdef krls < algorithm
             Ypred = kernelTest.K * obj.c;
 
         end
-        
-        
-%         function crossVal(obj , dataset)
-%             
-%             if obj.numFolds > dataset.nTr
-%                 display(['Maximum number of folds:' dataset.nTr '. numFolds set to nTr.'])
-%                 obj.numFolds = dataset.nTr;
-%             end
-%             
-% %             if ( strcmp(obj.kernelType , 'gaussianKernel') )
-% %                 
-% %             else
-% %                 error('Kernel type not implemented.');
-% %             end
-% 
-%             % Performance measure storage variable
-%             perfMeas = zeros(obj.numFolds , obj.numKerParGuesses , obj.numFilterParGuesses);
-%             
-%             % Get kernel type and instantiate kernel
-%             if strcmp(obj.kernelType , 'gaussian');
-%                 obj.kernel = gaussianKernel( dataset.X , dataset.X );
-%             end
-%             
-%             % Get guesses vector for the kernel parameter
-%             kerParGuesses = obj.kernel.range(obj.numKerParGuesses);
-%             
-%             % Get guesses vector for the regularization filter parameter
-%             %filterParGuesses = obj.filter.range(obj.kernel , obj.numFilterParGuesses); % TODO: implement filter range
-%             filterParGuesses = 1:obj.numFilterParGuesses;
-%             
-%             for i = 1:obj.numFolds
-%                 for j = 1:obj.numKerParGuesses
-%                     for k = 1:obj.numFilterParGuesses
-%                         
-%                         i
-%                         j
-%                         k
-% 
-%                         kerPar = obj.kerParGuesses(j);
-%                         filterPar = obj.filterParGuesses(k);
-%                         
-%                         testFoldIdx = round(dataset.nTr/obj.numFolds)*(i-1) + 1 : round(dataset.nTr/obj.numFolds)*i;                
-%                         trainFoldIdx = setdiff(dataset.trainIdx, testFoldIdx);
-% 
-%                         obj.train(dataset.X(trainFoldIdx,:) , dataset.Y(trainFoldIdx), kerPar, filterPar);
-%                         Ypred = obj.test( dataset.X(trainFoldIdx,:) , dataset.X(testFoldIdx,:) , kerPar);
-% 
-%                         perfMeas(i,j,k) = dataset.performanceMeasure(dataset.Y(testFoldIdx) , Ypred);
-% 
-%                     end
-%                 end
-%             end
-%             
-%             % Set the index of the best kernel parameter
-%             [~,kerParStarIdx] = min(median(perfMeas,1),2);
-%             obj.kerParStar = kerParGuesses(kerParStarIdx);
-%                         
-%             % Set the index of the best filter parameter
-%             [~,filterParStarIdx] = min(median(perfMeas,1),3);
-%             obj.filterParStar = filterParGuesses(filterParStarIdx);
-%             
-%             % Compute the kernel with the best kernel parameter
-%             obj.kernel.compute(obj.kerParStar);
-%             
-%         end
-
     end
 end
 
