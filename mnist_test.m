@@ -1,3 +1,6 @@
+
+addpath(genpath('.'));
+ 
 clearAllButBP
 
 % Set experimental results relative directory name
@@ -7,7 +10,7 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = MNIST;
+%ds = MNIST;Memphis Minnie
 
 % Load small dataset
 ds = MNIST(2000,10000,'plusMinusOne');

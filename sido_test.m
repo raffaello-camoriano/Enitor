@@ -1,3 +1,5 @@
+addpath(genpath('.'));
+
 clearAllButBP
 
 % Set experimental results relative directory name
