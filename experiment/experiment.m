@@ -162,8 +162,15 @@ classdef experiment < handle
             
             % Save result structure
             if obj.saveResult
-               dt = datetime('now','TimeZone','local','Format','d-MMM-y HH:mm:ss Z');
+               % Only matlab 2014
+               %dt = datetime('now','TimeZone','local','Format','d-MMM-y HH:mm:ss Z');
                fName = ['./' , obj.resdir , '/Exp_' , obj.result.algorithm , '_' , obj.result.dataset , '_' , obj.customStr , '_' , datestr(dt)];
+
+               
+               dt = clock;
+               dt = fix(dt);
+               fName = ['./' , obj.resdir , '/Exp_' , obj.result.algorithm , '_' , obj.result.dataset , '_' , obj.customStr , '_' , mat2str(dt)];
+               
                res = obj.result;
                save( fName , 'res' );
             end
