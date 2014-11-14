@@ -41,7 +41,6 @@ classdef Sido < dataset
                 obj.nTe = 2678;
                 
                 obj.trainIdx = 1:obj.nTr;
-                obj.shuffledTrainIdx = obj.trainIdx;
                 obj.testIdx = obj.nTr + 1 : obj.nTr + obj.nTe;
                 
             elseif (nargin > 1) && (nTr > 1) && (nTe > 0)
@@ -135,7 +134,7 @@ classdef Sido < dataset
             
         % Compute performance measure on the given outputs according to the
         % dataset-specific ranking standard measure
-        function perf = performanceMeasure(obj , Y , Ypred)
+        function perf = performanceMeasure(obj , Y , Ypred , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.
             if obj.hasRealValues(Ypred)

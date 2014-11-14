@@ -34,17 +34,12 @@ exp.result
 
 %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
 % 
-% numRF = 500;
-% mappingType = 'gaussian';
-% 
-% RFmapper = randomFeaturesMapper( ds.d , numRF , mappingType);
-% 
-% ds
-% fil = @tikhonov;
-% 
-% alg = regls(fil, 20);
-% 
-% exp = experiment('Experiment_USPS_RFRLS');
-% exp.run(alg , ds)
-% 
-% exp.result
+map = @randomFeaturesGaussian;
+fil = @tikhonov;
+
+alg = rfrls(map , 1000 , fil,  2 , 1);
+
+exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+exp.run();
+
+exp.result

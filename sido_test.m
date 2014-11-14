@@ -1,6 +1,6 @@
 setenv('LC_ALL','C');
 addpath(genpath('.'));
-
+ 
 clearAllButBP
 
 % Set experimental results relative directory name
@@ -10,10 +10,10 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = Sido;
+ds = Sido;
 
 % Load small dataset
- ds = Sido(500,500);
+%ds = Sido(500,500);
 
 % dataset.n
 % dataset.nTr
@@ -39,30 +39,25 @@ mkdir(resdir);
 
 %% Experiment 1 setup, Gaussian kernel
 
-ker = @gaussianKernel;
+% ker = @gaussianKernel;
+% fil = @tikhonov;
+% 
+% alg = krls(ker, fil,  5, 5);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% 
+% exp.run();
+% 
+% exp.result
+
+%% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
+
+map = @randomFeaturesGaussian;
 fil = @tikhonov;
 
-alg = kregls(ker, fil,  5, 5);
+alg = rfrls(map , 1000 , fil,  2 , 1);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-
 exp.run();
 
 exp.result
-
-%% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
-% 
-% numRF = 500;
-% mappingType = 'gaussian';
-% 
-% RFmapper = randomFeaturesMapper( ds.d , numRF , mappingType);
-% 
-% ds
-% fil = @tikhonov;
-% 
-% alg = regls(fil, 20);
-% 
-% exp = experiment('Experiment_USPS_RFRLS');
-% exp.run(alg , ds)
-% 
-% exp.result

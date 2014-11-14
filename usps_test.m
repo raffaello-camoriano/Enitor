@@ -10,10 +10,10 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-ds = USPS(7291,2007,'plusOneMinusBalanced');
+%ds = USPS(7291,2007,'zeroOne');
 
 % Load small dataset
-%ds = USPS(1000,500,'plusOneMinusBalanced');
+ds = USPS(500,500,'plusOneMinusBalanced');
 
 % dataset.n
 % dataset.nTr
@@ -52,12 +52,10 @@ ds = USPS(7291,2007,'plusOneMinusBalanced');
 
 %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
 
-kerType = 'gaussian';
-
-map = @randomFeatures;
+map = @randomFeaturesGaussian;
 fil = @tikhonov;
 
-alg = rfrls(map, kerType , 1000 , fil,  3 , 5);
+alg = rfrls(map , 1000 , fil,  2 , 1);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();

@@ -8,6 +8,5 @@ classdef algorithm < handle
       Ypred = test(obj , X );
       %crossVal(obj , X , Y);   % cross validation is included in the train
       %method
-      
-   end % methods
+    end % methods
 end % classdef
