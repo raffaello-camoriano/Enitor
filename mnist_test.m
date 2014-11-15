@@ -13,7 +13,7 @@ mkdir(resdir);
 %ds = MNIST;
 
 % Load small dataset
-ds = MNIST(8000,10000,'plusMinusOne');
+ds = MNIST(3000,10000,'plusMinusOne');
 
 % dataset.n
 % dataset.nTr
@@ -47,7 +47,6 @@ ds = MNIST(8000,10000,'plusMinusOne');
 % exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 % 
 % exp.run();
-% 
 % exp.result
 
 % %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
@@ -55,7 +54,7 @@ ds = MNIST(8000,10000,'plusMinusOne');
 map = @randomFeaturesGaussian;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  2 , 1);
+alg = rfrls(map , 1000 , fil,  5 , 5);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();

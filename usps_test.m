@@ -10,10 +10,10 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = USPS(7291,2007,'zeroOne');
+ds = USPS(7291,2007,'plusMinusOne');
 
 % Load small dataset
-ds = USPS(500,500,'plusOneMinusBalanced');
+%ds = USPS(500,500,'plusOneMinusBalanced');
 
 % dataset.n
 % dataset.nTr

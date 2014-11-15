@@ -11,7 +11,7 @@ classdef rfrls < algorithm
         numMapParGuesses
         rfMapper
         XrfStar                 % Best mapping of the training set
-        rfProjStar              % Best random projection matrix
+        rfOmegaStar              % Best random omega matrix
         numKerParRangeSamples   % Number of samples used for kernel hyperparameter range guesses creation
 
         % Filter props
@@ -49,6 +49,10 @@ classdef rfrls < algorithm
             tmp1 = floor(size(Xtr,1)*(1-validationPart));
             trainIdx = shuffledIdx(1 : tmp1);
             valIdx = shuffledIdx(tmp1 + 1 : end);
+
+%             tmp1 = floor(size(Xtr,1)*(1-validationPart));
+%             trainIdx = 1 : tmp1;
+%             valIdx = tmp1 + 1 : size(Xtr,1);      
             
             % mapper instantiation
             obj.rfMapper = obj.mapType(Xtr , obj.numMapParGuesses , obj.numKerParRangeSamples );
@@ -73,10 +77,12 @@ classdef rfrls < algorithm
                 Xval = obj.rfMapper.Xrf(valIdx,:);
                 
                 % Compute covariance matrix of the training samples
-                C = Xtrain' * Xtrain;   
-                n = size(Xtrain, 1);
+                C = Xtrain' * Xtrain;
                 
-                obj.filter = obj.filterType( 'primal' , C*size(C,1)/n , (Xtrain' * Ytrain)*size(C,1)/n , obj.numFilterParGuesses);
+                % Normalization factors
+                numSamples = size(Xtrain , 1);
+                
+                obj.filter = obj.filterType( C  , Xtrain' * Ytrain , numSamples ,  obj.numFilterParGuesses);
                 
                 while obj.filter.next()
                     
@@ -105,7 +111,7 @@ classdef rfrls < algorithm
                         obj.XrfStar = obj.rfMapper.Xrf;
                         
                         % Update best projections matrix
-                        obj.rfProjStar = obj.rfMapper.proj;
+                        obj.rfOmegaStar = obj.rfMapper.omega;
                         
                         %Update best validation performance measurement
                         valM = valPerf;
@@ -145,7 +151,10 @@ classdef rfrls < algorithm
             obj.rfMapper.Xrf = obj.XrfStar;
 
             % Set best projections matrix
-            obj.rfMapper.proj = obj.rfProjStar;
+            obj.rfMapper.omega = obj.rfOmegaStar;
+            
+            % Set best mapping parameters
+            obj.rfMapper.currentPar = obj.mapParStar;
                         
             if (nargin > 4) && (recompute)
                 
@@ -159,8 +168,11 @@ classdef rfrls < algorithm
 
                 % Recompute filter on the whole training set with the best
                 % filter parameter
-                sz=size(obj.XrfStar,1);
-                obj.filter.init('primal' , C , obj.rfMapper.Xrf' * Ytr);
+                
+                % Normalization factors
+                numSamples = size(obj.XrfStar , 1);
+                
+                obj.filter.init( C  , obj.rfMapper.Xrf' * Ytr , numSamples);
                 obj.filter.compute(obj.filterParStar);
                 
 %                 % Update internal model samples matrix
@@ -174,7 +186,10 @@ classdef rfrls < algorithm
         function Ypred = test( obj , Xte )
             
             % Set proj to best projections matrix
-            obj.rfMapper.proj = obj.rfProjStar;
+            obj.rfMapper.omega = obj.rfOmegaStar;
+            
+            % Set best mapping parameters
+            obj.rfMapper.currentPar = obj.mapParStar;
             
             % Compute scores
             XteRF = obj.rfMapper.map(Xte);

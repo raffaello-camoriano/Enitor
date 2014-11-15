@@ -44,8 +44,10 @@ classdef randomFeaturesGaussian < randomFeatures
         end
         
         function mappedSample = map(obj , inputSample)
-            V = inputSample * obj.proj;
-            mappedSample = [cos(V) , sin(V)];
+            V = inputSample * obj.omega;
+            mappedSample = sqrt( 2 / obj.currentPar(1) ) * [cos(V) , sin(V)];
+            
+%             mappedSample = real(exp(1i*inputSample * obj.omega));
         end
         
         function obj = range(obj)
@@ -106,17 +108,20 @@ classdef randomFeaturesGaussian < randomFeatures
             end
             
             obj.generateProj(chosenPar);
-            V =  obj.X * obj.proj;
-            obj.Xrf = [cos(V) , sin(V)] / sqrt(chosenPar(1));
+            
+%             obj.Xrf = 	 real(exp(1i*obj.X * obj.omega));
+
+            V =  obj.X * obj.omega;
+            obj.Xrf = sqrt( 2 / chosenPar(1) ) * [cos(V) , sin(V)];
         end        
         
         function obj = generateProj(obj , mapPar)
             
             % TODO: Vary sigma parameter!!!
-            %obj.proj = sqrt(2) * mapPar(2) * randn(obj.d, mapPar(1));
-            %obj.proj = sqrt(2) * randn(obj.d, mapPar(1));
-            obj.proj = mapPar(2) * randn(obj.d, mapPar(1));
-            %obj.proj = mapPar(2) * (2 * pi)^(-mapPar(1)/2) * randn(obj.d, mapPar(1));
+            obj.omega =  mapPar(2) * randn(obj.d, mapPar(1));
+            %obj.omega = sqrt(2) * randn(obj.d, mapPar(1));
+            %obj.omega = mapPar(2) * randn(obj.d, mapPar(1));
+            %obj.omega = mapPar(2) * (2 * pi)^(-mapPar(1)/2) * randn(obj.d, mapPar(1));
 
         end
         

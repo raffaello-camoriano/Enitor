@@ -9,7 +9,7 @@ classdef randomFeatures < handle
         kerPar
         rng
         
-        proj
+        omega
         numMapParGuesses
         
         currentPar

@@ -81,7 +81,10 @@ classdef krls < algorithm
                 kernel.compute();
                 kernelVal.compute(kernel.currentPar);
                 
-                filter = obj.filterType( 'dual' , kernel.K, Ytrain , obj.numFilterParGuesses);
+                % Normalization factors
+                numSamples = size(Xtrain , 1);
+                
+                filter = obj.filterType( kernel.K, Ytrain , numSamples , obj.numFilterParGuesses);
                 
                 while filter.next()
                     
@@ -89,11 +92,11 @@ classdef krls < algorithm
                     filter.compute();
 
                     % Populate full performance matrices
-                    %trainPerformance(i,j) = perfm( kernel.K * filter.coeffs, Ytrain);
-                    %valPerformance(i,j) = perfm( kernelVal.K * filter.coeffs, Yval);
+                    %trainPerformance(i,j) = perfm( kernel.K * filter.weights, Ytrain);
+                    %valPerformance(i,j) = perfm( kernelVal.K * filter.weights, Yval);
                     
                     % Compute predictions matrix
-                    YvalPred = kernelVal.K * filter.coeffs;
+                    YvalPred = kernelVal.K * filter.weights;
                     
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );
@@ -115,7 +118,7 @@ classdef krls < algorithm
                             obj.Xmodel = Xtrain;
                             
                             % Update coefficients vector
-                            obj.c = filter.coeffs;
+                            obj.c = filter.weights;
                         end
                     end
                 end
@@ -145,14 +148,16 @@ classdef krls < algorithm
                 
                 % Recompute filter on the whole training set with the best
                 % filter parameter
-                filter.init('dual' , kernel.K , Ytr);
+                numSamples = size(Xtr , 1);
+
+                filter.init( kernel.K , Ytr , numSamples);
                 filter.compute(obj.filterParStar);
                 
                 % Update internal model samples matrix
                 obj.Xmodel = Xtr;
                 
                 % Update coefficients vector
-                obj.c = filter.coeffs;
+                obj.c = filter.weights;
             end        
         end
         

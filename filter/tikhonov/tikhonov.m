@@ -4,44 +4,40 @@ classdef tikhonov < filter
 
     properties
         U, T, Y0
-        coeffs
         weights
-        n               % Number of samples associated to the K or C matrix
+        n               % Number of samples
+        sz              % Size of the K or C matrix
         
         numGuesses      % number of filter hyperparameters guesses
         rng             % Parameter ranges map container
         currentParIdx   % Current parameter combination indexes map container
         currentPar      % Current parameter combination map container
         
-        primalDual      % Flag indiccating either 'primal' or 'dual' case.
     end
     
     methods
         
-        function obj = tikhonov(  primalDual , K , Y , numGuesses )
+        function obj = tikhonov( K , Y , numSamples , numGuesses )
             
             if nargin > 3
-                obj.init( primalDual , K , Y , numGuesses );
+                obj.init( K , Y , numSamples , numGuesses );
             elseif nargin > 2
-                obj.init( primalDual , K , Y );
+                obj.init(  K , Y , numSamples );
             end
         end
         
-        function init(obj , primalDual , K , Y , numGuesses)
-                        
-            if strcmp( primalDual , 'primal' ) || strcmp( primalDual , 'dual' )
-                obj.primalDual = primalDual;
-            else
-                error('primalDual not set to "primal" or "dual"');
-            end
+        function init(obj , K , Y , numSamples , numGuesses)
                 
             % Get number of samples
-            obj.n = size(Y,1);
+            obj.n = numSamples;
+            
+            % Get size of kernel/covariance matrix
+            obj.sz = size(K,1);
 
             % Compute Hessenberger decomposition
             [obj.U, obj.T] = hess(K);
             obj.Y0 = obj.U' * Y;
-            
+
             if( nargin == 5 )
                 if numGuesses > 0
                     obj.numGuesses = numGuesses;
@@ -91,7 +87,7 @@ classdef tikhonov < filter
             % we take a max; 200*sqrt(eps) is the legacy number used in the previous
             % code, so i am just continuing it.
 
-            lmin = max(min(lmax*smallnumber, eigmin), 200*sqrt(eps));
+            lmin = max(min(lmax*smallnumber, eigmin), 200 * sqrt(eps));
 
             powers = linspace(0,1,obj.numGuesses);
             tmp = (lmin.*(lmax/lmin).^(powers)) / obj.n;        
@@ -102,35 +98,17 @@ classdef tikhonov < filter
 
             if( nargin > 1 )
                 
-                if strcmp(obj.primalDual , 'primal')
-                    
-                    tmp1 = obj.T +  filterPar(1) * obj.n * eye(obj.n);
-                    
-                    % Use sparse representation for tridiagonal matrix
-                    tmp1 = sparse(tmp1);
-                    
-                    % Invert
-                    %tic
-                    tmp2 = tmp1 \ obj.Y0;
-                    %toc
-                                        
-                    obj.weights = obj.U * tmp2;
+                tmp1 = obj.T +  filterPar(1) * obj.n * eye(obj.sz);
 
-                elseif strcmp(obj.primalDual , 'dual')
+                % Use sparse representation for tridiagonal matrix
+                tmp1 = sparse(tmp1);
 
-                    tmp1 = obj.T +  filterPar(1) * obj.n * eye(obj.n);
-                    
-                    % Use sparse representation for tridiagonal matrix
-                    tmp1 = sparse(tmp1);
-                    
-                    % Invert
-                    %tic
-                    tmp2 = tmp1 \ obj.Y0;
-                    %toc
-                                        
-                    obj.coeffs = obj.U * tmp2;
-                    
-                end
+                % Invert
+                %tic
+                tmp2 = tmp1 \ obj.Y0;
+                %toc
+
+                obj.weights = obj.U * tmp2;
 
             % If any current value for any of the parameters is not available, abort.
             elseif (nargin == 1) && (isempty(obj.currentPar))
@@ -139,35 +117,19 @@ classdef tikhonov < filter
                 
                 disp('Filter will be computed according to the internal current hyperparameter(s)');
                 obj.currentPar
-                
-                if strcmp(obj.primalDual , 'primal')
 
-                    tmp1 = obj.T +  obj.currentPar(1) * obj.n * eye(obj.n);
-                    
-                    % Use sparse representation for tridiagonal matrix
-                    tmp1 = sparse(tmp1);
-                    
-                    % Invert
-                    %tic
-                    tmp2 = tmp1 \ obj.Y0;
-                    %toc
-                                        
-                    obj.weights = obj.U * tmp2;
+                tmp1 = obj.T +  obj.currentPar(1) * obj.n * eye(obj.sz);
 
-                elseif strcmp(obj.primalDual , 'dual')
-    
-                    tmp1 = obj.T +  obj.currentPar(1) * obj.n * eye(obj.n);
-                    
-                    % Use sparse representation for tridiagonal matrix
-                    tmp1 = sparse(tmp1);
-                    
-                    % Invert
-                    %tic
-                    tmp2 = tmp1 \ obj.Y0;
-                    %toc
-                    
-                    obj.coeffs = obj.U * tmp2;                
-                end
+                % Use sparse representation for tridiagonal matrix
+                tmp1 = sparse(tmp1);
+
+                % Invert
+                %tic
+                tmp2 = tmp1 \ obj.Y0;
+                %toc
+
+                obj.weights = obj.U * tmp2;
+
             end
         end
         
