@@ -27,21 +27,6 @@ classdef randomFeaturesGaussian < randomFeatures
             obj.currentParIdx = 0;
             obj.currentPar = [];
         end
-
-        % WARNING: Modify sampling strategy
-        % Computes the squared distance matrix SqDistMat based on X1, X2
-        function SqDistMat = computeSqDistMat(obj , X1 , X2)
-            
-            p = size(X1,1);
-            q = size(X2,1);
-            
-            Sx1 = sum( X1.*X1 , 2);
-            Sx2 = sum( X2.*X2 , 2)';
-            Sx1x2 = X1 * X2';
-            
-            SqDistMat = repmat(Sx1 , 1 , p) -2 * Sx1x2 + repmat(Sx2 , q , 1);
-        
-        end
         
         function mappedSample = map(obj , inputSample)
             V = inputSample * obj.omega;
@@ -57,16 +42,22 @@ classdef randomFeaturesGaussian < randomFeatures
             
             %% Approximated kernel parameter range
             
-            % Compute max and min sigma guesses (same strategy used by
-            % GURLS)
+            % Compute max and min sigma guesses
+                
+            % Extract two samples without replacement                
+            samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
+                
+            % Compute squared distances  vector (D)
+            D = zeros(1,obj.numKerParRangeSamples);
+            for i = 1:2:obj.numKerParRangeSamples
 
-            %Compute partial square distances matrix
-            SqDistMat = obj.computeSqDistMat( obj.X(1:obj.numKerParRangeSamples,:) , obj.X(1:obj.numKerParRangeSamples,:) );
-            
-            D = sort(SqDistMat(tril(true(obj.numKerParRangeSamples),-1)));
-            firstPercentile = round(0.01*numel(D)+0.5);
-            minGuess = sqrt(D(firstPercentile));
-            maxGuess = sqrt(max(max(SqDistMat)));
+                D(i) = sum((samp(i,:) - samp(i+1,:)).^2);
+            end
+            D = sort(D);
+
+            firstPercentile = round(0.01 * numel(D) + 0.5);
+            minGuess = sqrt( D(firstPercentile));
+            maxGuess = sqrt( max(D) );
 
             if minGuess <= 0
                 minGuess = eps;
