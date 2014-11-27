@@ -36,6 +36,7 @@ classdef tikhonov < filter
 
             % Compute Hessenberger decomposition
             [obj.U, obj.T] = hess(K);
+            obj.T = sparse(obj.T);  % Store as sparse matrix (it is tridiagonal)
             obj.Y0 = obj.U' * Y;
 
             if( nargin == 5 )
@@ -98,10 +99,7 @@ classdef tikhonov < filter
 
             if( nargin > 1 )
                 
-                tmp1 = obj.T +  filterPar(1) * obj.n * eye(obj.sz);
-
-                % Use sparse representation for tridiagonal matrix
-                tmp1 = sparse(tmp1);
+                tmp1 = obj.T +  filterPar(1) * obj.n * speye(obj.sz);
 
                 % Invert
                 %tic
@@ -118,10 +116,7 @@ classdef tikhonov < filter
                 disp('Filter will be computed according to the internal current hyperparameter(s)');
                 obj.currentPar
 
-                tmp1 = obj.T +  obj.currentPar(1) * obj.n * eye(obj.sz);
-
-                % Use sparse representation for tridiagonal matrix
-                tmp1 = sparse(tmp1);
+                tmp1 = obj.T +  obj.currentPar(1) * obj.n * speye(obj.sz);
 
                 % Invert
                 %tic

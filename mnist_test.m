@@ -1,7 +1,7 @@
 setenv('LC_ALL','C');
 addpath(genpath('.'));
  
-clearAllButBP
+clearAllButBP;
 
 % Set experimental results relative directory name
 resdir = 'results';
@@ -38,25 +38,25 @@ ds = MNIST(3000,10000,'plusMinusOne');
 % dataset.performanceMeasure(Y , Ypred)l;
 
 %% Experiment 1 setup, Gaussian kernel
-% 
-% ker = @gaussianKernel;
-% fil = @tikhonov;
-% 
-% alg = krls(ker, fil,  1, 1);
-% 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-% 
-% exp.run();
-% exp.result
 
-% %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
-
-map = @randomFeaturesGaussian;
+ker = @gaussianKernel;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  5 , 5);
+alg = krls(ker, fil,  5, 5);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-exp.run();
 
+exp.run();
 exp.result
+
+ %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
+
+% map = @randomFeaturesGaussian;
+% fil = @tikhonov;
+% 
+% alg = rfrls(map , 1000 , fil,  5 , 5);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp.run();
+% 
+% exp.result
