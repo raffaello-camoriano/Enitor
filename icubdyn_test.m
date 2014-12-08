@@ -10,32 +10,10 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = MNIST;
+%ds = icubdyn;
 
 % Load small dataset
-ds = MNIST(3000,10000,'plusMinusOne');
-
-% dataset.n
-% dataset.nTr
-% dataset.nTe
-% dataset.d
-% dataset.t
-% 
-% dataset.X
-% dataset.Y
-% 
-% dataset.trainIdx
-% dataset.testIdx
-
-% Shuffled training set indexes
-% dataset.shuffledTrainIdx      
-% dataset.shuffleTrainIdx();
-% dataset.shuffledTrainIdx
-
-% Perf
-% Y = (1:10)';
-% Ypred = (10:-1:1)';
-% dataset.performanceMeasure(Y , Ypred)l;
+ds = icubdyn(10000,10000);
 
 %% Experiment 1 setup, Gaussian kernel
 

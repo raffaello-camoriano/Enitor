@@ -32,8 +32,8 @@ classdef rfrls < algorithm
         
         function init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses)
             obj.mapType = mapTy;
-            obj.filterType = filtTy;
             obj.numKerParRangeSamples = numKerParRangeSamples;
+            obj.filterType = filtTy;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
         end

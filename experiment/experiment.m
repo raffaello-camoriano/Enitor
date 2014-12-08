@@ -111,6 +111,7 @@ classdef experiment < handle
             end
             
             obj.result.Ypred = obj.algo.test(Xte);   
+            obj.result.Y = Yte;
             
             if obj.memoryProfiler
                 profile off;
@@ -149,7 +150,6 @@ classdef experiment < handle
             end
             
             obj.result.perf = abs(obj.ds.performanceMeasure( Yte , obj.result.Ypred , obj.ds.testIdx));
-            %obj.result.perf = abs(obj.ds.performanceMeasure( Yte , Yte , obj.ds.testIdx));
             
             if isprop(obj.algo,'kerParStar')
                 obj.result.kerParStar = obj.algo.kerParStar;

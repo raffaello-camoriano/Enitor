@@ -148,7 +148,7 @@ classdef MNIST < dataset
             mx = max(max(M));
             mn = min(min(M));
             
-            Ms = ((M + mn) / (mx - mn)) * 2 - 1;
+            Ms = ((M + abs(mn)) / (mx - mn)) * 2 - 1;
             
         end
         
