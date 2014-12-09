@@ -13,6 +13,7 @@ classdef rfrls < algorithm
         XrfStar                 % Best mapping of the training set
         rfOmegaStar              % Best random omega matrix
         numKerParRangeSamples   % Number of samples used for kernel hyperparameter range guesses creation
+        maxNumRF                % Maximum number of random features to be used
 
         % Filter props
         filterType
@@ -26,16 +27,17 @@ classdef rfrls < algorithm
     
     methods
         
-        function obj = rfrls(mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses)
-            init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses)
+        function obj = rfrls(mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxNumRF)
+            init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxNumRF)
         end
         
-        function init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses)
+        function init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxNumRF)
             obj.mapType = mapTy;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.filterType = filtTy;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
+            obj.maxNumRF = maxNumRF;
         end
         
 %         function lambda = computeSingleLambda( lambdas)
@@ -55,7 +57,7 @@ classdef rfrls < algorithm
 %             valIdx = tmp1 + 1 : size(Xtr,1);      
             
             % mapper instantiation
-            obj.rfMapper = obj.mapType(Xtr , obj.numMapParGuesses , obj.numKerParRangeSamples );
+            obj.rfMapper = obj.mapType(Xtr , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxNumRF);
             
             Ytrain = Ytr(trainIdx,:);
             Yval = Ytr(valIdx,:);                

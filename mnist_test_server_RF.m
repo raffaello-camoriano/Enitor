@@ -10,10 +10,32 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = icubdyn;
+%ds = MNIST;
 
 % Load small dataset
-ds = icubdyn(10000,10000);
+ds = MNIST(3000,10000,'plusMinusOne');
+
+% dataset.n
+% dataset.nTr
+% dataset.nTe
+% dataset.d
+% dataset.t
+% 
+% dataset.X
+% dataset.Y
+% 
+% dataset.trainIdx
+% dataset.testIdx
+
+% Shuffled training set indexes
+% dataset.shuffledTrainIdx      
+% dataset.shuffleTrainIdx();
+% dataset.shuffledTrainIdx
+
+% Perf
+% Y = (1:10)';
+% Ypred = (10:-1:1)';
+% dataset.performanceMeasure(Y , Ypred)l;
 
 %% Experiment 1 setup, Gaussian kernel
 
@@ -32,7 +54,7 @@ ds = icubdyn(10000,10000);
 map = @randomFeaturesGaussian;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  5 , 5 , 2000);
+alg = rfrls(map , 1000 , fil,  5 , 5 , 15000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();

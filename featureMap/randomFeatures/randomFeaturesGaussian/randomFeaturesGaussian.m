@@ -4,23 +4,25 @@ classdef randomFeaturesGaussian < randomFeatures
     
     properties
         numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
+        maxNumRF                % Maximum number of random features to be used
     end
     
     methods
         % Constructor
-        function obj = randomFeaturesGaussian( X , numMapParGuesses , numKerParRangeSamples )
+        function obj = randomFeaturesGaussian( X , numMapParGuesses , numKerParRangeSamples , maxNumRF )
             
-            obj.init( X , numMapParGuesses , numKerParRangeSamples );
+            obj.init( X , numMapParGuesses , numKerParRangeSamples , maxNumRF);
             
         end
         
         % Initialization function
-        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples )
+        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , maxNumRF)
             
             obj.X = X;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.d = size(X , 2);     
+            obj.maxNumRF = maxNumRF;
             
             % Compute range
             obj.range();
@@ -38,7 +40,7 @@ classdef randomFeaturesGaussian < randomFeatures
         function obj = range(obj)
             %% Range of the number of Random Fourier Features
             
-            tmpNumRF = linspace(obj.d, 2000 , obj.numMapParGuesses);   
+            tmpNumRF = round(linspace(obj.maxNumRF/10, obj.maxNumRF , obj.numMapParGuesses));   
             
             %% Approximated kernel parameter range
             
