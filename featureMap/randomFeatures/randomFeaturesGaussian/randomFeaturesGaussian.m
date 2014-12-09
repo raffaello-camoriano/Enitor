@@ -46,9 +46,18 @@ classdef randomFeaturesGaussian < randomFeatures
             
             % Compute max and min sigma guesses
                 
-            % Extract two samples without replacement                
-            samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
-                
+            % Extract an even number of samples without replacement                
+            
+            % WARNING: not compatible with versions older than 2014
+            %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
+            
+            % WARNING: Alternative to datasample below
+            nRows = size(obj.X,1); % number of rows
+            nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
+            rndIDX = randperm(nRows); 
+            samp = obj.X(rndIDX(1:nSample), :);   
+            
+            
             % Compute squared distances  vector (D)
             D = zeros(1,obj.numKerParRangeSamples);
             for i = 1:2:obj.numKerParRangeSamples
