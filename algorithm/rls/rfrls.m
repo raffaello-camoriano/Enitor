@@ -11,7 +11,8 @@ classdef rfrls < algorithm
         numMapParGuesses
         rfMapper
         XrfStar                 % Best mapping of the training set
-        rfOmegaStar              % Best random omega matrix
+        rfOmegaStar             % Best random omega matrix
+        rfBStar                 % Best coefficients vector b
         numKerParRangeSamples   % Number of samples used for kernel hyperparameter range guesses creation
         maxNumRF                % Maximum number of random features to be used
 
@@ -115,6 +116,9 @@ classdef rfrls < algorithm
                         % Update best projections matrix
                         obj.rfOmegaStar = obj.rfMapper.omega;
                         
+                        % Update bestb coefficients
+                        obj.rfBStar = obj.rfMapper.b;
+                        
                         %Update best validation performance measurement
                         valM = valPerf;
                         
@@ -152,7 +156,10 @@ classdef rfrls < algorithm
             % Set best mapped samples
             obj.rfMapper.Xrf = obj.XrfStar;
 
-            % Set best projections matrix
+            % Set best omega matrix
+            obj.rfMapper.omega = obj.rfOmegaStar;
+            
+            % Set best b vector
             obj.rfMapper.omega = obj.rfOmegaStar;
             
             % Set best mapping parameters
@@ -187,8 +194,11 @@ classdef rfrls < algorithm
         
         function Ypred = test( obj , Xte )
             
-            % Set proj to best projections matrix
+            % Set best omega
             obj.rfMapper.omega = obj.rfOmegaStar;
+            
+            % Set best b
+            obj.rfMapper.b = obj.rfBStar;
             
             % Set best mapping parameters
             obj.rfMapper.currentPar = obj.mapParStar;

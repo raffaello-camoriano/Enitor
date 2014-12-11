@@ -56,6 +56,9 @@ classdef USPS < dataset
                
             for i = 1:obj.n
                 obj.Y(i , data.gnd(i)) = 1;
+                % Display associated image
+                %imshow(vec2mat(obj.X(i,:),16))
+                %data.gnd(i)
             end
             
             % Set problem type
@@ -112,7 +115,7 @@ classdef USPS < dataset
             
             for i = 1:size(Y,1)
                 if sum(Y(i,:) == Ypred(i,:)) == size(Y,2)
-                    numCorrect = numCorrect +1;
+                    numCorrect = numCorrect + 1;
                 end
             end
             

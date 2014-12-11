@@ -10,6 +10,7 @@ classdef randomFeatures < handle
         rng
         
         omega
+        b
         numMapParGuesses
         
         currentPar

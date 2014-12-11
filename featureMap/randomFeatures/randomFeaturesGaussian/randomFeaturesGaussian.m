@@ -31,10 +31,14 @@ classdef randomFeaturesGaussian < randomFeatures
         end
         
         function mappedSample = map(obj , inputSample)
-            V = inputSample * obj.omega;
-            mappedSample = sqrt( 2 / obj.currentPar(1) ) * [cos(V) , sin(V)];
             
-%             mappedSample = real(exp(1i*inputSample * obj.omega));
+            % [cos sin] mapping
+%             V = inputSample * obj.omega;
+%             mappedSample = sqrt( 2 / obj.currentPar(1) ) * [cos(V) , sin(V)];
+            
+            % cos(wx+b) mapping
+            V =  inputSample * obj.omega + repmat(obj.b , size(inputSample,1) , 1);            
+            mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
         end
         
         function obj = range(obj)
@@ -56,7 +60,6 @@ classdef randomFeaturesGaussian < randomFeatures
             nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
             rndIDX = randperm(nRows); 
             samp = obj.X(rndIDX(1:nSample), :);   
-            
             
             % Compute squared distances  vector (D)
             D = zeros(1,obj.numKerParRangeSamples);
@@ -110,21 +113,34 @@ classdef randomFeaturesGaussian < randomFeatures
             end
             
             obj.generateProj(chosenPar);
+           
+            % cos sin mapping
+%             V =  obj.X * obj.omega;
+%             obj.Xrf = sqrt( 2 / chosenPar(1) ) * [cos(V) , sin(V)];
             
-%             obj.Xrf = 	 real(exp(1i*obj.X * obj.omega));
-
-            V =  obj.X * obj.omega;
-            obj.Xrf = sqrt( 2 / chosenPar(1) ) * [cos(V) , sin(V)];
+            % cos(wx+b) mapping
+            V =  obj.X * obj.omega + repmat(obj.b , size(obj.X,1) , 1);
+            obj.Xrf = sqrt( 2 / chosenPar(1) ) * cos(V);
         end        
         
         function obj = generateProj(obj , mapPar)
             
-            % TODO: Vary sigma parameter!!!
-            obj.omega =  mapPar(2) * randn(obj.d, mapPar(1));
+            % [ sin(wx) , cos(wx) ] mapping
+            %             It is common that M is a diagonal matrix with diag (M ) =
+            % 2 , . . . , 2 , such that it suffices to draw ω from a standard normal distribution N (0, 1) and sub-
+            % n
+            % 1
+            % sequently scale these by l
+%             obj.omega =  mapPar(2) * randn(obj.d, mapPar(1));
+
+            % cos(wx + b) mapping
+            %obj.omega =  2 * mapPar(2) .* randn(obj.d, mapPar(1));
+            obj.omega =  mapPar(2) .* randn(obj.d, mapPar(1));
+            obj.b =  rand(1,mapPar(1))* 2 * pi;
+
             %obj.omega = sqrt(2) * randn(obj.d, mapPar(1));
             %obj.omega = mapPar(2) * randn(obj.d, mapPar(1));
             %obj.omega = mapPar(2) * (2 * pi)^(-mapPar(1)/2) * randn(obj.d, mapPar(1));
-
         end
         
         % returns true if the next parameter combination is available and
