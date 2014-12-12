@@ -13,7 +13,7 @@ mkdir(resdir);
 %ds = icubdyn;
 
 % Load small dataset
-ds = icubdyn(30000,10000);
+ds = icubdyn(10000,10000);
 
 %% Experiment 1 setup, Gaussian kernel
 

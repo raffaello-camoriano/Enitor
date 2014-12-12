@@ -105,7 +105,6 @@ classdef experiment < handle
             end
             
             % Fill result structure
-            
             if obj.measureTime
                 tic;
             end
@@ -124,17 +123,8 @@ classdef experiment < handle
             
             if obj.memoryProfiler
                 p = profile('info');
-                
-                %obj.result.memoryProfile = cell(size(p.FunctionTable,1),4);
-                
+                                
                 obj.result.memoryProfile = struct;
-                
-%                 for i = 1:size(p.FunctionTable,1)
-%                     obj.result.memoryProfile{i,1} = p.FunctionTable(i).FunctionName;
-%                     obj.result.memoryProfile{i,2} = p.FunctionTable(i).TotalMemAllocated;
-%                     obj.result.memoryProfile{i,3} = p.FunctionTable(i).TotalMemFreed;
-%                     obj.result.memoryProfile{i,4} = p.FunctionTable(i).PeakMem;
-%                 end
 
                 for i = 1:size(p.FunctionTable,1)
                     obj.result.memoryProfile(i).FunctionName = p.FunctionTable(i).FunctionName;
@@ -143,10 +133,6 @@ classdef experiment < handle
                     obj.result.memoryProfile(i).PeakMem = p.FunctionTable(i).PeakMem;
                 end
 
-%                 obj.result.memoryProfile.FunctionName = p.FunctionTable.FunctionName;
-%                 obj.result.memoryProfile.TotalMemAllocated = p.FunctionTable.TotalMemAllocated;
-%                 obj.result.memoryProfile.TotalMemFreed = p.FunctionTable.TotalMemFreed;
-%                 obj.result.memoryProfile.PeakMem = p.FunctionTable.PeakMem;
             end
             
             obj.result.perf = abs(obj.ds.performanceMeasure( Yte , obj.result.Ypred , obj.ds.testIdx));

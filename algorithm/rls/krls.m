@@ -163,13 +163,12 @@ classdef krls < algorithm
         
         function Ypred = test( obj , Xte )
 
-            % Get kernel type and instantiate kernel (including sigma)
+            % Get kernel type and instantiate train-test kernel (including sigma)
             kernelTest = obj.kernelType(Xte , obj.Xmodel);
             kernelTest.compute(obj.kerParStar);
             
             % Compute scores
             Ypred = kernelTest.K * obj.c;
-
         end
     end
 end

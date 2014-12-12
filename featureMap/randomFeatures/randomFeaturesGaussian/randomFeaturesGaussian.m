@@ -12,7 +12,6 @@ classdef randomFeaturesGaussian < randomFeatures
         function obj = randomFeaturesGaussian( X , numMapParGuesses , numKerParRangeSamples , maxNumRF )
             
             obj.init( X , numMapParGuesses , numKerParRangeSamples , maxNumRF);
-            
         end
         
         % Initialization function
@@ -44,7 +43,8 @@ classdef randomFeaturesGaussian < randomFeatures
         function obj = range(obj)
             %% Range of the number of Random Fourier Features
             
-            tmpNumRF = round(linspace(obj.maxNumRF/10, obj.maxNumRF , obj.numMapParGuesses));   
+            %tmpNumRF = round(linspace(obj.maxNumRF/10, obj.maxNumRF , obj.numMapParGuesses));   
+            tmpNumRF = obj.maxNumRF;
             
             %% Approximated kernel parameter range
             
@@ -82,7 +82,7 @@ classdef randomFeaturesGaussian < randomFeatures
             
             tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
             
-            %% Generate all possible parameters combinatins            
+            %% Generate all possible parameters combinations            
             
             [p,q] = meshgrid(tmpNumRF, tmpKerPar);
             tmp = [p(:) q(:)]';
@@ -106,7 +106,7 @@ classdef randomFeaturesGaussian < randomFeatures
             
             else
                 
-                disp('Mapping will be computed according to the internal current hyperparameter(s)');
+                disp('Mapping will be computed according to the current internal hyperparameter(s)');
                 obj.currentPar
                 chosenPar = obj.currentPar;
                 
@@ -121,7 +121,7 @@ classdef randomFeaturesGaussian < randomFeatures
             % cos(wx+b) mapping
             V =  obj.X * obj.omega + repmat(obj.b , size(obj.X,1) , 1);
             obj.Xrf = sqrt( 2 / chosenPar(1) ) * cos(V);
-        end        
+        end
         
         function obj = generateProj(obj , mapPar)
             

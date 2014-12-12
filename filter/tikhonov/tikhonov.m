@@ -74,8 +74,11 @@ classdef tikhonov < filter
 %             eigmax = max(e);
 %             eigmin = min(e);
             
+            e = eig(obj.T)
+            eigmax = max(e);
+
             % DEBUG: fixed minimum and maximum eigenvalues
-            eigmax = 1;
+            %eigmax = 100;
             eigmin = 10e-7;
             %===================================================
             

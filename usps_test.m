@@ -38,26 +38,26 @@ ds = USPS(1000,1000,'plusMinusOne');
 % dataset.performanceMeasure(Y , Ypred)l;
 
 %% Experiment 1 setup, Gaussian kernel
-
-ker = @gaussianKernel;
-fil = @tikhonov;
-
-alg = krls(ker, fil,  5, 5);
-
-exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-
-exp.run();
-
-exp.result
-
-%% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
-
-% map = @randomFeaturesGaussian;
+% 
+% ker = @gaussianKernel;
 % fil = @tikhonov;
 % 
-% alg = rfrls(map , 1000 , fil,  3, 3, 1000);
+% alg = krls(ker, fil,  5, 5);
 % 
 % exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% 
 % exp.run();
 % 
 % exp.result
+
+%% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
+
+map = @randomFeaturesGaussian;
+fil = @tikhonov;
+
+alg = rfrls(map , 1000 , fil,  50, 50, 8000);
+
+exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+exp.run();
+
+exp.result

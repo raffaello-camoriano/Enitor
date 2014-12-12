@@ -41,10 +41,6 @@ classdef rfrls < algorithm
             obj.maxNumRF = maxNumRF;
         end
         
-%         function lambda = computeSingleLambda( lambdas)
-%             lambda = median(lambdas);
-%         end
-        
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
             
             % Training/validation sets splitting
@@ -56,13 +52,13 @@ classdef rfrls < algorithm
 %             tmp1 = floor(size(Xtr,1)*(1-validationPart));
 %             trainIdx = 1 : tmp1;
 %             valIdx = tmp1 + 1 : size(Xtr,1);      
+                
+            Ytrain = Ytr(trainIdx,:);
+            Yval = Ytr(valIdx,:);    
             
             % mapper instantiation
             obj.rfMapper = obj.mapType(Xtr , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxNumRF);
             
-            Ytrain = Ytr(trainIdx,:);
-            Yval = Ytr(valIdx,:);                
-
             valM = inf;     % Keeps track of the lowest validation error
             
             % Full matrices for performance storage

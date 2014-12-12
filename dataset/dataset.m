@@ -51,7 +51,7 @@ classdef dataset < handle
         function shuffleTrainIdx(obj)
             obj.trainIdx = obj.trainIdx(randperm(obj.nTr));
         end
-     
+        
         % Compute random permutation of the test set indexes
         function shuffleTestIdx(obj)
             obj.testIdx = obj.testIdx(randperm(obj.nTe));
