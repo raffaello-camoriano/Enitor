@@ -10,10 +10,10 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = MNIST;
+% ds = MNIST;
 
 % Load small dataset
-ds = MNIST(20000,10000,'plusMinusOne');
+ds = MNIST(60000,10000,'plusMinusOne');
 
 % dataset.n
 % dataset.nTr
@@ -54,7 +54,7 @@ ds = MNIST(20000,10000,'plusMinusOne');
 map = @randomFeaturesGaussian;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  50 , 50 , 20000);
+alg = rfrls(map , 1000 , fil,  10 , 10 , 20000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();

@@ -32,7 +32,7 @@ ds = USPS_binary(2000,200,'plusMinusOne');
 map = @randomFeaturesGaussian;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  30, 10, 2000);
+alg = rfrls(map , 1000 , fil,  5, 5, 2000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();

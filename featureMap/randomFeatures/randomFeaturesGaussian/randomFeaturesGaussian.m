@@ -135,7 +135,7 @@ classdef randomFeaturesGaussian < randomFeatures
 
             % cos(wx + b) mapping
             %obj.omega =  2 * mapPar(2) .* randn(obj.d, mapPar(1));
-            obj.omega =  mapPar(2) .* randn(obj.d, mapPar(1));
+            obj.omega =  randn(obj.d, mapPar(1)) / mapPar(2) ;
             obj.b =  rand(1,mapPar(1))* 2 * pi;
 
             %obj.omega = sqrt(2) * randn(obj.d, mapPar(1));

@@ -35,8 +35,9 @@ classdef tikhonov < filter
             obj.sz = size(K,1);
 
             % Compute Hessenberger decomposition
-            [obj.U, obj.T] = hess(K);
-            obj.T = sparse(obj.T);  % Store as sparse matrix (it is tridiagonal)
+            [obj.U, T] = hess(K);
+            obj.T = sparse(T);  % Store as sparse matrix (it is tridiagonal)
+            T = [];
             obj.Y0 = obj.U' * Y;
 
             if( nargin == 5 )
@@ -74,9 +75,14 @@ classdef tikhonov < filter
 %             eigmax = max(e);
 %             eigmin = min(e);
             
-            e = eig(obj.T)
-            eigmax = max(e);
+%             e = eigs(obj.T,1);
 
+             eigmax = eigs(obj.T,1);
+
+%             eigmax = norm(obj.T);
+            % WARNING: Error using norm
+            % Sparse norm(S,2) is not available.
+            
             % DEBUG: fixed minimum and maximum eigenvalues
             %eigmax = 100;
             eigmin = 10e-7;
@@ -93,7 +99,7 @@ classdef tikhonov < filter
 
             lmin = max(min(lmax*smallnumber, eigmin), 200 * sqrt(eps));
 
-            powers = linspace(0,1,obj.numGuesses);
+            powers = linspace(1,0,obj.numGuesses);
             tmp = (lmin.*(lmax/lmin).^(powers)) / obj.n;        
             obj.rng = num2cell(tmp);
         end
