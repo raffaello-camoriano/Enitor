@@ -13,7 +13,7 @@ mkdir(resdir);
 %ds = MNIST;
 
 % Load small dataset
-ds = MNIST(3000,10000,'plusMinusOne');
+ds = MNIST(20000,10000,'plusMinusOne');
 
 % dataset.n
 % dataset.nTr
