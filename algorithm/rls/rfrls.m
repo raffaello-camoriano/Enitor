@@ -58,6 +58,8 @@ classdef rfrls < algorithm
             
             % mapper instantiation
             obj.rfMapper = obj.mapType(Xtr , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxNumRF);
+            obj.mapParGuesses = obj.rfMapper.rng;
+            obj.filterParGuesses = [];
             
             valM = inf;     % Keeps track of the lowest validation error
             
@@ -82,6 +84,8 @@ classdef rfrls < algorithm
                 numSamples = size(Xtrain , 1);
                 
                 obj.filter = obj.filterType( C  , Xtrain' * Ytrain , numSamples ,  obj.numFilterParGuesses);
+                obj.filterParGuesses = [obj.filterParGuesses ; obj.filter.rng];
+                
                 
                 while obj.filter.next()
                     

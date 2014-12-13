@@ -54,9 +54,9 @@ ds = MNIST(60000,10000,'plusMinusOne');
 map = @randomFeaturesGaussian;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  10 , 10 , 20000);
+alg = rfrls(map , 1000 , fil,  10 , 10 , 32000);
 
-exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+exp = experiment(alg , ds , 1 , true , true , 'SERVER' , resdir);
 exp.run();
 
 exp.result

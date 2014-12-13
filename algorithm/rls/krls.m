@@ -65,9 +65,12 @@ classdef krls < algorithm
             
             % TrainVal kernel
             kernelVal = obj.kernelType(Xval,Xtrain);
-            
+
             % Train kernel
             kernel = obj.kernelType(Xtrain,Xtrain, obj.numMapParGuesses);
+            obj.kerParGuesses = kernel.rng;
+            obj.filterParGuesses = [];
+            
             
             valM = inf;     % Keeps track of the lowest validation error
             
@@ -85,7 +88,8 @@ classdef krls < algorithm
                 numSamples = size(Xtrain , 1);
                 
                 filter = obj.filterType( kernel.K, Ytrain , numSamples , obj.numFilterParGuesses);
-                
+                obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
+
                 while filter.next()
                     
                     % Compute filter according to current hyperparameters

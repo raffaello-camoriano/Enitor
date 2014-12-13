@@ -137,8 +137,27 @@ classdef experiment < handle
             
             obj.result.perf = abs(obj.ds.performanceMeasure( Yte , obj.result.Ypred , obj.ds.testIdx));
             
+            % Save hyperparameter ranges
+            if isprop(obj.algo,'filterParGuesses')
+                obj.result.filterParGuesses = obj.algo.filterParGuesses;
+            end
+            
+            if isprop(obj.algo,'kerParGuesses')
+                obj.result.kerParGuesses = obj.algo.kerParGuesses;
+            end
+            
+            if isprop(obj.algo,'rfMapper')
+                obj.result.mapParGuesses = obj.algo.mapParGuesses;
+            end
+                        
+            
+            % Save best hyperparameters
             if isprop(obj.algo,'kerParStar')
                 obj.result.kerParStar = obj.algo.kerParStar;
+            end
+            
+            if isprop(obj.algo,'mapParStar')
+                obj.result.mapParStar = obj.algo.mapParStar;
             end
             
             if isprop(obj.algo,'filterParStar')
