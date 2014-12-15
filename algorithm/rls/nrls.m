@@ -1,14 +1,15 @@
-classdef krls < algorithm
+classdef nrls < algorithm
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         
         % Kernel props
-        kernelType
+        mapType
         kerParGuesses
         kerParStar
         numMapParGuesses
+        maxRank
 
         % Filter props
         filterType
@@ -26,15 +27,16 @@ classdef krls < algorithm
     
     methods
         
-        function obj = krls(kerTy, filtTy,  numMapParGuesses , numFilterParGuesses )
-            init( obj , kerTy, filtTy ,  numMapParGuesses , numFilterParGuesses )
+        function obj = krls(kerTy, filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
+            init( obj , kerTy, filtTy ,  numMapParGuesses , numFilterParGuesses , maxRank)
         end
         
-        function init( obj , kerTy, filtTy , numMapParGuesses , numFilterParGuesses )
+        function init( obj , kerTy, filtTy , numMapParGuesses , numFilterParGuesses , maxRank)
             obj.kernelType = kerTy;
             obj.filterType = filtTy;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
+            obj.maxRank = maxRank;
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)

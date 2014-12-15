@@ -13,7 +13,7 @@ mkdir(resdir);
 %ds = icubdyn;
 
 % Load small dataset
-ds = icubdyn(10000,10000);
+ds = icubdyn(5000,10000);
 
 %% Experiment 1 setup, Gaussian kernel
 
@@ -27,12 +27,24 @@ ds = icubdyn(10000,10000);
 % exp.run();
 % exp.result
 
- %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
+%% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
 
-map = @randomFeaturesGaussian;
+% map = @randomFeaturesGaussian;
+% fil = @tikhonov;
+% 
+% alg = rfrls(map , 1000 , fil,  5 , 5 , 2000);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp.run();
+% 
+% exp.result
+
+%% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
+
+map = @nystromUniform;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  5 , 5 , 2000);
+alg = nrls(map , 1000 , fil,  5 , 5 , 1000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();
