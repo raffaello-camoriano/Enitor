@@ -51,17 +51,11 @@ classdef nrls < algorithm
             Ytrain = Ytr(trainIdx,:);
             Xval = Xtr(valIdx,:);
             Yval = Ytr(valIdx,:);
-            
-            % Distance matrices computation
-            
-            % TrainVal kernel
-            kernelVal = obj.kernelType(Xval,Xtrain);
 
             % Train kernel
-            kernel = obj.kernelType(Xtrain,Xtrain, obj.numMapParGuesses);
-            obj.kerParGuesses = kernel.rng;
+            nyMapper = obj.mapType(Xtrain,Xtrain, obj.numMapParGuesses);
+            obj.kerParGuesses = nyMapper.rng;
             obj.filterParGuesses = [];
-            
             
             valM = inf;     % Keeps track of the lowest validation error
             
@@ -69,16 +63,19 @@ classdef nrls < algorithm
 %             trainPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
 %             valPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
 
-            while kernel.next()
+            while nyMapper.next()
                 
                 % Compute kernel according to current hyperparameters
-                kernel.compute();
-                kernelVal.compute(kernel.currentPar);
+                nyMapper.compute();
+                                        
+                % Compute Kvm TrainVal kernel
+                kernelVal = nyMapper.kernelType(Xval,nyMapper.Xs);
+                kernelVal.compute(nyMapper.currentPar(2));
                 
                 % Normalization factors
                 numSamples = size(Xtrain , 1);
                 
-                filter = obj.filterType( kernel.K, Ytrain , numSamples , obj.numFilterParGuesses);
+                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain , numSamples , obj.numFilterParGuesses, nyMapper.W);
                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
 
                 while filter.next()
@@ -99,7 +96,7 @@ classdef nrls < algorithm
                     if valPerf < valM
                         
                         % Update best kernel parameter combination
-                        obj.kerParStar = kernel.currentPar;
+                        obj.kerParStar = nyMapper.currentPar;
                         
                         %Update best filter parameter
                         obj.filterParStar = filter.currentPar;
@@ -138,14 +135,14 @@ classdef nrls < algorithm
                 
                 % Recompute kernel on the whole training set with the best
                 % kernel parameter
-                kernel.init(Xtr, Xtr);
-                kernel.compute(obj.kerParStar);
+                nyMapper.init(Xtr, Xtr);
+                nyMapper.compute(obj.kerParStar);
                 
                 % Recompute filter on the whole training set with the best
                 % filter parameter
                 numSamples = size(Xtr , 1);
 
-                filter.init( kernel.K , Ytr , numSamples);
+                filter.init( nyMapper.K , Ytr , numSamples);
                 filter.compute(obj.filterParStar);
                 
                 % Update internal model samples matrix

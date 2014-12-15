@@ -16,10 +16,6 @@ classdef krls < algorithm
         filterParGuesses
         numFilterParGuesses        
         
-%         trainIdx    % Training indexes used internally in the actually performed training
-%         valIdx      % Validation indexes used internally in the actually
-%         performed validation
-        
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
     end
@@ -49,9 +45,7 @@ classdef krls < algorithm
             Ytrain = Ytr(trainIdx,:);
             Xval = Xtr(valIdx,:);
             Yval = Ytr(valIdx,:);
-            
-            % Distance matrices computation
-            
+                        
             % TrainVal kernel
             kernelVal = obj.kernelType(Xval,Xtrain);
 

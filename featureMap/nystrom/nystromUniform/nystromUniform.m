@@ -6,6 +6,7 @@ classdef nystromUniform < nystrom
         numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
         
+        kernelType      % Type of approximated kernel
         sampledPoints   % Current sampled columns
         SqDistMat       % Squared distances matrix
         Xs              % Sampled points
@@ -18,6 +19,8 @@ classdef nystromUniform < nystrom
         function obj = nystromUniform( X , numMapParGuesses , numKerParRangeSamples , maxRank )
             
             obj.init( X , numMapParGuesses , numKerParRangeSamples , maxRank );
+            
+            obj.kernelType = @gaussianKernel;
         end
         
         % Initialization function
