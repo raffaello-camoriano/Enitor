@@ -13,20 +13,23 @@ classdef tikhonov < filter
         currentParIdx   % Current parameter combination indexes map container
         currentPar      % Current parameter combination map container
         
+        M               % sz * sz matrix to be multiplied by lambda. M = speye(sz) by default
     end
     
     methods
         
-        function obj = tikhonov( K , Y , numSamples , numGuesses )
+        function obj = tikhonov( K , Y , numSamples , numGuesses , M)
             
-            if nargin > 3
+            if nargin > 4
+                obj.init( K , Y , numSamples , numGuesses , M );            
+            elseif nargin > 3
                 obj.init( K , Y , numSamples , numGuesses );
             elseif nargin > 2
                 obj.init(  K , Y , numSamples );
             end
         end
         
-        function init(obj , K , Y , numSamples , numGuesses)
+        function init(obj , K , Y , numSamples , numGuesses , M)
                 
             % Get number of samples
             obj.n = numSamples;
@@ -40,7 +43,7 @@ classdef tikhonov < filter
             T = [];
             obj.Y0 = obj.U' * Y;
 
-            if( nargin == 5 )
+            if( nargin >= 5 )
                 if numGuesses > 0
                     obj.numGuesses = numGuesses;
                 else
@@ -49,6 +52,12 @@ classdef tikhonov < filter
                 obj.range();    % Compute range
                 obj.currentParIdx = 0;
                 obj.currentPar = [];
+            end
+            
+            if nargin == 6
+                obj.M = M;
+            else
+                obj.M = speye(obj.sz);
             end
         end
         
@@ -108,7 +117,7 @@ classdef tikhonov < filter
 
             if( nargin > 1 )
                 
-                tmp1 = obj.T +  filterPar(1) * obj.n * speye(obj.sz);
+                tmp1 = obj.T +  filterPar(1) * obj.n * obj.M;
 
                 % Invert
                 %tic
@@ -125,7 +134,7 @@ classdef tikhonov < filter
                 disp('Filter will be computed according to the internal current hyperparameter(s)');
                 obj.currentPar
 
-                tmp1 = obj.T +  obj.currentPar(1) * obj.n * speye(obj.sz);
+                tmp1 = obj.T +  obj.currentPar(1) * obj.n * obj.M;
 
                 % Invert
                 %tic
