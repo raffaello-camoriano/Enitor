@@ -62,10 +62,10 @@ classdef randomFeaturesGaussian < randomFeatures
             samp = obj.X(rndIDX(1:nSample), :);   
             
             % Compute squared distances  vector (D)
-            D = zeros(1,obj.numKerParRangeSamples);
-            for i = 1:2:obj.numKerParRangeSamples
-
-                D(i) = sum((samp(i,:) - samp(i+1,:)).^2);
+            numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
+            D = zeros(1 , numDistMeas);
+            for i = 1:numDistMeas
+                D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
             end
             D = sort(D);
 
