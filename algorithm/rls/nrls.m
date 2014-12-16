@@ -135,9 +135,7 @@ classdef nrls < algorithm
             display('Best filter hyperparameter(s):')
             obj.filterParStar
             
-            
             %nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank);
-
                         
             if (nargin > 4) && (recompute)
                 
@@ -158,7 +156,7 @@ classdef nrls < algorithm
                 
                 % Update coefficients vector
                 obj.c = filter.weights;
-            end        
+            end
         end
         
         function Ypred = test( obj , Xte )
