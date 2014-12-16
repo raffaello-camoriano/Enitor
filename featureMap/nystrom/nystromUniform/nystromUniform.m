@@ -60,10 +60,10 @@ classdef nystromUniform < nystrom
             samp = obj.X(rndIDX(1:nSample), :);   
             
             % Compute squared distances  vector (D)
-            D = zeros(1,obj.numKerParRangeSamples);
-            for i = 1:2:obj.numKerParRangeSamples
-
-                D(i) = sum((samp(i,:) - samp(i+1,:)).^2);
+            numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
+            D = zeros(1 , numDistMeas);
+            for i = 1:numDistMeas
+                D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
             end
             D = sort(D);
 
@@ -96,7 +96,7 @@ classdef nystromUniform < nystrom
             Sx2 = sum( X2.*X2 , 2)';
             Sx1x2 = X1 * X2';
             
-            obj.SqDistMat = repmat(Sx1 , 1 , obj.m) -2*Sx1x2 + repmat(Sx2 , obj.n , 1);
+            obj.SqDistMat = repmat(Sx1 , 1 , size(X2,1)) -2*Sx1x2 + repmat(Sx2 , size(X1,1) , 1);
         
         end
         
@@ -127,10 +127,10 @@ classdef nystromUniform < nystrom
             obj.Xs = obj.X(obj.sampledPoints,:);
             
             % Compute C and W
-            obj.computeSqDistMat(X , obj.Xs);
-            obj.C = exp(-obj.SqDistMat / (2 * obj.chosenPar(2)^2));
-            obj.SqDistMat = [];     % Erase square distance matrix
-            obj.W = obj.C(obj.sampledCols , :);
+            obj.computeSqDistMat(obj.X , obj.Xs);
+            obj.C = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
+            %obj.SqDistMat = [];     % Erase square distance matrix
+            obj.W = obj.C(obj.sampledPoints , :);
         end
         
         % returns true if the next parameter combination is available and

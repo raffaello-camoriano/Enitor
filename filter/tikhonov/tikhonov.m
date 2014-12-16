@@ -3,7 +3,8 @@ classdef tikhonov < filter
     %   Detailed explanation goes here
 
     properties
-        U, T, Y0
+        U, Y0
+        T
         weights
         n               % Number of samples
         sz              % Size of the K or C matrix

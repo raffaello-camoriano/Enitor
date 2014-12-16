@@ -6,8 +6,10 @@ classdef nrls < algorithm
         
         % Kernel props
         mapType
+        kernelType
+        numKerParRangeSamples
         kerParGuesses
-        kerParStar
+        mapParStar
         numMapParGuesses
         maxRank
 
@@ -27,13 +29,14 @@ classdef nrls < algorithm
     
     methods
         
-        function obj = krls(kerTy, filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
-            init( obj , kerTy, filtTy ,  numMapParGuesses , numFilterParGuesses , maxRank)
+        function obj = nrls(mapType, numKerParRangeSamples, filterType,  numMapParGuesses , numFilterParGuesses , maxRank)
+            init( obj , mapType, numKerParRangeSamples, filterType ,  numMapParGuesses , numFilterParGuesses , maxRank)
         end
         
-        function init( obj , kerTy, filtTy , numMapParGuesses , numFilterParGuesses , maxRank)
-            obj.kernelType = kerTy;
-            obj.filterType = filtTy;
+        function init( obj , mapType, numKerParRangeSamples , filterType , numMapParGuesses , numFilterParGuesses , maxRank)
+            obj.mapType = mapType;
+            obj.numKerParRangeSamples = numKerParRangeSamples;
+            obj.filterType = filterType;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
             obj.maxRank = maxRank;
@@ -53,7 +56,7 @@ classdef nrls < algorithm
             Yval = Ytr(valIdx,:);
 
             % Train kernel
-            nyMapper = obj.mapType(Xtrain,Xtrain, obj.numMapParGuesses);
+            nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank);
             obj.kerParGuesses = nyMapper.rng;
             obj.filterParGuesses = [];
             
@@ -69,13 +72,14 @@ classdef nrls < algorithm
                 nyMapper.compute();
                                         
                 % Compute Kvm TrainVal kernel
+                obj.kernelType = nyMapper.kernelType;
                 kernelVal = nyMapper.kernelType(Xval,nyMapper.Xs);
                 kernelVal.compute(nyMapper.currentPar(2));
                 
                 % Normalization factors
                 numSamples = size(Xtrain , 1);
                 
-                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain , numSamples , obj.numFilterParGuesses, nyMapper.W);
+                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W);
                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
 
                 while filter.next()
@@ -96,7 +100,7 @@ classdef nrls < algorithm
                     if valPerf < valM
                         
                         % Update best kernel parameter combination
-                        obj.kerParStar = nyMapper.currentPar;
+                        obj.mapParStar = nyMapper.currentPar;
                         
                         %Update best filter parameter
                         obj.filterParStar = filter.currentPar;
@@ -107,7 +111,7 @@ classdef nrls < algorithm
                         if ~recompute
                             
                             % Update internal model samples matrix
-                            obj.Xmodel = Xtrain;
+                            obj.Xmodel = nyMapper.Xs;
                             
                             % Update coefficients vector
                             obj.c = filter.weights;
@@ -124,13 +128,17 @@ classdef nrls < algorithm
 %             obj.filterParStar = ...  
             
             % Print best kernel hyperparameter(s)
-            display('Best kernel hyperparameter(s):')
-            obj.kerParStar
+            display('Best mapper hyperparameter(s):')
+            obj.mapParStar
 
             % Print best filter hyperparameter(s)
             display('Best filter hyperparameter(s):')
             obj.filterParStar
             
+            
+            %nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank);
+
+                        
             if (nargin > 4) && (recompute)
                 
                 % Recompute kernel on the whole training set with the best
@@ -146,7 +154,7 @@ classdef nrls < algorithm
                 filter.compute(obj.filterParStar);
                 
                 % Update internal model samples matrix
-                obj.Xmodel = Xtr;
+                obj.Xmodel = nyMapper.Xs;
                 
                 % Update coefficients vector
                 obj.c = filter.weights;
@@ -155,9 +163,15 @@ classdef nrls < algorithm
         
         function Ypred = test( obj , Xte )
 
+                                                    
+%                 % Compute Kvm TrainVal kernel
+%                 kernelVal = nyMapper.kernelType(Xval,nyMapper.Xs);
+%                 kernelVal.compute(nyMapper.currentPar(2));
+                
             % Get kernel type and instantiate train-test kernel (including sigma)
+%             kernelTest = nyMapper.kernelType(Xte , obj.Xmodel);
             kernelTest = obj.kernelType(Xte , obj.Xmodel);
-            kernelTest.compute(obj.kerParStar);
+            kernelTest.compute(obj.mapParStar(2));
             
             % Compute scores
             Ypred = kernelTest.K * obj.c;

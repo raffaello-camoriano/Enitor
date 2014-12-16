@@ -9,9 +9,10 @@ classdef gaussianKernel < kernel
         currentParIdx   % Current parameter combination indexes map container
         currentPar      % Current parameter combination map container
         
-        SqDistMat
-        n
-        m
+        n               % Number of X1 samples
+        m               % Number of X2 samples
+        SqDistMat       % n-by-m squared distances matrix 
+
     end
     
     methods

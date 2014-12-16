@@ -98,7 +98,8 @@ classdef experiment < handle
                 profile -memory on
             end
 
-                obj.algo.train( Xtr , Ytr, obj.performanceMeasure , true , 0.2);
+%                 obj.algo.train( Xtr , Ytr, obj.performanceMeasure , true , 0.2);
+                obj.algo.train( Xtr , Ytr, obj.performanceMeasure , false , 0.2);
                 
             if obj.measureTime
                 obj.time.train = toc;
