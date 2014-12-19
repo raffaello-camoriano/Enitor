@@ -14,32 +14,43 @@ classdef Adult < dataset
 %             attrNames = textscan(fid, '%s');
 %             fclose(fid);
             
-            trainSet = generate_adult_train();
-        
-            gnd = [];
-                
-            obj.nTr = nTr;
-            obj.nTrTot = size(trainSet,1);
-            
-            obj.X = double(obj.X);
-            obj.X = obj.scale(obj.X);
-            
-            obj.nTe = nTe;
-            obj.nTeTot = size(trainSet,1);
-            obj.n = size(obj.X , 1);
 
-            obj.d = size(obj.X , 2);
-            obj.t = 10;
+            warning('This implementation of the Adult dataset considers all the available attributes, (d = 123)');
+            obj.d = 123;        % Fixed size for the full dataset
+            data = load('adult.mat');
+            
+            % Fix dimensionality issues
+            tesz = size(data.testing_vectors,2);
+            if tesz < obj.d
+                data.testing_vectors = [data.testing_vectors , zeros(size(data.testing_vectors,1), obj.d - tesz)];
+            end
+            
+            trsz = size(data.training_vectors,2);
+            if trsz < obj.d
+                data.testing_vectors = [data.testing_vectors , zeros(size(data.testing_vectors,1), obj.d - trsz)];
+            end            
+            
+            obj.X = [data.training_vectors ; data.testing_vectors];
+            obj.Y = [data.training_labels ; data.testing_labels];
+                            
+            obj.nTrTot = size(data.training_labels,1);
+            obj.nTeTot = size(data.testing_labels,1);
+            obj.n = size(obj.Y , 1);
+
+            obj.t = 2;
                 
             if nargin == 0
 
+                obj.nTr = obj.nTrTot;
+                obj.nTe = obj.nTeTot;
+                
                 obj.trainIdx = 1:obj.nTr;
                 obj.testIdx = obj.nTr + 1 : obj.nTr + obj.nTe;
                 
             elseif (nargin >1)
                 
                 if (nTr < 2) || (nTe < 1) ||(nTr > obj.nTrTot) || (nTe > obj.nTeTot)
-                    error('(nTr > obj.nTrTot) || (nTe > obj.nTeTot)');
+                    error('(nTr < 2) || (nTe < 1) ||(nTr > obj.nTrTot) || (nTe > obj.nTeTot)');
                 end
                 
                 obj.nTr = nTr;
@@ -63,16 +74,10 @@ classdef Adult < dataset
                 obj.outputFormat = 'plusMinusOne';
             end
             
-            if strcmp(obj.outputFormat, 'zeroOne')
-                obj.Y = zeros(obj.n,obj.t);
-            elseif strcmp(obj.outputFormat, 'plusMinusOne')
-                obj.Y = -1 * ones(obj.n,obj.t);
+            if strcmp(obj.outputFormat, 'plusMinusOne')
+                obj.Y = obj.Y*2-1;
             elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
-                obj.Y = -1/(obj.t - 1) * ones(obj.n,obj.t);
-            end
-               
-            for i = 1:obj.n
-                obj.Y(i , gnd(i) + 1) = 1;
+                obj.Y = obj.Y*2-1;
             end
             
             % Set problem type
@@ -110,8 +115,9 @@ classdef Adult < dataset
             end
             
             for i = 1:size(Ypred,1)
-                [~,maxIdx] = max(Yscores(i,:));
-                Ypred(i,maxIdx) = 1;
+                if Yscores(i) > 0
+                    Ypred(i) = 1;
+                end
             end
         end
             
@@ -128,22 +134,12 @@ classdef Adult < dataset
             numCorrect = 0;
             
             for i = 1:size(Y,1)
-                if sum(Y(i,:) == Ypred(i,:)) == size(Y,2)
+                if Y(i) == Ypred(i)
                     numCorrect = numCorrect +1;
                 end
             end
             
             perf = 1 - (numCorrect / size(Y,1));
-        end
-        
-        % Scales matrix M between -1 and 1
-        function Ms = scale(obj , M)
-            
-            mx = max(max(M));
-            mn = min(min(M));
-            
-            Ms = ((M + abs(mn)) / (mx - mn)) * 2 - 1;
-            
         end
         
         function getTrainSet(obj)

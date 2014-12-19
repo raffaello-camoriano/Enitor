@@ -39,7 +39,7 @@ classdef tikhonov < filter
             obj.sz = size(K,1);
 
             % Compute Hessenberger decomposition
-            [obj.U, T] = hess(K);
+            [obj.U, T] = hess(full(K));
             obj.T = sparse(T);  % Store as sparse matrix (it is tridiagonal)
             T = [];
             obj.Y0 = obj.U' * Y;

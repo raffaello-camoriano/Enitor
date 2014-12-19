@@ -10,17 +10,17 @@ mkdir(resdir);
 %% Dataset initialization
 
 % Load full dataset
-%ds = icubdyn;
+%ds = Adult;
 
 % Load small dataset
-ds = Adult(10000,10000,'plusMinusOne');
+ds = Adult(5000,16282,'plusMinusOne');
 
 %% Experiment 1 setup, Gaussian kernel
 
 % ker = @gaussianKernel;
 % fil = @tikhonov;
 % 
-% alg = krls(ker, fil,  5, 5);
+% alg = krls(ker, fil,  10, 10);
 % 
 % exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 % 
@@ -32,7 +32,7 @@ ds = Adult(10000,10000,'plusMinusOne');
 % map = @randomFeaturesGaussian;
 % fil = @tikhonov;
 % 
-% alg = rfrls(map , 1000 , fil,  5 , 5 , 2000);
+% alg = rfrls(map , 1000 , fil,  10 , 10 , 5000);
 % 
 % exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 % exp.run();
@@ -44,7 +44,7 @@ ds = Adult(10000,10000,'plusMinusOne');
 map = @nystromUniform;
 fil = @tikhonov;
 
-alg = nrls(map , 1000 , fil,  5 , 5 , 1000);
+alg = nrls(map , 1000 , fil,  5 , 5 , 3000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();

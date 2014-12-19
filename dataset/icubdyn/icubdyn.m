@@ -6,7 +6,7 @@ classdef icubdyn < dataset
    end
    
    methods
-        function obj = icubdyn(nTr , nTe, outputFormat)
+        function obj = icubdyn(nTr , nTe)
             
             data = load('icubdyn.dat');
             
@@ -24,7 +24,7 @@ classdef icubdyn < dataset
             
             obj.n = size(obj.X , 1);
             obj.d = size(obj.X , 2);
-            obj.t = 10;
+%             obj.t = 10;
                 
             if nargin < 2
 
