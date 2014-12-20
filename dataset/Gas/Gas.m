@@ -15,27 +15,28 @@ classdef Gas < dataset
                 error('Please specify a supported batch number: 2 or 3');
             end
             
-            % Assemble file name
-            fName = strcat('batch',num2str(obj.batchNumber),'.dat');
+            % Load training set
+            tmp = dlmread('money-fx.trn', ':');
             
-            data = dlmread(fName, ':');
+            gnd = tmp(:,1);
+            obj.X = tmp(:, 3:2:end);
             
-            gnd = data(:,1);
-            obj.X = data(:, 3:2:end);
-            data = [];
+            obj.nTrTot = size(obj.X,1);
+            obj.d = size(obj.X,2);
+            obj.t = 2;
+            
+            % Load test set
+            tmp = dlmread('money-fx.tst', ':');
+            
+            gnd = [gnd ; tmp(:,1)];
+            obj.X = [obj.X ; tmp(:, 3:2:end)];            
             
             % Scale columns between 0 and 1
             obj.X = obj.scale(obj.X);
 
             obj.n = size(obj.X , 1);
-
-            %obj.nTrTot = size(obj.X,1);
-            
-            %obj.nTeTot = obj.nTe;
-            
-            obj.d = size(obj.X , 2);
-            obj.t = 6;
-                
+            obj.nTeTot = obj.n - obj.nTrTot;            
+                            
             if nargin == 0
 
                 obj.trainIdx = 1:obj.nTr;

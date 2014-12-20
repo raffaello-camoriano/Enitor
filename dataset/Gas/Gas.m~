@@ -15,36 +15,32 @@ classdef Gas < dataset
                 error('Please specify a supported batch number: 2 or 3');
             end
             
-            % Assemble file name
-            fName = strcat('batch',num2str(obj.batchNumber),'.dat');
+            % Load training set
+            tmp = dlmread('money-fx.trn', ':');
             
-            data = csvread(fName);
-            data = dlmread(fName, ':');
-                        
-            for i = 0:9
-                currentFieldStr = strcat('train' , num2str(i));
-                obj.X = [ obj.X ; data.(currentFieldStr) ];
-                gnd = [gnd ; i * ones(size(data.(currentFieldStr),1) , 1) ];
-            end
-                
-            obj.nTr = size(obj.X,1);
-            obj.nTrTot = obj.nTr;
+            gnd = tmp(:,1);
+            obj.X = tmp(:, 3:2:end);
             
-            for i = 0:9
-                currentFieldStr = strcat('test' , num2str(i));
-                obj.X = [ obj.X ; data.(currentFieldStr) ];
-                gnd = [gnd ; i * ones(size(data.(currentFieldStr),1) , 1) ];
-            end
+            obj.nTrTot = size(obj.X,1);
+            obj.d = size(obj.X,2);
+            obj.t = 2;
             
-            obj.X = double(obj.X);
+            % Load test set
+            tmp = dlmread('money-fx.tst', ':');
+            
+            gnd = [gnd ; tmp(:,1)];
+            obj.X = [obj.X ; tmp(:, 3:2:end)];            
+            
+            % Scale columns between 0 and 1
             obj.X = obj.scale(obj.X);
-            
+
             obj.n = size(obj.X , 1);
-            obj.nTe = obj.n - obj.nTr;
-            obj.nTeTot = obj.nTe;
+
+            %obj.nTrTot = size(obj.X,1);
+            
             
             obj.d = size(obj.X , 2);
-            obj.t = 10;
+            obj.t = 6;
                 
             if nargin == 0
 
@@ -53,22 +49,20 @@ classdef Gas < dataset
                 
             elseif (nargin >1)
                 
-                if (nTr < 2) || (nTe < 1) ||(nTr > obj.nTrTot) || (nTe > obj.nTeTot)
-                    error('(nTr > obj.nTrTot) || (nTe > obj.nTeTot)');
+                if (nTr < 2) || (nTe < 1) ||(nTr + nTe > obj.n)
+                    error('(nTr < 2) || (nTe < 1) ||(nTr + nTe > obj.n)');
                 end
                 
                 obj.nTr = nTr;
                 obj.nTe = nTe;
                 
-                tmp = randperm( obj.nTrTot);                            
+                tmp = randperm(obj.n);                            
                 obj.trainIdx = tmp(1:obj.nTr);          
-                
-                tmp = obj.nTrTot + randperm( obj.nTeTot );
-                obj.testIdx = tmp(1:obj.nTe);
+                obj.testIdx = tmp(obj.nTr+1:obj.nTr+obj.nTe);
             end
             
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+%             obj.shuffleTrainIdx();
+%             obj.shuffleTestIdx();
             
             % Reformat output columns
             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
@@ -87,7 +81,7 @@ classdef Gas < dataset
             end
                
             for i = 1:obj.n
-                obj.Y(i , gnd(i) + 1) = 1;
+                obj.Y(i , gnd(i)) = 1;
             end
             
             % Set problem type
