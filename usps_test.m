@@ -39,16 +39,16 @@ ds = USPS(7291,2007,'plusMinusOne');
 
 %% Experiment 1 setup, Gaussian kernel
 
-ker = @gaussianKernel;
-fil = @tikhonov;
-
-alg = krls(ker, fil,  5, 5);
-
-exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-
-exp.run();
-
-exp.result
+% ker = @gaussianKernel;
+% fil = @tikhonov;
+% 
+% alg = krls(ker, fil,  5, 5);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% 
+% exp.run();
+% 
+% exp.result
 
 %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
 
@@ -61,3 +61,17 @@ exp.result
 % exp.run();
 % 
 % exp.result
+
+%% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
+
+map = @nystromUniform;
+fil = @tikhonov;
+
+alg = nrls(map , 1000 , fil,  10 , 10 , 2000);
+
+exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+exp.run();
+
+exp.result
+exp.result.mapParStar
+exp.result.filterParStar

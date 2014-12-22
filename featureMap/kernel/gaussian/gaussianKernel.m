@@ -86,7 +86,7 @@ classdef gaussianKernel < kernel
             obj.rng = num2cell(tmp);
         end
         
-        % Computes the kernel matrix SqDistMat based on SqDistMat and
+        % Computes the kernel matrix K based on SqDistMat and
         % kernel parameters
         function compute(obj , kerPar)
             if( nargin > 1 )

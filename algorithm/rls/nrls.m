@@ -57,7 +57,7 @@ classdef nrls < algorithm
 
             % Train kernel
             nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank);
-            obj.kerParGuesses = nyMapper.rng;
+            obj.kerParGuesses = nyMapper.rng;   % Warning: rename to mapParGuesses
             obj.filterParGuesses = [];
             
             valM = inf;     % Keeps track of the lowest validation error
@@ -73,11 +73,11 @@ classdef nrls < algorithm
                                         
                 % Compute Kvm TrainVal kernel
                 obj.kernelType = nyMapper.kernelType;
-                kernelVal = nyMapper.kernelType(Xval,nyMapper.Xs);
+                kernelVal = obj.kernelType(Xval,nyMapper.Xs);
                 kernelVal.compute(nyMapper.currentPar(2));
                 
                 % Normalization factors
-                numSamples = size(Xtrain , 1);
+                numSamples = nyMapper.currentPar(1);
                 
                 filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W);
                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];

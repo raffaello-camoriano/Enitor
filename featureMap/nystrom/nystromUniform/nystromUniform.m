@@ -1,6 +1,14 @@
 classdef nystromUniform < nystrom
-    %RANDOMFEATURES Summary of this class goes here
-    %   Detailed explanation goes here
+    %NYSTROMUNIFORM Implementation of a Nystrom approximation of the Gram
+    %matrix.
+    %
+    % Input parameters:
+    % X: n * d training matrix
+    % numMapParGuesses: Number of guesses for the hyperparameters of the
+    % mapper
+    % numKerParRangeSamples: Number of samples used for estimating the
+    % optimal range of the kernel hyperparameter
+    % maxRank: Maximum rank of the Nystrom approximation
     
     properties
         numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
@@ -20,6 +28,7 @@ classdef nystromUniform < nystrom
             
             obj.init( X , numMapParGuesses , numKerParRangeSamples , maxRank );
             
+            warning('Kernel type set by default to "gaussian"');
             obj.kernelType = @gaussianKernel;
         end
         
@@ -42,6 +51,7 @@ classdef nystromUniform < nystrom
             %% Range of the number of sampled columns
             
             tmpl = round(linspace(obj.maxRank/10, obj.maxRank , obj.numMapParGuesses));   
+            %warning('The rank of the approximated matrix is fixed to maxRank');
             %tmpl = obj.maxRank;
             
             %% Approximated kernel parameter range
@@ -121,7 +131,7 @@ classdef nystromUniform < nystrom
                 
             end
 
-            % Uniformly sample points
+            % Uniformly sample points (rows of X)
             
             obj.sampledPoints = randi(size(obj.X,1),1,chosenPar(1));
             obj.Xs = obj.X(obj.sampledPoints,:);
@@ -129,7 +139,7 @@ classdef nystromUniform < nystrom
             % Compute C and W
             obj.computeSqDistMat(obj.X , obj.Xs);
             obj.C = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
-            %obj.SqDistMat = [];     % Erase square distance matrix
+            obj.SqDistMat = [];     % Erase square distance matrix
             obj.W = obj.C(obj.sampledPoints , :);
         end
         
