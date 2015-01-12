@@ -13,19 +13,19 @@ mkdir(resdir);
 %ds = Adult;
 
 % Load small dataset
-ds = Adult(5000,16282,'plusMinusOne');
+ds = Adult(7000,16282,'plusMinusOne');
 
 %% Experiment 1 setup, Gaussian kernel
 
-% ker = @gaussianKernel;
-% fil = @tikhonov;
-% 
-% alg = krls(ker, fil,  10, 10);
-% 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-% 
-% exp.run();
-% exp.result
+ker = @gaussianKernel;
+fil = @tikhonov;
+
+alg = krls(ker, fil,  25, 25);
+
+exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+
+exp.run();
+exp.result
 
 %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
 
@@ -44,7 +44,7 @@ ds = Adult(5000,16282,'plusMinusOne');
 map = @nystromUniform;
 fil = @tikhonov;
 
-alg = nrls(map , 1000 , fil,  5 , 5 , 3000);
+alg = nrls(map , 1000 , fil,  25 , 25 , 2000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();

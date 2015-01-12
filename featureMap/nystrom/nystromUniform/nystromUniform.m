@@ -50,9 +50,9 @@ classdef nystromUniform < nystrom
         function obj = range(obj)
             %% Range of the number of sampled columns
             
-            tmpl = round(linspace(obj.maxRank/10, obj.maxRank , obj.numMapParGuesses));   
+            %tmpl = round(linspace(obj.maxRank/10, obj.maxRank , obj.numMapParGuesses));   
             %warning('The rank of the approximated matrix is fixed to maxRank');
-            %tmpl = obj.maxRank;
+            tmpl = obj.maxRank;
             
             %% Approximated kernel parameter range
             

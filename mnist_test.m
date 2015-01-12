@@ -13,50 +13,42 @@ mkdir(resdir);
 %ds = MNIST;
 
 % Load small dataset
-ds = MNIST(3000,10000,'plusMinusOne');
-
-% dataset.n
-% dataset.nTr
-% dataset.nTe
-% dataset.d
-% dataset.t
-% 
-% dataset.X
-% dataset.Y
-% 
-% dataset.trainIdx
-% dataset.testIdx
-
-% Shuffled training set indexes
-% dataset.shuffledTrainIdx      
-% dataset.shuffleTrainIdx();
-% dataset.shuffledTrainIdx
-
-% Perf
-% Y = (1:10)';
-% Ypred = (10:-1:1)';
-% dataset.performanceMeasure(Y , Ypred)l;
+ds = MNIST(7000,10000,'plusMinusOne');
 
 %% Experiment 1 setup, Gaussian kernel
 
-% ker = @gaussianKernel;
-% fil = @tikhonov;
-% 
-% alg = krls(ker, fil,  5, 5);
-% 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-% 
-% exp.run();
-% exp.result
+ker = @gaussianKernel;
+fil = @tikhonov;
+
+alg = krls(ker, fil,  25, 25);
+
+exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+
+exp.run();
+exp.result
 
  %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
 
-map = @randomFeaturesGaussian;
+% map = @randomFeaturesGaussian;
+% fil = @tikhonov;
+% 
+% alg = rfrls(map , 1000 , fil,  5 , 5);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp.run();
+% 
+% exp.result
+
+%% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
+
+map = @nystromUniform;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  5 , 5);
+alg = nrls(map , 1000 , fil,  25 , 25 , 2000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();
 
 exp.result
+exp.result.mapParStar
+exp.result.filterParStar

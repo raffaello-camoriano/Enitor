@@ -13,16 +13,16 @@ mkdir(resdir);
 %ds = pumadyn;
 
 % Load small dataset
-ds = pumadyn(2000,4096, 32 , 'n' , 'h');
+ds = pumadyn(4096,4096, 32 , 'n' , 'm');
 
 %% Experiment 1 setup, Gaussian kernel
 
 ker = @gaussianKernel;
 fil = @tikhonov;
 
-alg = krls(ker, fil,  5, 5);
+alg = krls(ker, fil,  25, 25);
 
-exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+exp = experiment(alg , ds , 1 , true , true , 'nm' , resdir);
 
 exp.run();
 exp.result
@@ -34,19 +34,19 @@ exp.result
 % 
 % alg = rfrls(map , 1000 , fil,  5 , 5 , 2000);
 % 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp = experiment(alg , ds , 1 , true , true , 'fh' , resdir);
 % exp.run();
 % 
 % exp.result
 
 %% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
 
-% map = @nystromUniform;
-% fil = @tikhonov;
-% 
-% alg = nrls(map , 1000 , fil,  5 , 5 , 1000);
-% 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-% exp.run();
-% 
-% exp.result
+map = @nystromUniform;
+fil = @tikhonov;
+
+alg = nrls(map , 1000 , fil,  25 , 25 , 1000);
+
+exp = experiment(alg , ds , 1 , true , true , 'nm' , resdir);
+exp.run();
+
+exp.result

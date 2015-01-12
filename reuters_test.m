@@ -17,37 +17,37 @@ ds = ReutersMoneyFX;
 
 
 %% Experiment 1 setup, Gaussian kernel
-% 
-% ker = @gaussianKernel;
-% fil = @tikhonov;
-% 
-% alg = krls(ker, fil,  20, 20);
-% 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-% 
-% exp.run();
-% exp.result
 
- %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
-
-map = @randomFeaturesGaussian;
+ker = @gaussianKernel;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  5 , 5 , 3000);
+alg = krls(ker, fil,  25, 25);
+
+exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+
+exp.run();
+exp.result
+
+ %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
+% 
+% map = @randomFeaturesGaussian;
+% fil = @tikhonov;
+% 
+% alg = rfrls(map , 1000 , fil,  5 , 5 , 3000);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp.run();
+% 
+% exp.result
+
+%% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
+
+map = @nystromUniform;
+fil = @tikhonov;
+
+alg = nrls(map , 1000 , fil,  25 , 25 , 2000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();
 
 exp.result
-
-%% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
-% 
-% map = @nystromUniform;
-% fil = @tikhonov;
-% 
-% alg = nrls(map , 800 , fil,  10 , 10 , 800);
-% 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-% exp.run();
-% 
-% exp.result
