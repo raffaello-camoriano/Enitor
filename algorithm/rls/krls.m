@@ -58,9 +58,10 @@ classdef krls < algorithm
             valM = inf;     % Keeps track of the lowest validation error
             
             % Full matrices for performance storage
-%             trainPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
-%             valPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
+            trainPerformance = zeros(1, 25);
+            valPerformance = [];
 
+            
             while kernel.next()
                 
                 % Compute kernel according to current hyperparameters
@@ -78,16 +79,18 @@ classdef krls < algorithm
                     % Compute filter according to current hyperparameters
                     filter.compute();
 
-                    % Populate full performance matrices
-                    %trainPerformance(i,j) = perfm( kernel.K * filter.weights, Ytrain);
-                    %valPerformance(i,j) = perfm( kernelVal.K * filter.weights, Yval);
-                    
+
                     % Compute predictions matrix
                     YvalPred = kernelVal.K * filter.weights;
                     
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );
                     
+                    
+                    % Populate full performance matrices
+%                     trainPerformance(i,j) = performanceMeasure( kernel.K * filter.weights, Ytrain);
+                    valPerformance = [valPerformance valPerf];
+                                 
                     if valPerf < valM
                         
                         % Update best kernel parameter combination
@@ -110,6 +113,12 @@ classdef krls < algorithm
                     end
                 end
             end
+            
+            
+            % Plot errors
+            semilogx(cell2mat(filter.rng),  valPerformance);            
+            
+            
             
             % Find best parameters from validation performance matrix
             

@@ -17,10 +17,11 @@ ds = MNIST(7000,10000,'plusMinusOne');
 
 %% Experiment 1 setup, Gaussian kernel
 
-ker = @gaussianKernel;
+% ker = @gaussianKernel;
+ker = @laplaceKernel;
 fil = @tikhonov;
 
-alg = krls(ker, fil,  25, 25);
+alg = krls(ker, fil,  1, 25);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 
@@ -40,15 +41,15 @@ exp.result
 % exp.result
 
 %% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
-
-map = @nystromUniform;
-fil = @tikhonov;
-
-alg = nrls(map , 1000 , fil,  25 , 25 , 2000);
-
-exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-exp.run();
-
-exp.result
-exp.result.mapParStar
-exp.result.filterParStar
+% 
+% map = @nystromUniform;
+% fil = @tikhonov;
+% 
+% alg = nrls(map , 1000 , fil,  25 , 25 , 2000);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp.run();
+% 
+% exp.result
+% exp.result.mapParStar
+% exp.result.filterParStar

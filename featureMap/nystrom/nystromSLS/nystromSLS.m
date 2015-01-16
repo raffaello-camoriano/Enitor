@@ -29,16 +29,6 @@ classdef nystromSLS < nystrom
             obj.currentPar = [];
         end
         
-        function mappedSample = map(obj , inputSample)
-            
-            % [cos sin] mapping
-%             V = inputSample * obj.omega;
-%             mappedSample = sqrt( 2 / obj.currentPar(1) ) * [cos(V) , sin(V)];
-            
-            % cos(wx+b) mapping
-            V =  inputSample * obj.omega + repmat(obj.b , size(inputSample,1) , 1);            
-            mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
-        end
         
         function obj = range(obj)
             %% Range of the number of Random Fourier Features

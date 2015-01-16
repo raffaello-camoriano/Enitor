@@ -17,15 +17,28 @@ ds = Adult(7000,16282,'plusMinusOne');
 
 %% Experiment 1 setup, Gaussian kernel
 
-ker = @gaussianKernel;
-fil = @tikhonov;
+% ker = @gaussianKernel;
+% fil = @tikhonov;
+% 
+% alg = krls(ker, fil,  25, 25);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% 
+% exp.run();
+% exp.result
 
-alg = krls(ker, fil,  25, 25);
+%% Experiment 1 setup, laplace kernel
 
-exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-
-exp.run();
-exp.result
+% ker = @gaussianKernel;
+% ker = @laplaceKernel;
+% fil = @tikhonov;
+% 
+% alg = krls(ker, fil,  1, 25);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% 
+% exp.run();
+% exp.result
 
 %% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
 
@@ -40,13 +53,27 @@ exp.result
 % exp.result
 
 %% Experiment 3 setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
+% 
+% map = @nystromUniform;
+% fil = @tikhonov;
+% 
+% alg = nrls(map , 1000 , fil,  25 , 25 , 2000);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp.run();
+% 
+% exp.result
 
-map = @nystromUniform;
+%% Experiment 4 setup, Nystrom method with non-uniform kernel column sampling. Gaussian kernel approximation.
+
+map = @nystromLRLS;
 fil = @tikhonov;
 
-alg = nrls(map , 1000 , fil,  25 , 25 , 2000);
+alg = nrls(map , 800 , fil,  25 , 25 , 2000);
 
 exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();
 
 exp.result
+exp.result.mapParStar
+exp.result.filterParStar
