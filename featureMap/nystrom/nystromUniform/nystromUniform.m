@@ -14,6 +14,8 @@ classdef nystromUniform < nystrom
         numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
         
+        fixedMapPar     % Fixed mapping parameter
+        
         kernelType      % Type of approximated kernel
         sampledPoints   % Current sampled columns
         SqDistMat       % Squared distances matrix
@@ -24,22 +26,27 @@ classdef nystromUniform < nystrom
     
     methods
         % Constructor
-        function obj = nystromUniform( X , numMapParGuesses , numKerParRangeSamples , maxRank )
+        function obj = nystromUniform( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar )
             
-            obj.init( X , numMapParGuesses , numKerParRangeSamples , maxRank );
+            obj.init( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar);
             
             warning('Kernel type set by default to "gaussian"');
             obj.kernelType = @gaussianKernel;
         end
         
         % Initialization function
-        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , maxRank)
+        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar)
             
             obj.X = X;
-            obj.numMapParGuesses = numMapParGuesses;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.d = size(X , 2);     
             obj.maxRank = maxRank;
+            obj.fixedMapPar = fixedMapPar;
+            if ~isempty(fixedMapPar)
+                obj.numMapParGuesses = 1;
+            else
+                obj.numMapParGuesses = numMapParGuesses;
+            end
             
             % Compute range
             obj.range();
@@ -56,40 +63,45 @@ classdef nystromUniform < nystrom
             
             %% Approximated kernel parameter range
             
-            % Compute max and min sigma guesses
+            if isempty(obj.fixedMapPar)
+                % Compute max and min sigma guesses
+
+                % Extract an even number of samples without replacement                
+
+                % WARNING: not compatible with versions older than 2014
+                %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
+
+                % WARNING: Alternative to datasample below
+                nRows = size(obj.X,1); % number of rows
+                nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
+                rndIDX = randperm(nRows); 
+                samp = obj.X(rndIDX(1:nSample), :);   
+
+                % Compute squared distances  vector (D)
+                numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
+                D = zeros(1 , numDistMeas);
+                for i = 1:numDistMeas
+                    D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
+                end
+                D = sort(D);
+
+                firstPercentile = round(0.01 * numel(D) + 0.5);
+                minGuess = sqrt( D(firstPercentile));
+                maxGuess = sqrt( max(D) );
+
+                if minGuess <= 0
+                    minGuess = eps;
+                end
+                if maxGuess <= 0
+                    maxGuess = eps;
+                end	
+
+                tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
                 
-            % Extract an even number of samples without replacement                
-            
-            % WARNING: not compatible with versions older than 2014
-            %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
-            
-            % WARNING: Alternative to datasample below
-            nRows = size(obj.X,1); % number of rows
-            nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
-            rndIDX = randperm(nRows); 
-            samp = obj.X(rndIDX(1:nSample), :);   
-            
-            % Compute squared distances  vector (D)
-            numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
-            D = zeros(1 , numDistMeas);
-            for i = 1:numDistMeas
-                D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
+            else
+                tmpKerPar = obj.fixedMapPar;
             end
-            D = sort(D);
 
-            firstPercentile = round(0.01 * numel(D) + 0.5);
-            minGuess = sqrt( D(firstPercentile));
-            maxGuess = sqrt( max(D) );
-
-            if minGuess <= 0
-                minGuess = eps;
-            end
-            if maxGuess <= 0
-                maxGuess = eps;
-            end	
-            
-            tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
-            
             %% Generate all possible parameters combinations            
             
             [p,q] = meshgrid(tmpl, tmpKerPar);

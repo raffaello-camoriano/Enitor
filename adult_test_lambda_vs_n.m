@@ -39,5 +39,5 @@ semilogy(nRange,mean(lambdaStarMat,1));
 
 %% Boxplot
 figure
-boxplot(lambdaStarArray)
- set(gca,'YScale','log')
+boxplot(lambdaStarMat)
+set(gca,'YScale','log')

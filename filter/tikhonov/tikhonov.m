@@ -20,6 +20,8 @@ classdef tikhonov < filter
         n               % Number of samples
         sz              % Size of the K or C matrix
         
+        fixedFilterPar  % Fixed filter parameter
+        
         numGuesses      % number of filter hyperparameters guesses
         rng             % Parameter ranges map container
         currentParIdx   % Current parameter combination indexes map container
@@ -28,9 +30,11 @@ classdef tikhonov < filter
     
     methods
         
-        function obj = tikhonov( K , Y , numSamples , numGuesses , M)
+        function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar)
             
-            if nargin > 4
+            if nargin > 5
+                obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar);     
+            elseif nargin > 4
                 obj.init( K , Y , numSamples , numGuesses , M );            
             elseif nargin > 3
                 obj.init( K , Y , numSamples , numGuesses );
@@ -39,7 +43,7 @@ classdef tikhonov < filter
             end
         end
         
-        function init(obj , K , Y , numSamples , numGuesses , M)
+        function init(obj , K , Y , numSamples , numGuesses , M, fixedFilterPar)
                 
             % Check dimension of K
             if size(K,1) ~= size(K,2)
@@ -57,7 +61,7 @@ classdef tikhonov < filter
             % Get size of kernel/covariance matrix
             obj.sz = size(K,1);
 
-            if nargin == 6
+            if nargin >= 6 && ~isempty(M)
                 
                 % Check M's size
                 if size(M,1) ~= size(M,2) || size(M,1) ~= size(K,1)
@@ -91,7 +95,7 @@ classdef tikhonov < filter
             end
             
             % Compute hyperparameter(s) range
-            if( nargin >= 5 )
+            if( nargin >= 5  && nargin <7)
                 if numGuesses > 0
                     obj.numGuesses = numGuesses;
                 else
@@ -100,71 +104,89 @@ classdef tikhonov < filter
                 obj.range();    % Compute range
                 obj.currentParIdx = 0;
                 obj.currentPar = [];
-            end            
+            end          
+            
+            % Compute hyperparameter(s) range
+            if nargin >= 7  && ~isempty(fixedFilterPar)
+
+                obj.numGuesses = 1;
+                obj.fixedFilterPar = fixedFilterPar;
+                
+                obj.range();    % Compute range
+                obj.currentParIdx = 0;
+                obj.currentPar = [];
+            end                
             
         end
         
         function obj = range(obj)
             
-            % TODO: @Ale: Smart computation of eigmin and eigmax starting from the
-            % tridiagonal matrix U
+            if isempty(obj.fixedFilterPar)
             
-            % ...
-            
-            % GURLS code below, set 'eigmax' and 'eigmin' variables
-            
-            
-            %===================================================
-            % DEBUG: Dumb computation of min and max eigenvalues
-            
-%             % Reconstruct kernel matrix
-%             K = obj.U * obj.T * obj.U';
-%             
-%             % Perform SVD of K
-%             e = eig(K);
-%             
-%             % Grab min and max eigs
-%             eigmax = max(e);
-%             eigmin = min(e);
-            
-%             e = eigs(obj.T,1);
+                % TODO: @Ale: Smart computation of eigmin and eigmax starting from the
+                % tridiagonal matrix U
+
+                % ...
+
+                % GURLS code below, set 'eigmax' and 'eigmin' variables
 
 
-%             eigmax = norm(obj.T);
-            % WARNING: Error using norm
-            % Sparse norm(S,2) is not available.
-            
-            % DEBUG: fixed minimum and maximum eigenvalues
-            %eigmax = 100;
-            %eigmin = 10e-7;
+                %===================================================
+                % DEBUG: Dumb computation of min and max eigenvalues
+
+    %             % Reconstruct kernel matrix
+    %             K = obj.U * obj.T * obj.U';
+    %             
+    %             % Perform SVD of K
+    %             e = eig(K);
+    %             
+    %             % Grab min and max eigs
+    %             eigmax = max(e);
+    %             eigmin = min(e);
+
+    %             e = eigs(obj.T,1);
 
 
-            %===================================================
+    %             eigmax = norm(obj.T);
+                % WARNING: Error using norm
+                % Sparse norm(S,2) is not available.
 
-            if obj.sparseFlag == 1
-                eigmax = eigs(obj.T,1);
-                opts.issym = 1;
-%                 eigmin = eigs(obj.K,1,'sm', opts);                
-                eigmin = eigs(obj.T,1,10e-7, opts);
-            else
-                eigmax = eigs(obj.K,1);
-                opts.issym = 1;
-%                 eigmin = eigs(obj.K,1,'sm', opts);
-                eigmin = eigs(obj.K,1,10e-7, opts);
-            end    
+                % DEBUG: fixed minimum and maximum eigenvalues
+                %eigmax = 100;
+                %eigmin = 10e-7;
+
+
+                %===================================================
+
+                if obj.sparseFlag == 1
+                    eigmax = eigs(obj.T,1);
+                    opts.issym = 1;
+    %                 eigmin = eigs(obj.K,1,'sm', opts);                
+                    eigmin = eigs(obj.T,1,10e-7, opts);
+                else
+                    eigmax = eigs(obj.K,1);
+                    opts.issym = 1;
+    %                 eigmin = eigs(obj.K,1,'sm', opts);
+                    eigmin = eigs(obj.K,1,10e-7, opts);
+                end    
+
+                % maximum lambda
+                lmax = eigmax;
+                smallnumber = 1e-8;
+
+                % just in case, when r = min(n,d) and r x r has some zero eigenvalues
+                % we take a max; 200*sqrt(eps) is the legacy number used in the previous
+                % code, so i am just continuing it.
+
+                lmin = max(min(lmax*smallnumber, eigmin), 200 * sqrt(eps));
+
+                powers = linspace(1,0,obj.numGuesses);
+                tmp = (lmin.*(lmax/lmin).^(powers)) / obj.n;
                 
-            % maximum lambda
-            lmax = eigmax;
-            smallnumber = 1e-8;
-
-            % just in case, when r = min(n,d) and r x r has some zero eigenvalues
-            % we take a max; 200*sqrt(eps) is the legacy number used in the previous
-            % code, so i am just continuing it.
-
-            lmin = max(min(lmax*smallnumber, eigmin), 200 * sqrt(eps));
-
-            powers = linspace(1,0,obj.numGuesses);
-            tmp = (lmin.*(lmax/lmin).^(powers)) / obj.n;        
+            else
+                tmp = obj.fixedFilterPar;
+            end
+            
             obj.rng = num2cell(tmp);
         end
         

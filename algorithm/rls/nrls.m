@@ -11,13 +11,15 @@ classdef nrls < algorithm
         kerParGuesses
         mapParStar
         numMapParGuesses
+        fixedMapPar
         maxRank
 
         % Filter props
         filterType
         filterParStar
         filterParGuesses
-        numFilterParGuesses        
+        numFilterParGuesses    
+        fixedFilterPar
         
 %         trainIdx    % Training indexes used internally in the actually performed training
 %         valIdx      % Validation indexes used internally in the actually
@@ -29,20 +31,25 @@ classdef nrls < algorithm
     
     methods
         
-        function obj = nrls(mapType, numKerParRangeSamples, filterType,  numMapParGuesses , numFilterParGuesses , maxRank)
-            init( obj , mapType, numKerParRangeSamples, filterType ,  numMapParGuesses , numFilterParGuesses , maxRank)
+        function obj = nrls(mapType, numKerParRangeSamples, filterType,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar)
+            init( obj , mapType, numKerParRangeSamples, filterType ,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar)
         end
         
-        function init( obj , mapType, numKerParRangeSamples , filterType , numMapParGuesses , numFilterParGuesses , maxRank)
+        function init( obj , mapType, numKerParRangeSamples , filterType , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar)
             obj.mapType = mapType;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.filterType = filterType;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
             obj.maxRank = maxRank;
+            obj.fixedMapPar = fixedMapPar;
+            obj.fixedFilterPar = fixedFilterPar;
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
+            
+            warning('recompute forced to FALSE');
+            recompute = 0;
             
             % Training/validation sets splitting
             shuffledIdx = randperm(size(Xtr,1));
@@ -56,7 +63,7 @@ classdef nrls < algorithm
             Yval = Ytr(valIdx,:);
 
             % Train kernel
-            nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank);
+            nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank , obj.fixedMapPar);
             obj.kerParGuesses = nyMapper.rng;   % Warning: rename to mapParGuesses
             obj.filterParGuesses = [];
             
@@ -79,7 +86,7 @@ classdef nrls < algorithm
                 % Normalization factors
                 numSamples = nyMapper.currentPar(1);
                 
-                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W);
+                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar);
                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
 
                 while filter.next()
