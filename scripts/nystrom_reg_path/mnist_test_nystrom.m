@@ -16,8 +16,8 @@ mkdir(resdir);
 ds = MNIST(5000,10000,'plusMinusOne');
 
 % Fixed reg parameters
-% fixedlambda = 0.1;
-fixedlambda = 0;
+fixedlambda = 2.2;
+% fixedlambda = 0;
 fixedsigma = 12.5;
 
 % Set range of m
@@ -41,7 +41,7 @@ for k = 1:size(mRange,2)
 
         alg = nrls(map , 1000 , fil,  1 , 1 , m , fixedsigma , fixedlambda , 0);
 
-        exp = experiment(alg , ds , 1 , true , true , '' , resdir , 0);
+        exp = experiment(alg , ds , 1 , true , false , '' , resdir , 0);
         exp.run();
 
         tmp = [tmp ; exp.result.perf];
