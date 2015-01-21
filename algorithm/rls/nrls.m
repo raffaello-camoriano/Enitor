@@ -31,11 +31,11 @@ classdef nrls < algorithm
     
     methods
         
-        function obj = nrls(mapType, numKerParRangeSamples, filterType,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar)
-            init( obj , mapType, numKerParRangeSamples, filterType ,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar)
+        function obj = nrls(mapType, numKerParRangeSamples, filterType,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose)
+            init( obj , mapType, numKerParRangeSamples, filterType ,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose)
         end
         
-        function init( obj , mapType, numKerParRangeSamples , filterType , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar)
+        function init( obj , mapType, numKerParRangeSamples , filterType , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose)
             obj.mapType = mapType;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.filterType = filterType;
@@ -44,6 +44,7 @@ classdef nrls < algorithm
             obj.maxRank = maxRank;
             obj.fixedMapPar = fixedMapPar;
             obj.fixedFilterPar = fixedFilterPar;
+            obj.verbose = verbose;
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
@@ -63,7 +64,7 @@ classdef nrls < algorithm
             Yval = Ytr(valIdx,:);
 
             % Train kernel
-            nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank , obj.fixedMapPar);
+            nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank , obj.fixedMapPar , obj.verbose);
             obj.kerParGuesses = nyMapper.rng;   % Warning: rename to mapParGuesses
             obj.filterParGuesses = [];
             
@@ -86,7 +87,7 @@ classdef nrls < algorithm
                 % Normalization factors
                 numSamples = nyMapper.currentPar(1);
                 
-                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar);
+                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
 
                 while filter.next()
@@ -134,14 +135,17 @@ classdef nrls < algorithm
 %             obj.kerParStar = obj.kerParGuesses
 %             obj.filterParStar = ...  
             
-            % Print best kernel hyperparameter(s)
-            display('Best mapper hyperparameter(s):')
-            obj.mapParStar
+            if obj.verbose == 1
+                
+                % Print best kernel hyperparameter(s)
+                display('Best mapper hyperparameter(s):')
+                obj.mapParStar
 
-            % Print best filter hyperparameter(s)
-            display('Best filter hyperparameter(s):')
-            obj.filterParStar
-            
+                % Print best filter hyperparameter(s)
+                display('Best filter hyperparameter(s):')
+                obj.filterParStar
+                
+            end
             %nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank);
                         
             if (nargin > 4) && (recompute)

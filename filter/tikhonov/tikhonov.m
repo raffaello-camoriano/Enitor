@@ -30,9 +30,11 @@ classdef tikhonov < filter
     
     methods
         
-        function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar)
-            
-            if nargin > 5
+        function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar , verbose)
+
+            if nargin > 6
+                obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar, verbose);                
+            elseif nargin > 5
                 obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar);     
             elseif nargin > 4
                 obj.init( K , Y , numSamples , numGuesses , M );            
@@ -43,7 +45,7 @@ classdef tikhonov < filter
             end
         end
         
-        function init(obj , K , Y , numSamples , numGuesses , M, fixedFilterPar)
+        function init(obj , K , Y , numSamples , numGuesses , M, fixedFilterPar , verbose)
                 
             % Check dimension of K
             if size(K,1) ~= size(K,2)
@@ -95,7 +97,7 @@ classdef tikhonov < filter
             end
             
             % Compute hyperparameter(s) range
-            if( nargin >= 5  && nargin <7)
+            if ( nargin >= 5  && nargin <7) || ( nargin >=7 && isempty(fixedFilterPar))
                 if numGuesses > 0
                     obj.numGuesses = numGuesses;
                 else
@@ -115,7 +117,13 @@ classdef tikhonov < filter
                 obj.range();    % Compute range
                 obj.currentParIdx = 0;
                 obj.currentPar = [];
-            end                
+            end           
+            
+            % Set verbosity
+            obj.verbose = 0;
+            if nargin >= 8 && verbose == 1                
+                obj.verbose = verbose;
+            end
             
         end
         
@@ -193,14 +201,20 @@ classdef tikhonov < filter
         function compute(obj , filterPar )
 
             if( nargin > 1 )
-                disp('Filter will be computed according to the given hyperparameter(s)');
-                selectedPar = filterPar
+                if obj.verbose == 1
+                    disp('Filter will be computed according to the given hyperparameter(s)');
+                    filterPar
+                end
+                selectedPar = filterPar;
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 % If any current value for any of the parameters is not available, abort.
                 error('Filter parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
             else
-                disp('Filter will be computed according to the internal current hyperparameter(s)');
-                selectedPar = obj.currentPar
+                if obj.verbose == 1
+                    disp('Filter will be computed according to the internal current hyperparameter(s)');
+                    obj.currentPar
+                end
+                selectedPar = obj.currentPar;
             end
             
             if obj.sparseFlag == 1

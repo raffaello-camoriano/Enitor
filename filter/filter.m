@@ -5,6 +5,8 @@ classdef filter < handle
     properties
         %rng
         Yreg
+        
+        verbose     % Verbosity flag
     end
     
     methods ( Abstract )

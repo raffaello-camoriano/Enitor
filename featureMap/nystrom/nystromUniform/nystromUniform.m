@@ -26,26 +26,32 @@ classdef nystromUniform < nystrom
     
     methods
         % Constructor
-        function obj = nystromUniform( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar )
+        function obj = nystromUniform( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
             
-            obj.init( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar);
+            obj.init( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
             
             warning('Kernel type set by default to "gaussian"');
             obj.kernelType = @gaussianKernel;
         end
         
         % Initialization function
-        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar)
+        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
             
             obj.X = X;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.d = size(X , 2);     
             obj.maxRank = maxRank;
             obj.fixedMapPar = fixedMapPar;
+            
             if ~isempty(fixedMapPar)
                 obj.numMapParGuesses = 1;
             else
                 obj.numMapParGuesses = numMapParGuesses;
+            end
+            
+            obj.verbose = 0;
+            if verbose == 1
+                obj.verbose = 1;
             end
             
             % Compute range
@@ -126,8 +132,10 @@ classdef nystromUniform < nystrom
             
             if( nargin > 1 )
                 
-                disp('Mapping will be computed according to the provided hyperparameter(s)');
-                mapPar
+                if(obj.verbose == 1)
+                    disp('Mapping will be computed according to the provided hyperparameter(s)');
+                    mapPar
+                end
                 chosenPar = mapPar;
                 
             elseif (nargin == 1) && (isempty(obj.currentPar))
@@ -137,8 +145,10 @@ classdef nystromUniform < nystrom
             
             else
                 
-                disp('Mapping will be computed according to the current internal hyperparameter(s)');
-                obj.currentPar
+                if(obj.verbose == 1)
+                    disp('Mapping will be computed according to the current internal hyperparameter(s)');
+                    obj.currentPar
+                end
                 chosenPar = obj.currentPar;
                 
             end

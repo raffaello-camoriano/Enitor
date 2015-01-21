@@ -1,6 +1,9 @@
 
 classdef algorithm < handle
 
+    properties
+       verbose 
+    end
     
     methods (Abstract)
       init(obj);

@@ -5,6 +5,7 @@ classdef kernel < handle
     properties
         %rng
         K
+        verbose
     end
     
     methods ( Abstract )

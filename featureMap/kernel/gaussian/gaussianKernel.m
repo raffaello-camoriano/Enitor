@@ -17,25 +17,27 @@ classdef gaussianKernel < kernel
     
     methods
         
-        function obj = gaussianKernel( X1 , X2 , numGuesses )
+        function obj = gaussianKernel( X1 , X2 , numGuesses , verbose)
 
             if  nargin > 0
-                if  nargin > 2
+                if  nargin > 3
+                    obj.init( X1 , X2 , numGuesses , verbose);
+                elseif  nargin > 2
                     obj.init( X1 , X2 , numGuesses);
-                else
+                else                    
                     obj.init( X1 , X2);
                 end
             end
         end
         
-        function init( obj , X1 , X2 , numGuesses)
+        function init( obj , X1 , X2 , numGuesses , verbose)
             
             % Set dimensions and compute square distances matrix
             obj.n = size(X1 , 1);
             obj.m = size(X2 , 1);
             obj.computeSqDistMat(X1,X2);
             
-            if( nargin == 4 )
+            if( nargin >= 4 )
                 if numGuesses > 0
                     obj.numGuesses = numGuesses;
                 else
@@ -46,6 +48,11 @@ classdef gaussianKernel < kernel
                 obj.currentParIdx = 0;
                 obj.currentPar = [];
                 
+            end
+            
+            obj.verbose = 0;
+            if nargin >=5 && verbose == 1
+                obj.verbose = 1;
             end
         end
         
@@ -96,8 +103,11 @@ classdef gaussianKernel < kernel
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 error('Kernel parameter(s) not explicitly specified, and no internal current parameter available. Exiting...');
             else
-                disp('Kernel will be computed according to the internal current hyperparameter(s)');
-                obj.currentPar
+                if obj.verbose == 1
+                    disp('Kernel will be computed according to the internal current hyperparameter(s)');
+                    obj.currentPar
+                end
+
                 obj.K = exp(-obj.SqDistMat / (2 * obj.currentPar(1)^2));
             end
         end

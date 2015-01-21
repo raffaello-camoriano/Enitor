@@ -11,16 +11,17 @@ mkdir(resdir);
 
 % Load full dataset
 %ds = MNIST;
-``
+
 % Load small dataset
 ds = MNIST(5000,10000,'plusMinusOne');
 
 % Fixed reg parameters
+% fixedlambda = 0.1;
 fixedlambda = 0;
 fixedsigma = 12.5;
 
 % Set range of m
-mRange = 50:50:3000;
+mRange = 1:200;
 numRep = 10;
 
 testErr = [];
@@ -38,11 +39,10 @@ for k = 1:size(mRange,2)
         map = @nystromUniform;
         fil = @tikhonov;
 
-        alg = nrls(map , 1000 , fil,  1 , 1 , m , fixedsigma , fixedlambda);
+        alg = nrls(map , 1000 , fil,  1 , 1 , m , fixedsigma , fixedlambda , 0);
 
-        exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+        exp = experiment(alg , ds , 1 , true , true , '' , resdir , 0);
         exp.run();
-%         exp.result
 
         tmp = [tmp ; exp.result.perf];
     end

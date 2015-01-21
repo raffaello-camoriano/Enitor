@@ -14,5 +14,7 @@ classdef nystrom < handle
         currentParIdx
         
         X
+        
+        verbose
     end
 end
