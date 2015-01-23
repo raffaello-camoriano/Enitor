@@ -142,7 +142,6 @@ classdef nystromUniform < nystrom
                 
                 % If any current value for any of the parameters is not available, abort.
                 error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
-            
             else
                 
                 if(obj.verbose == 1)
@@ -150,12 +149,14 @@ classdef nystromUniform < nystrom
                     obj.currentPar
                 end
                 chosenPar = obj.currentPar;
-                
             end
 
-            % Uniformly sample points (rows of X)
+            % Uniformly sample points (rows of X) with replacement
+%             obj.sampledPoints = randi(size(obj.X,1),1,chosenPar(1));
             
-            obj.sampledPoints = randi(size(obj.X,1),1,chosenPar(1));
+            % Uniformly sample points (rows of X) without replacement
+            obj.sampledPoints = 1:chosenPar(1);
+            
             obj.Xs = obj.X(obj.sampledPoints,:);
             
             % Compute C and W
