@@ -16,12 +16,12 @@ mkdir(resdir);
 ds = MNIST(5000,10000,'plusMinusOne');
 
 % Fixed reg parameters
-fixedlambda = 2.2;
-% fixedlambda = 0;
+% fixedlambda = 2.2;
+fixedlambda = 10e-07;
 fixedsigma = 12.5;
 
 % Set range of m
-mRange = 1:200;
+mRange = 1:50:5000;
 numRep = 10;
 
 testErr = [];
