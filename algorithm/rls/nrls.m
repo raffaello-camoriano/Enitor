@@ -87,7 +87,8 @@ classdef nrls < algorithm
                 % Normalization factors
                 numSamples = nyMapper.currentPar(1);
                 
-                filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
+%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
+                filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
 
                 while filter.next()
