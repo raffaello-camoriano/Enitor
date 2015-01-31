@@ -19,7 +19,7 @@ ds = Adult(30000,16282,'plusMinusOne');
 fixedsigma = 4.1;
 
 % Set range of m
-mRange = 1:50:2000;
+mRange = 1:100:2000;
 nM = size(mRange,2);
 
 % Set range of lambda
@@ -29,7 +29,7 @@ nLambda = 10;
 lRange = logspace(lMin,lMax,nLambda);
 
 % Number of experiment repetitions for each parameter combination
-numRep = 6;
+numRep = 1;
 
 testErr = zeros(nLambda, nM, numRep);
 

@@ -31,6 +31,7 @@ classdef Adult < dataset
             end            
             
             obj.X = [data.training_vectors ; data.testing_vectors];
+            obj.X = obj.scale(obj.X);
             obj.Y = [data.training_labels ; data.testing_labels];
                             
             obj.nTrTot = size(data.training_labels,1);
@@ -140,6 +141,16 @@ classdef Adult < dataset
             end
             
             perf = 1 - (numCorrect / size(Y,1));
+        end
+        
+        % Scales matrix M between -1 and 1
+        function Ms = scale(obj , M)
+            
+            mx = max(max(M));
+            mn = min(min(M));
+            
+            Ms = ((M + abs(mn)) / (mx - mn)) * 2 - 1;
+            
         end
         
         function getTrainSet(obj)
