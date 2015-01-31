@@ -25,15 +25,18 @@ nM = size(mRange,2);
 % Set range of lambda
 lMin = -7;
 lMax = 2;
-nLambda = 20;
+nLambda = 10;
 lRange = logspace(lMin,lMax,nLambda);
 
 % Number of experiment repetitions for each parameter combination
-numRep = 1;
+numRep = 6;
 
 testErr = zeros(nLambda, nM, numRep);
 
 for j = 1:size(lRange,2)
+    
+    j
+    
     l = lRange(j);
     
     for k = 1:size(mRange,2)

@@ -155,7 +155,7 @@ classdef nystromUniform < nystrom
 %             obj.sampledPoints = randi(size(obj.X,1),1,chosenPar(1));
             
             % Uniformly sample points (rows of X) without replacement
-            obj.sampledPoints = 1:chosenPar(1);
+            obj.sampledPoints = randperm(size(obj.X,1),chosenPar(1));
             
             obj.Xs = obj.X(obj.sampledPoints,:);
             

@@ -16,17 +16,17 @@ ds  = pumadyn(4096,4096, 32 , 'n' , 'h');
 fixedsigma = 3.4530;
 
 % Set range of m
-mRange = 1:50:2000;
+mRange = 1:100:1000;
 nM = size(mRange,2);
 
 % Set range of lambda
 lMin = -7;
-lMax = 2;
-nLambda = 20;
+lMax = -4;
+nLambda = 5;
 lRange = logspace(lMin,lMax,nLambda);
 
 % Number of experiment repetitions for each parameter combination
-numRep = 6;
+numRep = 1;
 
 testErr = zeros(nLambda, nM, numRep);
 
@@ -41,6 +41,8 @@ for j = 1:size(lRange,2)
         tmp = [];
         for rep = 1:numRep
 
+            
+%             ds.reshuffle
             rep
 
             map = @nystromUniform;
@@ -48,6 +50,7 @@ for j = 1:size(lRange,2)
 
             alg = nrls(map , 1000 , fil,  1 , 1 , m , fixedsigma , l , 0);
 
+            
             exp = experiment(alg , ds , 1 , true , false , '' , resdir , 0);
             exp.run();
 

@@ -48,10 +48,7 @@ classdef nrls < algorithm
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
-            
-            warning('recompute forced to FALSE');
-            recompute = 0;
-            
+                        
             % Training/validation sets splitting
             shuffledIdx = randperm(size(Xtr,1));
             tmp1 = floor(size(Xtr,1)*(1-validationPart));
@@ -87,10 +84,17 @@ classdef nrls < algorithm
                 % Normalization factors
                 numSamples = nyMapper.currentPar(1);
                 
-%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, Ytrain(nyMapper.sampledPoints,:) , numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
-                filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
-                obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
+%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
 
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Numerically stable version
+                [L,D] = ldl(full(nyMapper.W));                    
+                sqrtDinv = diag(1./sqrt(abs(diag(D))));
+                A = sqrtDinv * (L\(nyMapper.C'));
+                filter = obj.filterType( A * A' , A * Ytrain, numSamples , obj.numFilterParGuesses, eye(size(A,1)) , obj.fixedFilterPar , obj.verbose , ((L') \ sqrtDinv));
+                obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                
                 while filter.next()
                     
                     % Compute filter according to current hyperparameters
@@ -101,7 +105,13 @@ classdef nrls < algorithm
                     %valPerformance(i,j) = perfm( kernelVal.K * filter.weights, Yval);
                     
                     % Compute predictions matrix
+%                     YvalPred = kernelVal.K * filter.weights;
+
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    % Numerically stable version
+%                     B = (kernelVal.K / (L') ) * sqrtDinv;
                     YvalPred = kernelVal.K * filter.weights;
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );
@@ -147,28 +157,6 @@ classdef nrls < algorithm
                 obj.filterParStar
                 
             end
-            %nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank);
-                        
-            if (nargin > 4) && (recompute)
-                
-                % Recompute kernel on the whole training set with the best
-                % kernel parameter
-                nyMapper.init(Xtr, Xtr);
-                nyMapper.compute(obj.kerParStar);
-                
-                % Recompute filter on the whole training set with the best
-                % filter parameter
-                numSamples = size(Xtr , 1);
-
-                filter.init( nyMapper.K , Ytr , numSamples);
-                filter.compute(obj.filterParStar);
-                
-                % Update internal model samples matrix
-                obj.Xmodel = nyMapper.Xs;
-                
-                % Update coefficients vector
-                obj.c = filter.weights;
-            end
         end
         
         function Ypred = test( obj , Xte )
@@ -185,6 +173,12 @@ classdef nrls < algorithm
             
             % Compute scores
             Ypred = kernelTest.K * obj.c;
+            
+%             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             % Numerically stable version
+%             B = (kernelTest.K / (L') ) * sqrtDinv;
+%             YvalPred = B * obj.c;
+%             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
         end
     end
 end

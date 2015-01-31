@@ -4,7 +4,8 @@ classdef tikhonov < filter
 
     properties
         
-        M               % sz * sz matrix to be multiplied by lambda. M = speye(sz) by default
+        preMultiplier       % Matrix to premultiplpy to the filter (useful for LDLT-based Tikhonov)
+        M                   % sz * sz matrix to be multiplied by lambda. M = speye(sz) by default
         sparseFlag          % Flag insicating is the sparse (1) or classical (0) formulation is being used
         
         % Parameters used in the classical formulation
@@ -30,9 +31,11 @@ classdef tikhonov < filter
     
     methods
         
-        function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar , verbose)
+        function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar , verbose , preMultiplier)
 
-            if nargin > 6
+            if nargin > 7
+                obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar, verbose, preMultiplier);                
+            elseif nargin > 6
                 obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar, verbose);                
             elseif nargin > 5
                 obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar);     
@@ -45,7 +48,7 @@ classdef tikhonov < filter
             end
         end
         
-        function init(obj , K , Y , numSamples , numGuesses , M, fixedFilterPar , verbose)
+        function init(obj , K , Y , numSamples , numGuesses , M, fixedFilterPar , verbose , preMultiplier)
                 
             % Check dimension of K
             if size(K,1) ~= size(K,2)
@@ -78,10 +81,21 @@ classdef tikhonov < filter
                     obj.sparseFlag = 1;
                     obj.M = speye(size(M));
                 end
+                    obj.sparseFlag = 0;
 
             else
                 obj.sparseFlag = 1;
                 obj.M = speye(obj.sz);
+            end
+            
+            if nargin >= 9 && ~isempty(preMultiplier)
+                
+                % Check preMultiplier's size
+                if size(preMultiplier,1) ~= size(preMultiplier,2) || size(preMultiplier,1) ~= size(K,1)
+                    error ('preMultiplier matrix must be squared, and its size must be the same as size(K)');
+                end
+                
+                obj.preMultiplier = preMultiplier;
             end
             
             if obj.sparseFlag == 1
@@ -230,6 +244,10 @@ classdef tikhonov < filter
             else
                 obj.weights = (obj.K + selectedPar(1) * obj.n * obj.M) \ obj.Y;
             end
+            
+            if ~isempty(obj.preMultiplier)
+                obj.weights = obj.preMultiplier * obj.weights;
+            end            
         end
         
         % returns true if the next parameter combination is available and
