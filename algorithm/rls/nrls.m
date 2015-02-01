@@ -84,16 +84,18 @@ classdef nrls < algorithm
                 % Normalization factors
                 numSamples = nyMapper.currentPar(1);
                 
-%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , obj.numFilterParGuesses, nyMapper.W , obj.fixedFilterPar , obj.verbose);
+                filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
 
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Numerically stable version
-                [L,D] = ldl(full(nyMapper.W));                    
-                sqrtDinv = diag(1./sqrt(abs(diag(D))));
-                A = sqrtDinv * (L\(nyMapper.C'));
-                filter = obj.filterType( A * A' , A * Ytrain, numSamples , obj.numFilterParGuesses, eye(size(A,1)) , obj.fixedFilterPar , obj.verbose , ((L') \ sqrtDinv));
-                obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 % Numerically stable version
+%                 [L,D] = ldl(full(nyMapper.W));                    
+%                 sqrtDinv = diag(1./sqrt(abs(diag(D))));
+%                 A = sqrtDinv * (L\(nyMapper.C'));
+% %                 filter = obj.filterType( A * A' , A * Ytrain, numSamples , obj.numFilterParGuesses, eye(size(A,1)) , obj.fixedFilterPar , obj.verbose , ((L') \ sqrtDinv));
+%                 filter = obj.filterType( A * A' , A * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(A,1)) , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose , 'preMultiplier' , ((L') \ sqrtDinv));
+% 
+%                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
+%                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 
                 while filter.next()
                     
@@ -105,14 +107,8 @@ classdef nrls < algorithm
                     %valPerformance(i,j) = perfm( kernelVal.K * filter.weights, Yval);
                     
                     % Compute predictions matrix
-%                     YvalPred = kernelVal.K * filter.weights;
-
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    % Numerically stable version
-%                     B = (kernelVal.K / (L') ) * sqrtDinv;
                     YvalPred = kernelVal.K * filter.weights;
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    
+
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );
                     

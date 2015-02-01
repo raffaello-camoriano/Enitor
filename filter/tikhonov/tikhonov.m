@@ -30,116 +30,216 @@ classdef tikhonov < filter
     end
     
     methods
-        
-        function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar , verbose , preMultiplier)
+      
+        function obj = tikhonov( K , Y , numSamples , varargin)
 
-            if nargin > 7
-                obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar, verbose, preMultiplier);                
-            elseif nargin > 6
-                obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar, verbose);                
-            elseif nargin > 5
-                obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar);     
-            elseif nargin > 4
-                obj.init( K , Y , numSamples , numGuesses , M );            
-            elseif nargin > 3
-                obj.init( K , Y , numSamples , numGuesses );
-            elseif nargin > 2
-                obj.init(  K , Y , numSamples );
-            end
+            obj.init(  K , Y , numSamples , varargin{:} );            
         end
         
-        function init(obj , K , Y , numSamples , numGuesses , M, fixedFilterPar , verbose , preMultiplier)
-                
-            % Check dimension of K
-            if size(K,1) ~= size(K,2)
-                error('K must be squared.');
-            end
-    
-            % Check dimension of Y
-            if size(K,1) ~= numSamples
-                error('The number of rows of Y must be == numSamples.');
-            end
+%         function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar , verbose , preMultiplier)
+% 
+%             if nargin > 7
+%                 obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar, verbose, preMultiplier);                
+%             elseif nargin > 6
+%                 obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar, verbose);                
+%             elseif nargin > 5
+%                 obj.init( K , Y , numSamples , numGuesses , M , fixedFilterPar);     
+%             elseif nargin > 4
+%                 obj.init( K , Y , numSamples , numGuesses , M );            
+%             elseif nargin > 3
+%                 obj.init( K , Y , numSamples , numGuesses );
+%             elseif nargin > 2
+%                 obj.init(  K , Y , numSamples );
+%             end
+%         end
+        
+        function init(obj , K , Y , numSamples , varargin)
+                 
+            p = inputParser;
             
-            % Get number of samples
-            obj.n = numSamples;
+            %%%% Required parameters
+            
+            checkK = @(x) size(x,1) == size(x,2);
+            checkNumSamples = @(x) (x > 0) && (x == size(Y,1));
+            
+            addRequired(p,'K',checkK);
+            addRequired(p,'Y');
+            addRequired(p,'numSamples',checkNumSamples);
+            
+            %%%% Optional parameters
+            % Optional parameter names:
+            % numGuesses , M, fixedFilterPar , verbose , preMultiplier
+            
+            defaultNumGuesses = 1;
+            checkNumGuesses = @(x) x > 0;
+
+            defaultM = [];
+            checkM = @(x) ( size(x,1) == size(x,2) && size(x,1) == size(K,1) );
+            
+            defaultFixedFilterPar = [];
+            checkFixedFilterPar = @(x) x >= 0;
+            
+            defaultVerbose = 0;
+            checkVerbose = @(x) (x==0) || (x==1);
+
+            defaultPreMultiplier = [];
+            checkPreMultiplier = @(x) ( size(x,1) == size(x,2) && size(x,1) == size(K,1) );
+            
+            addParameter(p,'numGuesses',defaultNumGuesses,checkNumGuesses)
+            addParameter(p,'M',defaultM,checkM)
+            addParameter(p,'fixedFilterPar',defaultFixedFilterPar,checkFixedFilterPar)
+            addParameter(p,'verbose',defaultVerbose,checkVerbose)
+            addParameter(p,'preMultiplier',defaultPreMultiplier,checkPreMultiplier)
+            
+            % Parse function inputs
+%             p.KeepUnmatched = true;
+            parse(p, K , Y , numSamples , varargin{:})
+            
+            p.Results
             
             % Get size of kernel/covariance matrix
-            obj.sz = size(K,1);
+            obj.sz = size(p.Results.K,1);
+            
+            % Get number of samples
+            obj.n = p.Results.numSamples;
 
-            if nargin >= 6 && ~isempty(M)
-                
-                % Check M's size
-                if size(M,1) ~= size(M,2) || size(M,1) ~= size(K,1)
-                    error ('M must be squared, and its size must be the same as size(K)');
-                end
-                
+            if ~isempty(p.Results.M) 
                 % Set sparsity flag
-                if sum(sum(M ~= eye(size(M)))) > 0
+                if sum(sum(p.Results.M ~= eye(size(p.Results.M)))) > 0
                     obj.sparseFlag = 0;
-                    obj.M = M;                
+                    obj.M = p.Results.M;                
                 else
                     obj.sparseFlag = 1;
-                    obj.M = speye(size(M));
+                    obj.M = speye(size(p.Results.M));
                 end
-                    obj.sparseFlag = 0;
-
+                    %obj.sparseFlag = 0;
             else
                 obj.sparseFlag = 1;
                 obj.M = speye(obj.sz);
             end
             
-            if nargin >= 9 && ~isempty(preMultiplier)
-                
-                % Check preMultiplier's size
-                if size(preMultiplier,1) ~= size(preMultiplier,2) || size(preMultiplier,1) ~= size(K,1)
-                    error ('preMultiplier matrix must be squared, and its size must be the same as size(K)');
-                end
-                
-                obj.preMultiplier = preMultiplier;
-            end
+            warning('obj.sparseFlag forced to 0 to avoid Hessenberger decomposition');
+            obj.sparseFlag = 0;
             
             if obj.sparseFlag == 1
                 % Compute Hessenberger decomposition
-                [obj.U, T] = hess(full(K));
+                [obj.U, T] = hess(full(p.Results.K));
                 obj.T = sparse(T);  % Store as sparse matrix (it is tridiagonal)
                 T = [];
                 obj.Y0 = obj.U' * Y;
             else
                 % Store full kernel/covariance matrix
-                obj.K = K;
-                obj.Y = Y;
+                obj.K = p.Results.K;
+                obj.Y = p.Results.Y;
             end
-            
-            % Compute hyperparameter(s) range
-            if ( nargin >= 5  && nargin <7) || ( nargin >=7 && isempty(fixedFilterPar))
-                if numGuesses > 0
-                    obj.numGuesses = numGuesses;
-                else
-                    obj.numGuesses = 1;
-                end            
-                obj.range();    % Compute range
-                obj.currentParIdx = 0;
-                obj.currentPar = [];
-            end          
-            
-            % Compute hyperparameter(s) range
-            if nargin >= 7  && ~isempty(fixedFilterPar)
 
+            % Compute hyperparameter(s) range
+            if ~isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterPar)
+
+                warning('numGuesses forced to 1');
                 obj.numGuesses = 1;
-                obj.fixedFilterPar = fixedFilterPar;
-                
-                obj.range();    % Compute range
-                obj.currentParIdx = 0;
-                obj.currentPar = [];
+                obj.fixedFilterPar = p.Results.fixedFilterPar;
             end           
+            obj.range();    % Compute range
+            obj.currentParIdx = 0;
+            obj.currentPar = [];   
             
-            % Set verbosity
-            obj.verbose = 0;
-            if nargin >= 8 && verbose == 1                
-                obj.verbose = verbose;
-            end
-            
+            % Set verbosity          
+            obj.verbose = p.Results.verbose;
         end
+        
+%         function init(obj , K , Y , numSamples , numGuesses , M, fixedFilterPar , verbose , preMultiplier)
+%                 
+%             % Check dimension of K
+%             if size(K,1) ~= size(K,2)
+%                 error('K must be squared.');
+%             end
+%     
+%             % Check dimension of Y
+%             if size(K,1) ~= numSamples
+%                 error('The number of rows of Y must be == numSamples.');
+%             end
+%             
+%             % Get number of samples
+%             obj.n = numSamples;
+%             
+%             % Get size of kernel/covariance matrix
+%             obj.sz = size(K,1);
+% 
+%             if nargin >= 6 && ~isempty(M)
+%                 
+%                 % Check M's size
+%                 if size(M,1) ~= size(M,2) || size(M,1) ~= size(K,1)
+%                     error ('M must be squared, and its size must be the same as size(K)');
+%                 end
+%                 
+%                 % Set sparsity flag
+%                 if sum(sum(M ~= eye(size(M)))) > 0
+%                     obj.sparseFlag = 0;
+%                     obj.M = M;                
+%                 else
+%                     obj.sparseFlag = 1;
+%                     obj.M = speye(size(M));
+%                 end
+%                     obj.sparseFlag = 0;
+% 
+%             else
+%                 obj.sparseFlag = 1;
+%                 obj.M = speye(obj.sz);
+%             end
+%             
+%             if nargin >= 9 && ~isempty(preMultiplier)
+%                 
+%                 % Check preMultiplier's size
+%                 if size(preMultiplier,1) ~= size(preMultiplier,2) || size(preMultiplier,1) ~= size(K,1)
+%                     error ('preMultiplier matrix must be squared, and its size must be the same as size(K)');
+%                 end
+%                 
+%                 obj.preMultiplier = preMultiplier;
+%             end
+%             
+%             if obj.sparseFlag == 1
+%                 % Compute Hessenberger decomposition
+%                 [obj.U, T] = hess(full(K));
+%                 obj.T = sparse(T);  % Store as sparse matrix (it is tridiagonal)
+%                 T = [];
+%                 obj.Y0 = obj.U' * Y;
+%             else
+%                 % Store full kernel/covariance matrix
+%                 obj.K = K;
+%                 obj.Y = Y;
+%             end
+%             
+%             % Compute hyperparameter(s) range
+%             if ( nargin >= 5  && nargin <7) || ( nargin >=7 && isempty(fixedFilterPar))
+%                 if numGuesses > 0
+%                     obj.numGuesses = numGuesses;
+%                 else
+%                     obj.numGuesses = 1;
+%                 end            
+%                 obj.range();    % Compute range
+%                 obj.currentParIdx = 0;
+%                 obj.currentPar = [];
+%             end          
+%             
+%             % Compute hyperparameter(s) range
+%             if nargin >= 7  && ~isempty(fixedFilterPar)
+% 
+%                 obj.numGuesses = 1;
+%                 obj.fixedFilterPar = fixedFilterPar;
+%                 
+%                 obj.range();    % Compute range
+%                 obj.currentParIdx = 0;
+%                 obj.currentPar = [];
+%             end           
+%             
+%             % Set verbosity
+%             obj.verbose = 0;
+%             if nargin >= 8 && verbose == 1                
+%                 obj.verbose = verbose;
+%             end
+%             
+%         end
         
         function obj = range(obj)
             

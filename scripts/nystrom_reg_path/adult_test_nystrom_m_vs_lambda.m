@@ -71,8 +71,3 @@ figure
 surf(mRange , lRange , testErrMed)
 set(gca,'XScale','lin')
 set(gca,'YScale','log')
-
-% Test error boxplot
-% figure
-% boxplot(testErr)
-%set(gca,'YScale','log')
