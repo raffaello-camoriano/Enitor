@@ -9,9 +9,6 @@ mkdir(resdir);
 
 %% Dataset initialization
 
-% Load full dataset
-%ds = MNIST;
-
 % Load small dataset
 ds = Adult(30000,16282,'plusMinusOne');
 

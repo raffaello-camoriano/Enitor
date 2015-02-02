@@ -16,13 +16,13 @@ ds  = pumadyn(4096,4096, 32 , 'n' , 'h');
 fixedsigma = 3.4530;
 
 % Set range of m
-mRange = 1:100:2000;
+mRange = 1:10:2000;
 nM = size(mRange,2);
 
 % Set range of lambda
 lMin = -7;
 lMax = 2;
-nLambda = 10;
+nLambda = 50;
 lRange = logspace(lMin,lMax,nLambda);
 
 % Number of experiment repetitions for each parameter combination
@@ -32,6 +32,8 @@ testErr = zeros(nLambda, nM, numRep);
 
 for j = 1:size(lRange,2)
     l = lRange(j);
+    
+    j
     
     for k = 1:size(mRange,2)
         m = mRange(k);
