@@ -85,6 +85,7 @@ classdef nrls < algorithm
                 numSamples = nyMapper.currentPar(1);
                 
                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
+%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(nyMapper.W,1)) , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
 
 %                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                 % Numerically stable version
