@@ -142,7 +142,9 @@ classdef tikhonov < filter
                 obj.numGuesses = 1;
                 
             elseif ~isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterPar)
-                error('numGuesses and fixedFilterPar optional parameters are not compatible');
+                warning('numGuesses and fixedFilterPar optional parameters are not compatible. Setting numGuesses = 1');
+                obj.fixedFilterPar = p.Results.fixedFilterPar;
+                obj.numGuesses = 1;
             end
             
             obj.range();    % Compute range
