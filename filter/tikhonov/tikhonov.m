@@ -134,12 +134,17 @@ classdef tikhonov < filter
             end
 
             % Compute hyperparameter(s) range
-            if ~isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterPar)
-
-                warning('numGuesses forced to 1');
-                obj.numGuesses = 1;
+            if ~isempty(p.Results.numGuesses) && isempty(p.Results.fixedFilterPar)
+                obj.numGuesses = p.Results.numGuesses;
+                
+            elseif isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterPar)
                 obj.fixedFilterPar = p.Results.fixedFilterPar;
-            end           
+                obj.numGuesses = 1;
+                
+            elseif ~isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterPar)
+                error('numGuesses and fixedFilterPar optional parameters are not compatible');
+            end
+            
             obj.range();    % Compute range
             obj.currentParIdx = 0;
             obj.currentPar = [];   

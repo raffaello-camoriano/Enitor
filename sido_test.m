@@ -15,49 +15,27 @@ ds = Sido;
 % Load small dataset
 %ds = Sido(500,500);
 
-% dataset.n
-% dataset.nTr
-% dataset.nTe
-% dataset.d
-% dataset.t
-% 
-% dataset.X
-% dataset.Y
-% 
-% dataset.trainIdx
-% dataset.testIdx
-
-% Shuffled training set indexes
-% dataset.shuffledTrainIdx      
-% dataset.shuffleTrainIdx();
-% dataset.shuffledTrainIdx
-
-% Perf
-% Y = (1:10)';
-% Ypred = (10:-1:1)';
-% dataset.performanceMeasure(Y , Ypred)l;
-
 %% Experiment 1 setup, Gaussian kernel
 
-% ker = @gaussianKernel;
-% fil = @tikhonov;
-% 
-% alg = krls(ker, fil,  5, 5);
-% 
-% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
-% 
-% exp.run();
-% 
-% exp.result
-
-%% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
-
-map = @randomFeaturesGaussian;
+ker = @gaussianKernel;
 fil = @tikhonov;
 
-alg = rfrls(map , 1000 , fil,  2 , 1);
+alg = krls(ker, fil,  30, 30 , 0);
 
-exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+exp = experiment(alg , ds , 1 , true , true , '' , resdir , 0);
+
 exp.run();
 
 exp.result
+
+%% Experiment 2 setup, Random Fourier Features. Gaussian kernel approximation
+% 
+% map = @randomFeaturesGaussian;
+% fil = @tikhonov;
+% 
+% alg = rfrls(map , 1000 , fil,  2 , 1);
+% 
+% exp = experiment(alg , ds , 1 , true , true , '' , resdir);
+% exp.run();
+% 
+% exp.result
