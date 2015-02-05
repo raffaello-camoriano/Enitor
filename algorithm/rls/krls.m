@@ -22,15 +22,16 @@ classdef krls < algorithm
     
     methods
         
-        function obj = krls(kerTy, filtTy,  numMapParGuesses , numFilterParGuesses )
-            init( obj , kerTy, filtTy ,  numMapParGuesses , numFilterParGuesses )
+        function obj = krls(kerTy, filtTy,  numMapParGuesses , numFilterParGuesses , verbose)
+            init( obj , kerTy, filtTy ,  numMapParGuesses , numFilterParGuesses , verbose)
         end
         
-        function init( obj , kerTy, filtTy , numMapParGuesses , numFilterParGuesses )
+        function init( obj , kerTy, filtTy , numMapParGuesses , numFilterParGuesses , verbose)
             obj.kernelType = kerTy;
             obj.filterType = filtTy;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
+            obj.verbose = verbose;
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
@@ -71,14 +72,16 @@ classdef krls < algorithm
                 % Normalization factors
                 numSamples = size(Xtrain , 1);
                 
-                filter = obj.filterType( kernel.K, Ytrain , numSamples , obj.numFilterParGuesses);
+                filter = obj.filterType( kernel.K, Ytrain , numSamples , 'numGuesses' , obj.numFilterParGuesses , 'verbose' , obj.verbose);
+                
+%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
+                
                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
 
                 while filter.next()
                     
                     % Compute filter according to current hyperparameters
                     filter.compute();
-
 
                     % Compute predictions matrix
                     YvalPred = kernelVal.K * filter.weights;
