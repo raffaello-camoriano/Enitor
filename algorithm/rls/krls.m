@@ -119,7 +119,7 @@ classdef krls < algorithm
             
             
             % Plot errors
-            semilogx(cell2mat(filter.rng),  valPerformance);            
+%             semilogx(cell2mat(filter.rng),  valPerformance);            
             
             
             
