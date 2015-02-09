@@ -291,12 +291,12 @@ classdef tikhonov < filter
                     eigmax = eigs(obj.T,1);
                     opts.issym = 1;
     %                 eigmin = eigs(obj.K,1,'sm', opts);                
-                    eigmin = eigs(obj.T,1,10e-7, opts);
+                    eigmin = eigs(obj.T, [] , 1,10e-7, opts);
                 else
                     eigmax = eigs(obj.K,1);
                     opts.issym = 1;
     %                 eigmin = eigs(obj.K,1,'sm', opts);
-                    eigmin = eigs(obj.K,1,10e-7, opts);
+                    eigmin = eigs(obj.K , [] , 1 , 10e-7 , opts);
                 end    
 
                 % maximum lambda

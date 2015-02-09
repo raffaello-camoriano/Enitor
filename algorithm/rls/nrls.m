@@ -84,8 +84,12 @@ classdef nrls < algorithm
                 % Normalization factors
                 numSamples = nyMapper.currentPar(1);
                 
-                filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
-%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(nyMapper.W,1)) , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
+                if ~isempty(obj.fixedFilterPar)
+                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
+                else
+                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'verbose' , obj.verbose);
+                end
+                    %                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(nyMapper.W,1)) , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
 
 %                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                 % Numerically stable version
@@ -124,14 +128,11 @@ classdef nrls < algorithm
                         %Update best validation performance measurement
                         valM = valPerf;
                         
-                        if ~recompute
-                            
-                            % Update internal model samples matrix
-                            obj.Xmodel = nyMapper.Xs;
-                            
-                            % Update coefficients vector
-                            obj.c = filter.weights;
-                        end
+                        % Update internal model samples matrix
+                        obj.Xmodel = nyMapper.Xs;
+
+                        % Update coefficients vector
+                        obj.c = filter.weights;
                     end
                 end
             end

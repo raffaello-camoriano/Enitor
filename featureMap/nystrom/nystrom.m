@@ -10,6 +10,8 @@ classdef nystrom < handle
      
         numMapParGuesses
         
+        numNysParGuesses    % Number of sampled columns guesses
+        
         currentPar
         currentParIdx
         

@@ -16,17 +16,17 @@ ds  = pumadyn(4096,4096, 32 , 'n' , 'h');
 fixedsigma = 3.4530;
 
 % Set range of m
-mRange = 1:10:2000;
+mRange = 1:100:2000;
 nM = size(mRange,2);
 
 % Set range of lambda
 lMin = -7;
 lMax = 2;
-nLambda = 50;
+nLambda = 20;
 lRange = logspace(lMin,lMax,nLambda);
 
 % Number of experiment repetitions for each parameter combination
-numRep = 1;
+numRep = 3;
 
 testErr = zeros(nLambda, nM, numRep);
 
@@ -63,15 +63,23 @@ end
 
 %% Plot results
 
-testErrMed = median(testErr,3);
-
 % Median test error surface
+testErrMed = median(testErr,3);
 figure
 surf(mRange , lRange , testErrMed)
 set(gca,'XScale','lin')
 set(gca,'YScale','log')
 
-% Test error boxplot
-% figure
-% boxplot(testErr)
-%set(gca,'YScale','log')
+% Mean + sd test error surface
+testErrAvg = mean(testErr,3);
+testErrSd = std(testErr,1,3);
+figure
+hold on
+surf(mRange , lRange , testErrAvg)
+h = surf(mRange , lRange , testErrAvg + 2*testErrSd);
+alpha(h,0.2)
+h = surf(mRange , lRange , testErrAvg - 2*testErrSd);
+alpha(h,0.2)
+set(gca,'XScale','lin')
+set(gca,'YScale','log')
+hold off

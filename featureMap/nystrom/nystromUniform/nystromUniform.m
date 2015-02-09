@@ -26,16 +26,16 @@ classdef nystromUniform < nystrom
     
     methods
         % Constructor
-        function obj = nystromUniform( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
+        function obj = nystromUniform( X , numNysParGuesses , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
             
-            obj.init( X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
+            obj.init( X , numNysParGuesses , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
             
             warning('Kernel type set by default to "gaussian"');
             obj.kernelType = @gaussianKernel;
         end
         
         % Initialization function
-        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
+        function obj = init(obj , X , numNysParGuesses , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
             
             obj.X = X;
             obj.numKerParRangeSamples = numKerParRangeSamples;
@@ -48,6 +48,8 @@ classdef nystromUniform < nystrom
             else
                 obj.numMapParGuesses = numMapParGuesses;
             end
+            
+            obj.numNysParGuesses = numNysParGuesses;
             
             obj.verbose = 0;
             if verbose == 1
@@ -63,9 +65,9 @@ classdef nystromUniform < nystrom
         function obj = range(obj)
             %% Range of the number of sampled columns
             
-            %tmpl = round(linspace(obj.maxRank/10, obj.maxRank , obj.numMapParGuesses));   
+            tmpl = round(linspace(1, obj.maxRank , obj.numNysParGuesses));   
             %warning('The rank of the approximated matrix is fixed to maxRank');
-            tmpl = obj.maxRank;
+%             tmpl = obj.maxRank;
             
             %% Approximated kernel parameter range
             
@@ -156,6 +158,8 @@ classdef nystromUniform < nystrom
             
             % Uniformly sample points (rows of X) without replacement
             obj.sampledPoints = randperm(size(obj.X,1),chosenPar(1));
+            % Check sample
+            %scatter(1:size(obj.sampledPoints,2),obj.sampledPoints)
             
             obj.Xs = obj.X(obj.sampledPoints,:);
             
