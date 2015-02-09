@@ -21,7 +21,7 @@ classdef tikhonov < filter
         n               % Number of samples
         sz              % Size of the K or C matrix
         
-        fixedFilterPar  % Fixed filter parameter
+        fixedFilterParGuesses  % Fixed filter parameter guesses
         
         numGuesses      % number of filter hyperparameters guesses
         rng             % Parameter ranges map container
@@ -76,8 +76,8 @@ classdef tikhonov < filter
             defaultM = [];
             checkM = @(x) ( size(x,1) == size(x,2) && size(x,1) == size(K,1) );
             
-            defaultFixedFilterPar = [];
-            checkFixedFilterPar = @(x) x >= 0;
+            defaultFixedFilterParGuesses = [];
+            checkFixedFilterParGuesses = @(x) x >= 0;
             
             defaultVerbose = 0;
             checkVerbose = @(x) (x==0) || (x==1);
@@ -87,7 +87,7 @@ classdef tikhonov < filter
             
             addParameter(p,'numGuesses',defaultNumGuesses,checkNumGuesses)
             addParameter(p,'M',defaultM,checkM)
-            addParameter(p,'fixedFilterPar',defaultFixedFilterPar,checkFixedFilterPar)
+            addParameter(p,'fixedFilterParGuesses',defaultFixedFilterParGuesses,checkFixedFilterParGuesses)
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             addParameter(p,'preMultiplier',defaultPreMultiplier,checkPreMultiplier)
             
@@ -134,17 +134,20 @@ classdef tikhonov < filter
             end
 
             % Compute hyperparameter(s) range
-            if ~isempty(p.Results.numGuesses) && isempty(p.Results.fixedFilterPar)
+            if ~isempty(p.Results.numGuesses) && isempty(p.Results.fixedFilterParGuesses)
                 obj.numGuesses = p.Results.numGuesses;
                 
-            elseif isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterPar)
-                obj.fixedFilterPar = p.Results.fixedFilterPar;
-                obj.numGuesses = 1;
+            elseif isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterParGuesses)
+                obj.fixedFilterParGuesses = p.Results.fixedFilterParGuesses;
+                obj.numGuesses = size(p.Results.fixedFilterParGuesses,2);
                 
-            elseif ~isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterPar)
-                warning('numGuesses and fixedFilterPar optional parameters are not compatible. Setting numGuesses = 1');
-                obj.fixedFilterPar = p.Results.fixedFilterPar;
-                obj.numGuesses = 1;
+            elseif ~isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterParGuesses)
+                if p.Results.numGuesses == size( p.Results.fixedFilterParGuesses,2)
+                    obj.fixedFilterParGuesses = p.Results.fixedFilterParGuesses;
+                    obj.numGuesses = p.Results.fixedFilterParGuesses;
+                else
+                    error('numGuesses and fixedFilterParGuesses optional parameters are not consistent.');
+                end
             end
             
             obj.range();    % Compute range
@@ -250,7 +253,7 @@ classdef tikhonov < filter
         
         function obj = range(obj)
             
-            if isempty(obj.fixedFilterPar)
+            if isempty(obj.fixedFilterParGuesses)
             
                 % TODO: @Ale: Smart computation of eigmin and eigmax starting from the
                 % tridiagonal matrix U
@@ -313,7 +316,7 @@ classdef tikhonov < filter
                 tmp = (lmin.*(lmax/lmin).^(powers)) / obj.n;
                 
             else
-                tmp = obj.fixedFilterPar;
+                tmp = obj.fixedFilterParGuesses;
             end
             
             obj.rng = num2cell(tmp);

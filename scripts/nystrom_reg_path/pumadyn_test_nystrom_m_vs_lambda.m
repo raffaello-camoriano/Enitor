@@ -1,7 +1,7 @@
 setenv('LC_ALL','C');
 addpath(genpath('.'));
  
-clearAllButBP;
+% clearAllButBP;
 
 % Set experimental results relative directory name
 resdir = 'results';
@@ -16,19 +16,23 @@ ds  = pumadyn(4096,4096, 32 , 'n' , 'h');
 fixedsigma = 3.4530;
 
 % Set range of m
-mRange = 1:100:2000;
-nM = size(mRange,2);
+mMin = 3000;
+mMax = 3000;
+nM = 1;
+mRange = linspace(mMin,mMax,nM);
 
 % Set range of lambda
 lMin = -7;
 lMax = 2;
-nLambda = 20;
+nLambda = 1;
 lRange = logspace(lMin,lMax,nLambda);
 
 % Number of experiment repetitions for each parameter combination
-numRep = 3;
+numRep = 1;
 
 testErr = zeros(nLambda, nM, numRep);
+
+tic
 
 for j = 1:size(lRange,2)
     l = lRange(j);
@@ -50,7 +54,7 @@ for j = 1:size(lRange,2)
             map = @nystromUniform;
             fil = @tikhonov;
 
-            alg = nrls(map , 1000 , fil,  1 , 1 , m , fixedsigma , l , 0);
+            alg = nrls(map , 1000 , fil,  1 , 1 , 1 , m , fixedsigma , l , 0 , 1 , 1);
 
             
             exp = experiment(alg , ds , 1 , true , false , '' , resdir , 0);
@@ -61,7 +65,9 @@ for j = 1:size(lRange,2)
     end
 end
 
-%% Plot results
+toc
+
+% Plot results
 
 % Median test error surface
 testErrMed = median(testErr,3);

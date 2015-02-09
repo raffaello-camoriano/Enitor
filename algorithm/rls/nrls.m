@@ -4,6 +4,13 @@ classdef nrls < algorithm
     
     properties
         
+        storeFullTrainPerf
+        storeFullValPerf
+        valPerformance
+        trainPerformance
+        
+        numNysParGuesses
+        
         % Kernel props
         mapType
         kernelType
@@ -17,9 +24,9 @@ classdef nrls < algorithm
         % Filter props
         filterType
         filterParStar
-        filterParGuesses
+        fixedFilterParGuesses
         numFilterParGuesses    
-        fixedFilterPar
+        fixedMapParGuesses
         
 %         trainIdx    % Training indexes used internally in the actually performed training
 %         valIdx      % Validation indexes used internally in the actually
@@ -31,20 +38,27 @@ classdef nrls < algorithm
     
     methods
         
-        function obj = nrls(mapType, numKerParRangeSamples, filterType,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose)
-            init( obj , mapType, numKerParRangeSamples, filterType ,  numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose)
+        function obj = nrls(mapType, numKerParRangeSamples, filterType, numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf)
+            init( obj , mapType, numKerParRangeSamples, filterType , numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf)
         end
         
-        function init( obj , mapType, numKerParRangeSamples , filterType , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose)
+        function init( obj , mapType, numKerParRangeSamples , filterType , numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf)
             obj.mapType = mapType;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.filterType = filterType;
+            obj.numNysParGuesses = numNysParGuesses;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
             obj.maxRank = maxRank;
-            obj.fixedMapPar = fixedMapPar;
-            obj.fixedFilterPar = fixedFilterPar;
+            obj.fixedMapParGuesses = fixedMapParGuesses;
+            obj.fixedFilterParGuesses = fixedFilterParGuesses;
             obj.verbose = verbose;
+            obj.storeFullTrainPerf = storeFullTrainPerf;
+            obj.storeFullValPerf = storeFullValPerf;
+            
+            if obj.numMapParGuesses ~= size(obj.fixedFilterParGuesses,2)
+                error('obj.numMapParGuesses ~= size(obj.fixedFilterParGuesses,2)');
+            end
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
@@ -61,15 +75,20 @@ classdef nrls < algorithm
             Yval = Ytr(valIdx,:);
 
             % Train kernel
-            nyMapper = obj.mapType(Xtrain, obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank , obj.fixedMapPar , obj.verbose);
+            nyMapper = obj.mapType(Xtrain, obj.numNysParGuesses , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank , obj.fixedMapPar , obj.verbose);
             obj.kerParGuesses = nyMapper.rng;   % Warning: rename to mapParGuesses
-            obj.filterParGuesses = [];
+%             obj.filterParGuesses = [];
             
             valM = inf;     % Keeps track of the lowest validation error
             
-            % Full matrices for performance storage
-%             trainPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
-%             valPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
+            % Full matrices for performance storage initialization
+            if obj.storeFullTrainPerf == 1
+                warning('Training performance matrix storage unavailable');
+                obj.trainPerformance = zeros(size(obj.kerParGuesses,2), size(obj.fixedFilterParGuesses,2));
+            end
+            if obj.storeFullValPerf == 1
+                obj.valPerformance = zeros(size(obj.kerParGuesses,2), size(obj.fixedFilterParGuesses,2));
+            end
 
             while nyMapper.next()
                 
@@ -84,23 +103,11 @@ classdef nrls < algorithm
                 % Normalization factors
                 numSamples = nyMapper.currentPar(1);
                 
-                if ~isempty(obj.fixedFilterPar)
-                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
+                if ~isempty(obj.fixedFilterParGuesses)
+                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterParGuesses' , obj.fixedFilterParGuesses , 'verbose' , obj.verbose);
                 else
                     filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'verbose' , obj.verbose);
                 end
-                    %                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(nyMapper.W,1)) , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
-
-%                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                 % Numerically stable version
-%                 [L,D] = ldl(full(nyMapper.W));                    
-%                 sqrtDinv = diag(1./sqrt(abs(diag(D))));
-%                 A = sqrtDinv * (L\(nyMapper.C'));
-% %                 filter = obj.filterType( A * A' , A * Ytrain, numSamples , obj.numFilterParGuesses, eye(size(A,1)) , obj.fixedFilterPar , obj.verbose , ((L') \ sqrtDinv));
-%                 filter = obj.filterType( A * A' , A * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(A,1)) , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose , 'preMultiplier' , ((L') \ sqrtDinv));
-% 
-%                 obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
-%                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 
                 while filter.next()
                     
@@ -116,6 +123,13 @@ classdef nrls < algorithm
 
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );
+                    
+%                     if obj.storeFullTrainPerf == 1
+%                         obj.trainPerformance() = trainPerf;
+%                     end
+                    if obj.storeFullValPerf == 1
+                        obj.valPerformance(nyMapper.currentParIdx , filter.currentParIdx) = valPerf;
+                    end
                     
                     if valPerf < valM
                         

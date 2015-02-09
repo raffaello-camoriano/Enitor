@@ -17,17 +17,17 @@ ds = pumadyn(4096,4096, 32 , 'n' , 'h');
 
 %% Experiment setup, Nystrom method with uniform kernel column sampling. Gaussian kernel approximation.
 
-map = @nystromUniformIncremental;
+map = @nystromUniform;
 fil = @tikhonov;
 
 % Fixed Tikhonov filter lambda parameter guesses
 lMin = -7;
 lMax = 2;
 nLambda = 1;
-filterParGuesses = logspace(lMin,lMax,nLambda);
+fixedFilterParGuesses = logspace(lMin,lMax,nLambda);
 
-% mapType, numKerParRangeSamples, numNysParGuesses,  numMapParGuesses , filterParGuesses , maxRank , fixedMapPar , verbose)
-alg = incrementalNkrls(map , 1000 , 10 , 1 , filterParGuesses , 3000 , [] , 1 , 1 , 1);
+% mapType, numKerParRangeSamples, filterType, numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose , storeFullTrainPerf, storeFullValPerf
+alg = nrls(map , 1000 , fil , 10 , 1 , nLambda , 3000, [] , fixedFilterParGuesses , 1 , 1 , 1);
 
 exp = experiment(alg , ds , 1 , true , true , 'nm' , resdir , 1);
 exp.run();
