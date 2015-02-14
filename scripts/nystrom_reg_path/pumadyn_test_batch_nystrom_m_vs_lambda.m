@@ -22,8 +22,8 @@ fil = @tikhonov;
 
 % Fixed Tikhonov filter lambda parameter guesses
 lMin = -7;
-lMax = 2;
-nLambda = 1;
+lMax = 0;
+nLambda = 10;
 fixedFilterParGuesses = logspace(lMin,lMax,nLambda);
 
 % mapType, numKerParRangeSamples, filterType, numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose , storeFullTrainPerf, storeFullValPerf

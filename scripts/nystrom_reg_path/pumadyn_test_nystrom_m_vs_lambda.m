@@ -23,7 +23,7 @@ mRange = linspace(mMin,mMax,nM);
 
 % Set range of lambda
 lMin = -7;
-lMax = 2;
+lMax = 0;
 nLambda = 1;
 lRange = logspace(lMin,lMax,nLambda);
 

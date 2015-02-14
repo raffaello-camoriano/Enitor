@@ -4,6 +4,8 @@ classdef nrls < algorithm
     
     properties
         
+        ntr
+        
         storeFullTrainPerf
         storeFullValPerf
         valPerformance
@@ -18,7 +20,6 @@ classdef nrls < algorithm
         kerParGuesses
         mapParStar
         numMapParGuesses
-        fixedMapPar
         maxRank
 
         % Filter props
@@ -56,26 +57,30 @@ classdef nrls < algorithm
             obj.storeFullTrainPerf = storeFullTrainPerf;
             obj.storeFullValPerf = storeFullValPerf;
             
-            if obj.numMapParGuesses ~= size(obj.fixedFilterParGuesses,2)
-                error('obj.numMapParGuesses ~= size(obj.fixedFilterParGuesses,2)');
+            if obj.numFilterParGuesses ~= size(obj.fixedFilterParGuesses,2)
+                error('obj.numFilterParGuesses ~= size(obj.fixedFilterParGuesses,2)');
             end
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
                         
             % Training/validation sets splitting
-            shuffledIdx = randperm(size(Xtr,1));
+%             shuffledIdx = randperm(size(Xtr,1));
             tmp1 = floor(size(Xtr,1)*(1-validationPart));
-            trainIdx = shuffledIdx(1 : tmp1);
-            valIdx = shuffledIdx(tmp1 + 1 : end);
+%             trainIdx = shuffledIdx(1 : tmp1);
+%             valIdx = shuffledIdx(tmp1 + 1 : end);
+            trainIdx = 1 : tmp1;
+            valIdx = tmp1 + 1 : size(Xtr,1);
             
             Xtrain = Xtr(trainIdx,:);
             Ytrain = Ytr(trainIdx,:);
             Xval = Xtr(valIdx,:);
             Yval = Ytr(valIdx,:);
 
+            obj.ntr = size(Xtrain,1);
+
             % Train kernel
-            nyMapper = obj.mapType(Xtrain, obj.numNysParGuesses , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank , obj.fixedMapPar , obj.verbose);
+            nyMapper = obj.mapType(Xtrain, obj.numNysParGuesses , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxRank , obj.fixedMapParGuesses , obj.verbose);
             obj.kerParGuesses = nyMapper.rng;   % Warning: rename to mapParGuesses
 %             obj.filterParGuesses = [];
             
@@ -100,13 +105,15 @@ classdef nrls < algorithm
                 kernelVal = obj.kernelType(Xval,nyMapper.Xs);
                 kernelVal.compute(nyMapper.currentPar(2));
                 
-                % Normalization factors
-                numSamples = nyMapper.currentPar(1);
-                
+%                 if ~isempty(obj.fixedFilterParGuesses)
+%                     filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterParGuesses' , obj.fixedFilterParGuesses , 'verbose' , obj.verbose);
+%                 else
+%                     filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'verbose' , obj.verbose);
+%                 end                
                 if ~isempty(obj.fixedFilterParGuesses)
-                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterParGuesses' , obj.fixedFilterParGuesses , 'verbose' , obj.verbose);
+                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, obj.ntr , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(nyMapper.W,1)) , 'fixedFilterParGuesses' , obj.fixedFilterParGuesses , 'verbose' , obj.verbose);
                 else
-                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'verbose' , obj.verbose);
+                    filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, obj.ntr , 'numGuesses' , obj.numFilterParGuesses, 'M' , eye(size(nyMapper.W,1)) , 'verbose' , obj.verbose);
                 end
                 
                 while filter.next()
@@ -114,10 +121,6 @@ classdef nrls < algorithm
                     % Compute filter according to current hyperparameters
                     filter.compute();
 
-                    % Populate full performance matrices
-                    %trainPerformance(i,j) = perfm( kernel.K * filter.weights, Ytrain);
-                    %valPerformance(i,j) = perfm( kernelVal.K * filter.weights, Yval);
-                    
                     % Compute predictions matrix
                     YvalPred = kernelVal.K * filter.weights;
 
@@ -151,13 +154,6 @@ classdef nrls < algorithm
                 end
             end
             
-            % Find best parameters from validation performance matrix
-            
-              %[row, col] = find(valPerformance <= min(min(valPerformance)));
-
-%             obj.kerParStar = obj.kerParGuesses
-%             obj.filterParStar = ...  
-            
             if obj.verbose == 1
                 
                 % Print best kernel hyperparameter(s)
@@ -167,30 +163,17 @@ classdef nrls < algorithm
                 % Print best filter hyperparameter(s)
                 display('Best filter hyperparameter(s):')
                 obj.filterParStar
-                
             end
         end
         
         function Ypred = test( obj , Xte )
-
-                                                    
-%                 % Compute Kvm TrainVal kernel
-%                 kernelVal = nyMapper.kernelType(Xval,nyMapper.Xs);
-%                 kernelVal.compute(nyMapper.currentPar(2));
                 
             % Get kernel type and instantiate train-test kernel (including sigma)
-%             kernelTest = nyMapper.kernelType(Xte , obj.Xmodel);
             kernelTest = obj.kernelType(Xte , obj.Xmodel);
             kernelTest.compute(obj.mapParStar(2));
             
             % Compute scores
             Ypred = kernelTest.K * obj.c;
-            
-%             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%             % Numerically stable version
-%             B = (kernelTest.K / (L') ) * sqrtDinv;
-%             YvalPred = B * obj.c;
-%             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
         end
     end
 end

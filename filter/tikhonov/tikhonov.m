@@ -60,7 +60,7 @@ classdef tikhonov < filter
             %%%% Required parameters
             
             checkK = @(x) size(x,1) == size(x,2);
-            checkNumSamples = @(x) (x > 0) && (x == size(Y,1));
+            checkNumSamples = @(x) (x > 0);
             
             addRequired(p,'K',checkK);
             addRequired(p,'Y');
@@ -77,7 +77,7 @@ classdef tikhonov < filter
             checkM = @(x) ( size(x,1) == size(x,2) && size(x,1) == size(K,1) );
             
             defaultFixedFilterParGuesses = [];
-            checkFixedFilterParGuesses = @(x) x >= 0;
+%             checkFixedFilterParGuesses = @(x) x >= 0;
             
             defaultVerbose = 0;
             checkVerbose = @(x) (x==0) || (x==1);
@@ -87,7 +87,7 @@ classdef tikhonov < filter
             
             addParameter(p,'numGuesses',defaultNumGuesses,checkNumGuesses)
             addParameter(p,'M',defaultM,checkM)
-            addParameter(p,'fixedFilterParGuesses',defaultFixedFilterParGuesses,checkFixedFilterParGuesses)
+            addParameter(p,'fixedFilterParGuesses',defaultFixedFilterParGuesses)
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             addParameter(p,'preMultiplier',defaultPreMultiplier,checkPreMultiplier)
             
@@ -95,7 +95,7 @@ classdef tikhonov < filter
 %             p.KeepUnmatched = true;
             parse(p, K , Y , numSamples , varargin{:})
             
-            p.Results
+%             p.Results
             
             % Get size of kernel/covariance matrix
             obj.sz = size(p.Results.K,1);

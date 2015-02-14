@@ -61,10 +61,12 @@ classdef incrementalNkrls < algorithm
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
                         
             % Training/validation sets splitting
-            shuffledIdx = randperm(size(Xtr,1));
+%             shuffledIdx = randperm(size(Xtr,1));
             tmp1 = floor(size(Xtr,1)*(1-validationPart));
-            trainIdx = shuffledIdx(1 : tmp1);
-            valIdx = shuffledIdx(tmp1 + 1 : end);
+%             trainIdx = shuffledIdx(1 : tmp1);
+%             valIdx = shuffledIdx(tmp1 + 1 : end);
+            trainIdx = 1 : tmp1;
+            valIdx = tmp1 + 1 : size(Xtr,1);
             
             Xtrain = Xtr(trainIdx,:);
             Ytrain = Ytr(trainIdx,:);
@@ -91,7 +93,6 @@ classdef incrementalNkrls < algorithm
                 obj.valPerformance = zeros(size(obj.kerParGuesses,2), size(obj.filterParGuesses,2));
             end
 
-            YvalPred = zeros(size(Xval,1),size(obj.filterParGuesses,2));
             
             while nyMapper.next()
                 
@@ -105,10 +106,10 @@ classdef incrementalNkrls < algorithm
                 for i = 1:size(obj.filterParGuesses,2)
 
                     % Compute predictions matrix
-                    YvalPred(:,i) = kernelVal.K * nyMapper.alpha{i};
+                    YvalPred = kernelVal.K * nyMapper.alpha{i};
 
                     % Compute performance
-                    valPerf = performanceMeasure( Yval , YvalPred(:,i) , valIdx );                
+                    valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
 
 %                     if obj.storeFullTrainPerf == 1
 %                         obj.trainPerformance() = trainPerf;
@@ -137,13 +138,6 @@ classdef incrementalNkrls < algorithm
                 end
             end
             
-            % Find best parameters from validation performance matrix
-            
-              %[row, col] = find(valPerformance <= min(min(valPerformance)));
-
-%             obj.kerParStar = obj.kerParGuesses
-%             obj.filterParStar = ...  
-            
             if obj.verbose == 1
                 
                 % Print best kernel hyperparameter(s)
@@ -153,7 +147,6 @@ classdef incrementalNkrls < algorithm
                 % Print best filter hyperparameter(s)
                 display('Best filter hyperparameter(s):')
                 obj.filterParStar
-                
             end
         end
         
@@ -165,7 +158,6 @@ classdef incrementalNkrls < algorithm
             
             % Compute scores
             Ypred = kernelTest.K * obj.c;
-            
         end
     end
 end

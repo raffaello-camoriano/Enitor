@@ -27,9 +27,6 @@ classdef nystromUniformIncremental < nystrom
         
         prevPar
         
-        A
-        B
-        D
         M
         alpha
     end
@@ -80,7 +77,7 @@ classdef nystromUniformIncremental < nystrom
             
             % Compute range of number of sampled columns (m)
             tmpm = round(linspace(1, obj.maxRank , obj.numNysParGuesses));   
-            
+
             % Approximated kernel parameter range
             
             if isempty(obj.fixedMapPar)
@@ -135,7 +132,6 @@ classdef nystromUniformIncremental < nystrom
             Sx1x2 = X1 * X2';
             
             obj.SqDistMat = repmat(Sx1 , 1 , size(X2,1)) -2*Sx1x2 + repmat(Sx2 , size(X1,1) , 1);
-        
         end
         
         function compute(obj , mapPar)
@@ -147,13 +143,11 @@ classdef nystromUniformIncremental < nystrom
                     mapPar
                 end
                 chosenPar = mapPar;
-                
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 
                 % If any current value for any of the parameters is not available, abort.
                 error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
             else
-                
                 if(obj.verbose == 1)
                     disp('Mapping will be computed according to the current internal hyperparameter(s)');
                     obj.currentPar
@@ -165,61 +159,106 @@ classdef nystromUniformIncremental < nystrom
             % Incremental Update Rule %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            if isempty(obj.prevPar)
+            if obj.currentParIdx == 1
                 
                 %%% Initialization (i = 1)
-
-                obj.D = cell(size(obj.filterParGuesses));
+                
+                % Preallocate calls of matrices 
+                
                 obj.M = cell(size(obj.filterParGuesses));
+                [obj.M{:,:}] = deal(zeros(obj.maxRank));
+                
                 obj.alpha = cell(size(obj.filterParGuesses));
-                            
+                [obj.alpha{:,:}] = deal(zeros(obj.maxRank,size(obj.Y,2)));
+                
                 sampledPoints = 1:chosenPar(1);
                 obj.s = chosenPar(1);  % Number of new columns
                 obj.Xs = obj.X(sampledPoints,:);
                 obj.computeSqDistMat(obj.X , obj.Xs);
                 A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
-                obj.C = A;
                 
+                A = A/sqrt(obj.ntr);
+
+                % Set C_2
+                obj.C = A;
+
                 for i = 1:size(obj.filterParGuesses,2)
-                    obj.M{i} = inv(A'*A + obj.ntr * obj.filterParGuesses(i) * eye(obj.s));
-                    obj.D{i} = obj.M{i};
-                    obj.alpha{i} = obj.D{i} * A' * obj.Y;
+                    % D_1
+%                     D = inv(A'*A + obj.ntr * obj.filterParGuesses(i) * eye(obj.s));
+                    D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
+                    % alpha_2
+                    obj.alpha{i} = 	D * (A' * obj.Y / sqrt(obj.ntr));
+                    % M_2
+                    obj.M{i}(1:chosenPar(1), 1:chosenPar(1)) = D;
                 end
                 
             elseif obj.prevPar(1) ~= chosenPar(1)
-                
+               
                 %%% Generic i-th incremental update step
                 
                 %Sample new columns of K
-                sampledPoints = obj.prevPar(1)+1:chosenPar(1);
+                sampledPoints = (obj.prevPar(1)+1):chosenPar(1);
                 obj.s = chosenPar(1) - obj.prevPar(1);  % Number of new columns
                 XsNew = obj.X(sampledPoints,:);
                 obj.Xs = [ obj.Xs ; XsNew ];
                 obj.computeSqDistMat(obj.X , XsNew);
                 A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
+               
+                A = A/sqrt(obj.ntr);
                 
-                % Update B
-                obj.B = obj.C' * A;
-                % Update C
+                % Update B_(t)
+                B = obj.C' * A;
+                
+                % Update C_(t+1)
                 obj.C = [obj.C A];
+                
+                Aty = A' * obj.Y/sqrt(obj.ntr);
+                
+                % for cycle implementation
                 
                 for i = 1:size(obj.filterParGuesses,2)
 
-                    % Update D_(t)
-                    obj.D{i} = inv(A' * A - obj.B' * obj.M{i} * obj.B + obj.ntr * obj.filterParGuesses(i) * eye(obj.s));
+%                     max(max(obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1))))
+                    MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
+
+                    %D = inv(A' * A - B' * MB +  obj.filterParGuesses(i) * eye(obj.s));
+
+%                     sum(sum(isinf(A' * A - B' * MB)))
+%                     sum(sum(isnan(A' * A - B' * MB)))
                     
-                    % Precompute BD and MBD, needed later
-                    BD{i} = obj.B * obj.D{i};
-                    MBD{i} = obj.M{i} * BD{i};
+%                     isreal(A)
+%                     isreal(B)
+%                     isreal(MB)
+%                     sum(sum(isnan(A)))
+%                     sum(sum(isnan(B)))
+%                     sum(sum(isnan(MB)))  
+%                     sum(sum(isinf(A)))
+%                     sum(sum(isinf(B)))
+%                     sum(sum(isinf(MB)))     
+                    if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
+                        
+                    end
+                    [U, S] = eig(A' * A - B' * MB);
+                    ds = diag(S);
+                    ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0
+                    ds = real((ds>0).*ds);    % Set eigenvalues < 0 for numerical reasons to 0
+                    U = real(U);
+                    D = U * diag(1./(ds + obj.filterParGuesses(i))) * U';
+%                     isreal(D)
+%                     isreal(U)
+%                     isreal(diag(1./(ds + obj.filterParGuesses(i))))
+                    
+                    MBD = MB * D;
+%                     isreal(MBD)
 
-                    % Update alpha_(t+1)
-                    obj.alpha{i} = [ obj.alpha{i} + MBD{i} * obj.B' * obj.alpha{i} - MBD{i} * A' * obj.Y ; ...
-                                  -obj.D{i} * obj.B' * obj.alpha{i} + obj.D{i} * A' * obj.Y        ];
-
-                    % Update M_(t+1)
-%                     norm(obj.M{i} + MBD{i} * obj.B')
-                    obj.M{i} = [obj.M{i} + MBD{i} * obj.B' * obj.M{i} , -MBD{i}; ...
-                                -MBD{i}'                                obj.D{i}];                
+                    df = B' * obj.alpha{i} - Aty;
+                    obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
+                    obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
+                  
+                    obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
+                    obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
+                    obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
+                    obj.M{i}((obj.prevPar(1)+1):chosenPar(1), (obj.prevPar(1)+1):chosenPar(1)) = D;
                 end
             end
         end

@@ -11,6 +11,8 @@ classdef nystromUniform < nystrom
     % maxRank: Maximum rank of the Nystrom approximation
     
     properties
+        prevPar
+        
         numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
         
@@ -43,11 +45,11 @@ classdef nystromUniform < nystrom
             obj.maxRank = maxRank;
             obj.fixedMapPar = fixedMapPar;
             
-            if ~isempty(fixedMapPar)
-                obj.numMapParGuesses = 1;
-            else
+%             if ~isempty(fixedMapPar)
+%                 obj.numMapParGuesses = size(fixedMapPar;
+%             else
                 obj.numMapParGuesses = numMapParGuesses;
-            end
+%             end
             
             obj.numNysParGuesses = numNysParGuesses;
             
@@ -60,6 +62,7 @@ classdef nystromUniform < nystrom
             obj.range();
             obj.currentParIdx = 0;
             obj.currentPar = [];
+            obj.prevPar = [];
         end
         
         function obj = range(obj)
@@ -155,13 +158,22 @@ classdef nystromUniform < nystrom
 
             % Uniformly sample points (rows of X) with replacement
 %             obj.sampledPoints = randi(size(obj.X,1),1,chosenPar(1));
-            
+
+                
             % Uniformly sample points (rows of X) without replacement
-            obj.sampledPoints = randperm(size(obj.X,1),chosenPar(1));
+%             obj.sampledPoints = randperm(size(obj.X,1),chosenPar(1));
             % Check sample
             %scatter(1:size(obj.sampledPoints,2),obj.sampledPoints)
             
-            obj.Xs = obj.X(obj.sampledPoints,:);
+%             if ~isempty(obj.prevPar)
+%                 newSampledPoints = obj.prevPar(1)+1:chosenPar(1);
+%                 XsNew = obj.X(newSampledPoints ,:);
+%                 obj.Xs = [ obj.Xs ; XsNew ];  
+%                 obj.sampledPoints = [ obj.sampledPoints , newSampledPoints ];
+%             else
+                obj.sampledPoints = 1:chosenPar(1);
+                obj.Xs = obj.X(obj.sampledPoints,:);
+%             end
             
             % Compute C and W
             obj.computeSqDistMat(obj.X , obj.Xs);
@@ -181,6 +193,7 @@ classdef nystromUniform < nystrom
 
             available = false;
             if length(obj.rng) > obj.currentParIdx
+                obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
                 obj.currentPar = obj.rng{obj.currentParIdx};
                 available = true;

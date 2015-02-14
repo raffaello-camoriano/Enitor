@@ -24,7 +24,7 @@ nM = size(mRange,2);
 
 % Set range of lambda
 lMin = -7;
-lMax = 1;
+lMax = 0;
 nLambda = 10;
 lRange = logspace(lMin,lMax,nLambda);
 
