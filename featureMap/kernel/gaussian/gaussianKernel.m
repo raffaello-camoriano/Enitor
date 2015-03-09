@@ -4,10 +4,10 @@ classdef gaussianKernel < kernel
     
     properties
         
-        numGuesses      % Number of guesses for the parameters
-        rng             % Parameter ranges map container
-        currentParIdx   % Current parameter combination indexes map container
-        currentPar      % Current parameter combination map container
+        numMapParGuesses        % Number of guesses for the parameters
+        mapParGuesses           % Parameter ranges container
+        currentParIdx           % Current parameter combination indexes map container
+        currentPar              % Current parameter combination map container
         
         n               % Number of X1 samples
         m               % Number of X2 samples
@@ -17,43 +17,87 @@ classdef gaussianKernel < kernel
     
     methods
         
-        function obj = gaussianKernel( X1 , X2 , numGuesses , verbose)
-
-            if  nargin > 0
-                if  nargin > 3
-                    obj.init( X1 , X2 , numGuesses , verbose);
-                elseif  nargin > 2
-                    obj.init( X1 , X2 , numGuesses);
-                else                    
-                    obj.init( X1 , X2);
-                end
-            end
+%         function obj = gaussianKernel( X1 , X2 , numGuesses , verbose)
+% 
+%             if  nargin > 0
+%                 if  nargin > 3
+%                     obj.init( X1 , X2 , numGuesses , verbose);
+%                 elseif  nargin > 2
+%                     obj.init( X1 , X2 , numGuesses);
+%                 else                    
+%                     obj.init( X1 , X2);
+%                 end
+%             end
+%         end        
+        function obj = gaussianKernel( X1 , X2 , varargin)
+            obj.init( X1 , X2 , varargin);
         end
         
-        function init( obj , X1 , X2 , numGuesses , verbose)
+        function init( obj , X1 , X2 , varargin)
+            
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            checkX1 = @(x) size(x,1) > 0;
+            checkX2 = @(x) size(x,1) == size(x,2);
+            
+            addRequired(p,'X1',checkX1);
+            addRequired(p,'X2',checkX2);
+            
+            %%%% Optional parameters
+            % Optional parameter names:
+            % numMapParGuesses , mapParGuesses, verbose
+            
+            % mapParGuesses       % Map parameter guesses cell array
+            defaultMapParGuesses = [];
+            checkMapParGuesses = @(x) iscell(x) && size(x,2) > 0 ;            
+            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);                    
+            
+            % numMapParGuesses        % Number of map parameter guesses
+            defaultNumMapParGuesses = 10;
+            checkNumMapParGuesses = @(x) isinteger(x) && x > 0 ;            
+            addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
+            
+            % verbose             % 1: verbose; 0: silent      
+            defaultVerbose = 0;
+            checkVerbose = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'verbose',defaultVerbose,checkVerbose);
+            
+            % Parse function inputs
+            parse(p, X1 , X2 ,  varargin{:})
+                                    
+            % Assign parsed parameters to object properties
+            props = properties(p.Results);
+            for idx = 1:size(props,2)
+                set(obj, props{idx} , p.Results.(props{idx}));
+            end
+            
+            %%% Joint parameters validation
+            if size(X1,2) ~= size(X2,1)
+                error('size(X1,2) ~= size(X2,1)');
+            end
+            
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                error('either mapParGuesses or numMapParGuesses must be specified');
+            end    
+            
+            if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
+                error('mapParGuesses and numMapParGuesses cannot be specified together');
+            end
             
             % Set dimensions and compute square distances matrix
             obj.n = size(X1 , 1);
             obj.m = size(X2 , 1);
             obj.computeSqDistMat(X1,X2);
             
-            if( nargin >= 4 )
-                if numGuesses > 0
-                    obj.numGuesses = numGuesses;
-                else
-                    obj.numGuesses = 1;
-                end            
-
+            % Conditional range computation
+            if ~isempty(obj.numMapParGuesses)
+                display('Computing Gaussian kernel range');
                 obj.range();    % Compute range
-                obj.currentParIdx = 0;
-                obj.currentPar = [];
-                
             end
-            
-            obj.verbose = 0;
-            if nargin >=5 && verbose == 1
-                obj.verbose = 1;
-            end
+            obj.currentParIdx = 0;
+            obj.currentPar = [];
         end
         
         % Computes the squared distance matrix SqDistMat based on X1, X2
@@ -90,7 +134,7 @@ classdef gaussianKernel < kernel
             end	
             
             tmp = linspace(minGuess, maxGuess , obj.numGuesses);
-            obj.rng = num2cell(tmp);
+            obj.mapParGuesses = num2cell(tmp);
         end
         
         % Computes the kernel matrix K based on SqDistMat and
@@ -117,39 +161,16 @@ classdef gaussianKernel < kernel
         function available = next(obj)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty,obj.rng)
+            if cellfun(@isempty,obj.mapParGuesses)
                 obj.range();
             end
 
             available = false;
-            if length(obj.rng) > obj.currentParIdx
+            if length(obj.mapParGuesses) > obj.currentParIdx
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.rng{obj.currentParIdx};
+                obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
                 available = true;
             end
         end
-
-%         % returns true if the next parameter combination is available and
-%         % updates the current parameter combination 'currentPar'
-%         function available = next(obj)
-%             
-%             % If any range for any of the parameters is not available, recompute all ranges.
-%             if sum(cellfun(@isempty,values(obj.rng))) > 0
-%                 obj.range
-%             end
-%                         
-%             available = false;
-%             for key = keys(obj.rng)
-%                 keyStr = key{1};
-%                 if length(obj.rng(keyStr)) >= obj.currentParIdx(keyStr) + 1
-%                     obj.currentParIdx(keyStr) = obj.currentParIdx(keyStr) + 1;
-%                     
-%                     tmp = obj.rng(keyStr);
-%                     obj.currentPar(keyStr) = tmp(obj.currentParIdx(keyStr));
-%                     
-%                     available = true;
-%                 end
-%             end
-%         end
     end
 end

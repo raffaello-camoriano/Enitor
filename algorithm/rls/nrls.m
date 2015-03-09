@@ -10,6 +10,8 @@ classdef nrls < algorithm
         storeFullValPerf
         valPerformance
         trainPerformance
+        storeFullTestPerf
+        testPerformance
         
         numNysParGuesses
         
@@ -39,11 +41,11 @@ classdef nrls < algorithm
     
     methods
         
-        function obj = nrls(mapType, numKerParRangeSamples, filterType, numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf)
-            init( obj , mapType, numKerParRangeSamples, filterType , numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf)
+        function obj = nrls(mapType, numKerParRangeSamples, filterType, numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
+            init( obj , mapType, numKerParRangeSamples, filterType , numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
         end
         
-        function init( obj , mapType, numKerParRangeSamples , filterType , numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf)
+        function init( obj , mapType, numKerParRangeSamples , filterType , numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapParGuesses , fixedFilterParGuesses , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
             obj.mapType = mapType;
             obj.numKerParRangeSamples = numKerParRangeSamples;
             obj.filterType = filterType;
@@ -56,14 +58,47 @@ classdef nrls < algorithm
             obj.verbose = verbose;
             obj.storeFullTrainPerf = storeFullTrainPerf;
             obj.storeFullValPerf = storeFullValPerf;
+            obj.storeFullTestPerf = storeFullTestPerf;
             
             if obj.numFilterParGuesses ~= size(obj.fixedFilterParGuesses,2)
                 error('obj.numFilterParGuesses ~= size(obj.fixedFilterParGuesses,2)');
             end
         end
         
-        function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
+        function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin)
                         
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            checkRecompute = @(x) x == 1 || x == 0 ;
+            checkValidationPart = @(x) x > 0 && x < 1;
+            
+            addRequired(p,'Xtr');
+            addRequired(p,'Ytr');
+            addRequired(p,'performanceMeasure');
+            addRequired(p,'recompute',checkRecompute);
+            addRequired(p,'validationPart',checkValidationPart);
+            
+            %%%% Optional parameters
+            % Optional parameter names:
+            % Xte, Yte
+            
+            defaultXte = [];
+            checkXte = @(x) size(x,2) == size(Xtr,2);
+            
+            defaultYte = [];
+            checkYte = @(x) size(x,2) == size(Ytr,2);
+            
+            addParameter(p,'Xte',defaultXte,checkXte)
+            addParameter(p,'Yte',defaultYte,checkYte)
+
+            % Parse function inputs
+            parse(p, Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin{:})
+            
+            Xte = p.Results.Xte;
+            Yte = p.Results.Yte;
+            
             % Training/validation sets splitting
 %             shuffledIdx = randperm(size(Xtr,1));
             tmp1 = floor(size(Xtr,1)*(1-validationPart));
@@ -88,11 +123,13 @@ classdef nrls < algorithm
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
-                warning('Training performance matrix storage unavailable');
-                obj.trainPerformance = zeros(size(obj.kerParGuesses,2), size(obj.fixedFilterParGuesses,2));
+                obj.trainPerformance = zeros(size(obj.kerParGuesses,2), obj.numFilterParGuesses);
             end
             if obj.storeFullValPerf == 1
-                obj.valPerformance = zeros(size(obj.kerParGuesses,2), size(obj.fixedFilterParGuesses,2));
+                obj.valPerformance = zeros(size(obj.kerParGuesses,2), obj.numFilterParGuesses);
+            end
+            if obj.storeFullTestPerf == 1
+                obj.testPerformance = zeros(size(obj.kerParGuesses,2), obj.numFilterParGuesses);
             end
 
             while nyMapper.next()
@@ -127,13 +164,45 @@ classdef nrls < algorithm
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );
                     
-%                     if obj.storeFullTrainPerf == 1
-%                         obj.trainPerformance() = trainPerf;
-%                     end
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %  Store performance matrices  %
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    
+                    if obj.storeFullTrainPerf == 1                    
+                        
+                        kernelTrain = obj.kernelType(Xtrain,nyMapper.Xs);
+                        kernelTrain.compute(nyMapper.currentPar(2));
+
+                        % Compute training predictions matrix
+                        YtrainPred = kernelTrain.K * filter.weights;
+                        
+                        % Compute training performance
+                        trainPerf = performanceMeasure( Ytrain , YtrainPred , trainIdx );
+                        
+                        obj.trainPerformance(nyMapper.currentParIdx , filter.currentParIdx) = trainPerf;
+                    end
+                    
                     if obj.storeFullValPerf == 1
                         obj.valPerformance(nyMapper.currentParIdx , filter.currentParIdx) = valPerf;
                     end
+                    if obj.storeFullTestPerf == 1                    
+                        
+                        % Instantiate train-test kernel (including sigma)
+                        kernelTest = obj.kernelType(Xte , nyMapper.Xs);
+                        kernelTest.compute(nyMapper.currentPar(2));
+
+                        % Compute scores
+                        YtestPred = kernelTest.K * filter.weights;
+
+                        % Compute training performance
+                        testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );
+                        
+                        obj.testPerformance(nyMapper.currentParIdx , filter.currentParIdx) = testPerf;
+                    end
                     
+                    %%%%%%%%%%%%%%%%%%%%
+                    % Store best model %
+                    %%%%%%%%%%%%%%%%%%%%
                     if valPerf < valM
                         
                         % Update best kernel parameter combination

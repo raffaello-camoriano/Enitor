@@ -17,9 +17,9 @@ ds = pumadyn(4096,4096, 32 , 'n' , 'h');
 %% Set ranges
 
 % Fixed Tikhonov filter lambda parameter guesses
-lMin = -6;
+lMin = -5;
 lMax = 0;
-nLambda = 10;
+nLambda = 20;
 fixedFilterParGuesses = logspace(lMin,lMax,nLambda);
 
 fixedMapPar = 6;     %Pumadyn
@@ -31,7 +31,7 @@ fixedMapPar = 6;     %Pumadyn
 map = @nystromUniformIncremental;
 
 % mapType, numKerParRangeSamples, numNysParGuesses,  numMapParGuesses , filterParGuesses , maxRank , fixedMapPar , verbose)
-alg = incrementalNkrls(map , 1000 , 20 , 1 , fixedFilterParGuesses , 3000 , fixedMapPar , 0 , 0 , 0);
+alg = incrementalNkrls(map , 1000 , 20 , 1 , fixedFilterParGuesses , 3000 , fixedMapPar , 0 , 1,1,1);
 
 exp = experiment(alg , ds , 1 , true , true , 'nm' , resdir , 0);
 exp.run();
@@ -42,7 +42,7 @@ map = @nystromUniform;
 fil = @tikhonov;
 
 % mapType, numKerParRangeSamples, filterType, numNysParGuesses , numMapParGuesses , numFilterParGuesses , maxRank , fixedMapPar , fixedFilterPar , verbose , storeFullTrainPerf, storeFullValPerf
-alg = nrls(map , 1000 , fil , 1 , 1 , nLambda , 3000, fixedMapPar , fixedFilterParGuesses , 0 , 0 , 0);
+alg = nrls(map , 1000 , fil , 1 , 1 , nLambda , 3000, fixedMapPar , fixedFilterParGuesses , 0 , 1,1,1);
 
 exp2 = experiment(alg , ds , 1 , true , true , 'nm' , resdir , 0);
 exp2.run();

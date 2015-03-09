@@ -21,12 +21,11 @@ classdef tikhonov < filter
         n               % Number of samples
         sz              % Size of the K or C matrix
         
-        fixedFilterParGuesses  % Fixed filter parameter guesses
-        
-        numGuesses      % number of filter hyperparameters guesses
-        rng             % Parameter ranges map container
-        currentParIdx   % Current parameter combination indexes map container
-        currentPar      % Current parameter combination map container
+        filterParGuesses        % Filter parameter guesses (range)
+        numFilterParGuesses     % number of filter hyperparameters guesses
+%         rng                     % Parameter ranges map container
+        currentParIdx           % Current parameter combination indexes map container
+        currentPar              % Current parameter combination map container
     end
     
     methods
@@ -85,18 +84,15 @@ classdef tikhonov < filter
             defaultPreMultiplier = [];
             checkPreMultiplier = @(x) ( size(x,1) == size(x,2) && size(x,1) == size(K,1) );
             
-            addParameter(p,'numGuesses',defaultNumGuesses,checkNumGuesses)
+            addParameter(p,'numFilterParGuesses',defaultNumGuesses,checkNumGuesses)
             addParameter(p,'M',defaultM,checkM)
-            addParameter(p,'fixedFilterParGuesses',defaultFixedFilterParGuesses)
+            addParameter(p,'filterParGuesses',defaultFixedFilterParGuesses)
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             addParameter(p,'preMultiplier',defaultPreMultiplier,checkPreMultiplier)
             
             % Parse function inputs
-%             p.KeepUnmatched = true;
             parse(p, K , Y , numSamples , varargin{:})
-            
-%             p.Results
-            
+                        
             % Get size of kernel/covariance matrix
             obj.sz = size(p.Results.K,1);
             
@@ -319,7 +315,9 @@ classdef tikhonov < filter
                 tmp = obj.fixedFilterParGuesses;
             end
             
-            obj.rng = num2cell(tmp);
+%             obj.rng = num2cell(tmp);
+            obj.filterParGuesses = num2cell(tmp);
+
         end
         
         function compute(obj , filterPar )
@@ -365,14 +363,14 @@ classdef tikhonov < filter
         function available = next(obj)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty,obj.rng)
+            if cellfun(@isempty,obj.filterParGuesses)
                 obj.range();
             end
 
             available = false;
-            if length(obj.rng) > obj.currentParIdx
+            if length(obj.filterParGuesses) > obj.currentParIdx
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.rng{obj.currentParIdx};
+                obj.currentPar = obj.filterParGuesses{obj.currentParIdx};
                 available = true;
             end
         end

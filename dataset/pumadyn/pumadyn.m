@@ -120,9 +120,9 @@ classdef pumadyn < dataset
 %             end
 %         end
             
-        % Compute performance measure on the given outputs according to the
-        % USPS dataset-specific ranking standard measure
+        % Compute performance measure on the given outputs
         function perf = performanceMeasure(obj , Y , Ypred , varargin)
+            % RMSE
             perf = sqrt(sum((Y - Ypred).^2)/size(Y,1));
         end
         

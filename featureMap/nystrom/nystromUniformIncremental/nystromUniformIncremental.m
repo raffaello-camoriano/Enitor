@@ -184,7 +184,6 @@ classdef nystromUniformIncremental < nystrom
 
                 for i = 1:size(obj.filterParGuesses,2)
                     % D_1
-%                     D = inv(A'*A + obj.ntr * obj.filterParGuesses(i) * eye(obj.s));
                     D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
                     % alpha_2
                     obj.alpha{i} = 	D * (A' * obj.Y / sqrt(obj.ntr));

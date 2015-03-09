@@ -37,10 +37,12 @@ classdef krls < algorithm
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
             
             % Training/validation sets splitting
-            shuffledIdx = randperm(size(Xtr,1));
-            tmp1 = floor(size(Xtr,1)*(1-validationPart));
-            trainIdx = shuffledIdx(1 : tmp1);
-            valIdx = shuffledIdx(tmp1 + 1 : end);
+%             shuffledIdx = randperm(size(Xtr,1));
+            ntr = floor(size(Xtr,1)*(1-validationPart));
+%             trainIdx = shuffledIdx(1 : tmp1);
+%             valIdx = shuffledIdx(tmp1 + 1 : end);
+            trainIdx = 1 : ntr;
+            valIdx = ntr + 1 : size(Xtr,1);
             
             Xtrain = Xtr(trainIdx,:);
             Ytrain = Ytr(trainIdx,:);
@@ -120,15 +122,6 @@ classdef krls < algorithm
             
             % Plot errors
 %             semilogx(cell2mat(filter.rng),  valPerformance);            
-            
-            
-            
-            % Find best parameters from validation performance matrix
-            
-              %[row, col] = find(valPerformance <= min(min(valPerformance)));
-
-%             obj.kerParStar = obj.kerParGuesses
-%             obj.filterParStar = ...  
             
             % Print best kernel hyperparameter(s)
             display('Best kernel hyperparameter(s):')
