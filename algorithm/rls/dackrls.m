@@ -8,7 +8,6 @@ classdef dackrls < algorithm
     properties
         
         % I/O options
-        verbose             % 1: verbose; 0: silent        
         storeFullTrainPerf  % Store full training performance matrix 1/0
         storeFullValPerf    % Store full validation performance matrix 1/0
         storeFullTestPerf   % Store full test performance matrix 1/0
@@ -16,9 +15,9 @@ classdef dackrls < algorithm
         trainPerformance    % Training performance matrix
         testPerformance     % Test performance matrix
         
-        
         mGuesses        % Guesses vector of the number of chunks m for each partition
         numMGuesses     
+        XtrSplit        % Contains the indexes of the samples of each split
         X               % Full dataset inputs
         Y               % Full dataset outputs
         NTr             % Total number of training samples
@@ -26,6 +25,9 @@ classdef dackrls < algorithm
         partitionIdx    % Cell array containing the disjoint sample indexes sets of the current partitions
         trainIdx        % Training set indexes
         valIdx          % Validation set indexes
+        
+        c
+        Xmodel
         
         % Map properties (e.g. kernel or explicit feature map)
         map                     % Handle to the specified map
@@ -55,11 +57,13 @@ classdef dackrls < algorithm
             %%%% Required parameters
             
             % map
-            checkMap = @(x) isa(x,'featureMap');
+%             checkMap = @(x) isa(x,'featureMap');
+            checkMap = @(x) isa(x,'function_handle');
             addRequired(p,'map',checkMap);
 
             % filter
-            checkFilter = @(x) isa(x,'filter');
+%             checkFilter = @(x) isa(x,'filter');
+            checkFilter = @(x) isa(x,'function_handle');
             addRequired(p,'filter', checkFilter);
             
             % mGuesses
@@ -90,40 +94,31 @@ classdef dackrls < algorithm
             
             % mapParGuesses       % Map parameter guesses cell array
             defaultMapParGuesses = [];
-            checkMapParGuesses = @(x) iscell(x) && size(x,2) > 0 ;            
+            checkMapParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
             addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);                    
             
             % numMapParGuesses        % Number of map parameter guesses
-            defaultNumMapParGuesses = 10;
+            defaultNumMapParGuesses = [];
             checkNumMapParGuesses = @(x) isinteger(x) && x > 0 ;            
             addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
             
             % filterParGuesses       % filter parameter guesses vector
             defaultFilterParGuesses = [];
-            checkFilterParGuesses = @(x) iscell(x) && size(x,2) > 0 ;            
+            checkFilterParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
             addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                
             
             % numFilterParGuesses    % Number of filter parameter guesses vector
-            defaultNumFilterParGuesses = 10;
+            defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x) isinteger(x) && x > 0 ;            
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses);      
-            
-            addParameter(p,'verbose',defaultVerbose,checkVerbose)
-            addParameter(p,'storeFullTrainPerf',defaultStoreFullTrainPerf,checkStoreFullTrainPerf)
-            addParameter(p,'storeFullValPerf',defaultStoreFullValPerf,checkStoreFullValPerf)
-            addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf)
-            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses)
-            addParameter(p,'numMapParGuesses',defaultNumMapParGuesses, checkNumMapParGuesses)
-            addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses)
-            addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses, checkNumFilterParGuesses)
             
             % Parse function inputs
             parse(p, map, filter, mGuesses, varargin{:})
             
             % Assign parsed parameters to object properties
-            props = properties(p.Results);
-            for idx = 1:size(props,2)
-                set(obj, props{idx} , p.Results.(props{idx}));
+            fields = fieldnames(p.Results);
+            for idx = 1:numel(fields)
+                obj.(fields{idx}) = p.Results.(fields{idx});
             end
             
             %%% Joint parameters validation
@@ -146,18 +141,51 @@ classdef dackrls < algorithm
                
         end
         
-        function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
+        function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart, varargin)
             
+                        
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            checkRecompute = @(x) x == 1 || x == 0 ;
+            checkValidationPart = @(x) x > 0 && x < 1;
+            
+            addRequired(p,'Xtr');
+            addRequired(p,'Ytr');
+            addRequired(p,'performanceMeasure');
+            addRequired(p,'recompute',checkRecompute);
+            addRequired(p,'validationPart',checkValidationPart);
+            
+            %%%% Optional parameters
+            % Optional parameter names:
+            % Xte, Yte
+            
+            defaultXte = [];
+            checkXte = @(x) size(x,2) == size(Xtr,2);
+            
+            defaultYte = [];
+            checkYte = @(x) size(x,2) == size(Ytr,2);
+            
+            addParameter(p,'Xte',defaultXte,checkXte)
+            addParameter(p,'Yte',defaultYte,checkYte)
+
+            % Parse function inputs
+            parse(p, Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin{:})
+            
+            Xte = p.Results.Xte;
+            Yte = p.Results.Yte;
+
             % Training/validation sets splitting
 %             shuffledIdx = randperm(size(Xtr,1));
             ntr = floor(size(Xtr,1)*(1-validationPart));
-%             trainIdx = shuffledIdx(1 : tmp1);
+%             obj.trainIdx = shuffledIdx(1 : tmp1);
 %             valIdx = shuffledIdx(tmp1 + 1 : end);
-            trainIdx = 1 : ntr;
+            obj.trainIdx = 1 : ntr;
             valIdx = ntr + 1 : size(Xtr,1);
             
-            Xtrain = Xtr(trainIdx,:);
-            Ytrain = Ytr(trainIdx,:);
+            Xtrain = Xtr(obj.trainIdx,:);
+            Ytrain = Ytr(obj.trainIdx,:);
             Xval = Xtr(valIdx,:);
             Yval = Ytr(valIdx,:);
             
@@ -172,7 +200,7 @@ classdef dackrls < algorithm
                     error('Invalid chunk size!');
                 end
                 for j = 1:obj.mGuesses(i)
-                    obj.XtrSplitIdx{i,j} = trainIdx( (j-1) * chunkSize + 1 : j * chunkSize));
+                    obj.XtrSplit{i,j} = obj.trainIdx( (j-1) * chunkSize + 1 : j * chunkSize);
                 end
             end
             
@@ -194,10 +222,10 @@ classdef dackrls < algorithm
                 for j = 1:obj.mGuesses(i)
                     
                     % Initialize TrainVal kernel
-                    kernelVal = obj.map(Xval,Xtr(obj.XtrSplitIdx{i,j},:));
+                    kernelVal = obj.map(Xval,Xtr(obj.XtrSplit{i,j},:));
 
                     % Initialize Train kernel
-                    argin = [];
+                    argin = {};
                     if ~isempty(obj.numMapParGuesses)
                         argin = [argin , 'numMapParGuesses' , obj.numMapParGuesses];
                     end
@@ -207,7 +235,7 @@ classdef dackrls < algorithm
                     if ~isempty(obj.verbose)
                         argin = [argin , 'verbose' , obj.verbose];
                     end
-                    kernelTrain = obj.map( Xtr(obj.XtrSplitIdx{i,j},:) , Xtr(obj.XtrSplitIdx{i,j},:) , argin);
+                    kernelTrain = obj.map( Xtr(obj.XtrSplit{i,j},:) , Xtr(obj.XtrSplit{i,j},:) , argin{:});
                     
                     % Number of samples of the current disjoint training subset
                     numSamples = size(kernelTrain, 1);
@@ -218,12 +246,12 @@ classdef dackrls < algorithm
 
                         % Compute kernel according to current hyperparameters
                         kernelTrain.compute();
-                        kernelVal.compute(kernel.currentPar);
+                        kernelVal.compute(kernelTrain.currentPar);
 
 
                         % Initialize filter
 
-                        argin = [];
+                        argin = {};
                         if ~isempty(obj.numFilterParGuesses)
                             argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
                         end
@@ -234,7 +262,7 @@ classdef dackrls < algorithm
                             argin = [argin , 'verbose' , obj.verbose];
                         end
 
-                        filter = obj.filter( kernelTrain.K , Ytr(obj.XtrSplitIdx{i,j},:) , numSamples , argin);
+                        filter = obj.filter( kernelTrain.K , Ytr(obj.XtrSplit{i,j},:) , numSamples , argin{:});
 
 %                         obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
 
@@ -252,12 +280,12 @@ classdef dackrls < algorithm
 
                             % Populate full performance matrices
         %                     trainPerformance(i,j) = performanceMeasure( kernel.K * filter.weights, Ytrain);
-                            valPerformance = [valPerformance valPerf];
+%                             obj.valPerformance = [obj.valPerformance valPerf];
 
                             if valPerf < valM
 
                                 % Update best kernel parameter combination
-                                obj.kerParStar = kernel.currentPar;
+                                obj.mapParStar = kernelTrain.currentPar;
 
                                 %Update best filter parameter
                                 obj.filterParStar = filter.currentPar;
@@ -268,7 +296,7 @@ classdef dackrls < algorithm
                                 if ~recompute
 
                                     % Update internal model samples matrix
-                                    obj.Xmodel = Xtrain;
+                                    obj.Xmodel = Xtr(obj.XtrSplit{i,j},:);
 
                                     % Update coefficients vector
                                     obj.c = filter.weights;
@@ -276,128 +304,45 @@ classdef dackrls < algorithm
                             end
                         end
                     end
-                
                 end
             end
             
-            % TrainVal kernel
-            kernelVal = obj.kernelType(Xval,Xtrain);
-
-            % Train kernel
-            kernel = obj.kernelType(Xtrain,Xtrain, obj.numMapParGuesses);
-            obj.kerParGuesses = kernel.rng;
-            obj.filterParGuesses = [];
-            
-            
-            valM = inf;     % Keeps track of the lowest validation error
-            
-            % Full matrices for performance storage
-            trainPerformance = zeros(1, 25);
-            valPerformance = [];
-
-            
-            while kernel.next()
-                
-                % Compute kernel according to current hyperparameters
-                kernel.compute();
-                kernelVal.compute(kernel.currentPar);
-                
-                % Normalization factors
-                numSamples = size(Xtrain , 1);
-                
-                filter = obj.filterType( kernel.K, Ytrain , numSamples , 'numGuesses' , obj.numFilterParGuesses , 'verbose' , obj.verbose);
-                
-%                 filter = obj.filterType( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
-                
-                obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
-
-                while filter.next()
-                    
-                    % Compute filter according to current hyperparameters
-                    filter.compute();
-
-                    % Compute predictions matrix
-                    YvalPred = kernelVal.K * filter.weights;
-                    
-                    % Compute performance
-                    valPerf = performanceMeasure( Yval , YvalPred , valIdx );
-                    
-                    
-                    % Populate full performance matrices
-%                     trainPerformance(i,j) = performanceMeasure( kernel.K * filter.weights, Ytrain);
-                    valPerformance = [valPerformance valPerf];
-                                 
-                    if valPerf < valM
-                        
-                        % Update best kernel parameter combination
-                        obj.kerParStar = kernel.currentPar;
-                        
-                        %Update best filter parameter
-                        obj.filterParStar = filter.currentPar;
-                        
-                        %Update best validation performance measurement
-                        valM = valPerf;
-                        
-                        if ~recompute
-                            
-                            % Update internal model samples matrix
-                            obj.Xmodel = Xtrain;
-                            
-                            % Update coefficients vector
-                            obj.c = filter.weights;
-                        end
-                    end
-                end
-            end
-            
-            
-            % Plot errors
-%             semilogx(cell2mat(filter.rng),  valPerformance);            
-            
-            
-            
-            % Find best parameters from validation performance matrix
-            
-              %[row, col] = find(valPerformance <= min(min(valPerformance)));
-
-%             obj.kerParStar = obj.kerParGuesses
-%             obj.filterParStar = ...  
             
             % Print best kernel hyperparameter(s)
             display('Best kernel hyperparameter(s):')
-            obj.kerParStar
+            obj.mapParStar
 
             % Print best filter hyperparameter(s)
             display('Best filter hyperparameter(s):')
             obj.filterParStar
             
-            if (nargin > 4) && (recompute)
-                
-                % Recompute kernel on the whole training set with the best
-                % kernel parameter
-                kernel.init(Xtr, Xtr);
-                kernel.compute(obj.kerParStar);
-                
-                % Recompute filter on the whole training set with the best
-                % filter parameter
-                numSamples = size(Xtr , 1);
-
-                filter.init( kernel.K , Ytr , numSamples);
-                filter.compute(obj.filterParStar);
-                
-                % Update internal model samples matrix
-                obj.Xmodel = Xtr;
-                
-                % Update coefficients vector
-                obj.c = filter.weights;
-            end        
+%             if (nargin > 4) && (recompute)
+%                 
+%                 % Recompute kernel on the whole training set with the best
+%                 % kernel parameter
+%                 kernel.init(Xtr, Xtr);
+%                 kernel.compute(obj.kerParStar);
+%                 
+%                 % Recompute filter on the whole training set with the best
+%                 % filter parameter
+%                 numSamples = size(Xtr , 1);
+% 
+%                 filter.init( kernel.K , Ytr , numSamples);
+%                 filter.compute(obj.filterParStar);
+%                 
+%                 % Update internal model samples matrix
+%                 obj.Xmodel = Xtr;
+%                 
+%                 % Update coefficients vector
+%                 obj.c = filter.weights;
+%             end        
         end
         
         function Ypred = test( obj , Xte )
 
             % Get kernel type and instantiate train-test kernel (including sigma)
-            kernelTest = obj.kernelType(Xte , obj.Xmodel);
-            kernelTest.compute(obj.kerParStar);
+            kernelTest = obj.map(Xte , obj.Xmodel);
+            kernelTest.compute(obj.mapParStar);
             
             % Compute scores
             Ypred = kernelTest.K * obj.c;

@@ -39,8 +39,8 @@ classdef gaussianKernel < kernel
             
             %%%% Required parameters
             
-            checkX1 = @(x) size(x,1) > 0;
-            checkX2 = @(x) size(x,1) == size(x,2);
+            checkX1 = @(x) size(x,1) > 0 && size(x,2) > 0;
+            checkX2 = @(x) size(x,1) > 0 && size(x,2) > 0;
             
             addRequired(p,'X1',checkX1);
             addRequired(p,'X2',checkX2);
@@ -51,11 +51,11 @@ classdef gaussianKernel < kernel
             
             % mapParGuesses       % Map parameter guesses cell array
             defaultMapParGuesses = [];
-            checkMapParGuesses = @(x) iscell(x) && size(x,2) > 0 ;            
+            checkMapParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
             addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);                    
             
             % numMapParGuesses        % Number of map parameter guesses
-            defaultNumMapParGuesses = 10;
+            defaultNumMapParGuesses = [];
             checkNumMapParGuesses = @(x) isinteger(x) && x > 0 ;            
             addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
             
@@ -65,25 +65,43 @@ classdef gaussianKernel < kernel
             addParameter(p,'verbose',defaultVerbose,checkVerbose);
             
             % Parse function inputs
-            parse(p, X1 , X2 ,  varargin{:})
-                                    
+            if isempty(varargin{:})
+                parse(p, X1 , X2)
+            else
+%                 varargin1 = cell(size(varargin,1),size(varargin,2));
+%                 for i = 1:numel(varargin)
+%                     if mod(i,2) == 1
+%                         varargin1{i} = varargin{i};
+%                     else
+%                         varargin1{i} = varargin(i);
+%                     end
+%                 end
+                parse(p, X1 , X2 , varargin{:}{:})
+            end
+            
             % Assign parsed parameters to object properties
-            props = properties(p.Results);
-            for idx = 1:size(props,2)
-                set(obj, props{idx} , p.Results.(props{idx}));
+            fields = fieldnames(p.Results);
+            fieldsToIgnore = {'X1','X2'};
+            fields = setdiff(fields, fieldsToIgnore);
+            for idx = 1:numel(fields)
+                obj.(fields{idx}) = p.Results.(fields{idx});
             end
             
             %%% Joint parameters validation
-            if size(X1,2) ~= size(X2,1)
+            if size(X1,2) ~= size(X2,2)
                 error('size(X1,2) ~= size(X2,1)');
             end
-            
-            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
-                error('either mapParGuesses or numMapParGuesses must be specified');
-            end    
-            
+%             
+%             if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+%                 error('either mapParGuesses or numMapParGuesses must be specified');
+%             end    
+%             
             if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
                 error('mapParGuesses and numMapParGuesses cannot be specified together');
+            end
+            
+            if size(X2,2) ~= size(X1,2)
+                error('X1 and X2 have incompatible sizes');
             end
             
             % Set dimensions and compute square distances matrix
@@ -134,7 +152,8 @@ classdef gaussianKernel < kernel
             end	
             
             tmp = linspace(minGuess, maxGuess , obj.numGuesses);
-            obj.mapParGuesses = num2cell(tmp);
+%             obj.mapParGuesses = num2cell(tmp);
+            obj.mapParGuesses = tmp;
         end
         
         % Computes the kernel matrix K based on SqDistMat and
@@ -161,14 +180,22 @@ classdef gaussianKernel < kernel
         function available = next(obj)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty,obj.mapParGuesses)
+%             if cellfun(@isempty,obj.mapParGuesses)
+%                 obj.range();
+%             end
+            if isempty(obj.mapParGuesses)
                 obj.range();
             end
-
+            
             available = false;
+%             if length(obj.mapParGuesses) > obj.currentParIdx
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
+%                 available = true;
+%             end
             if length(obj.mapParGuesses) > obj.currentParIdx
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
+                obj.currentPar = obj.mapParGuesses(:,obj.currentParIdx);
                 available = true;
             end
         end

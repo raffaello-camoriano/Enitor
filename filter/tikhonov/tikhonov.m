@@ -130,17 +130,17 @@ classdef tikhonov < filter
             end
 
             % Compute hyperparameter(s) range
-            if ~isempty(p.Results.numGuesses) && isempty(p.Results.fixedFilterParGuesses)
+            if ~isempty(p.Results.numFilterParGuesses) && isempty(p.Results.filterParGuesses)
                 obj.numGuesses = p.Results.numGuesses;
                 
-            elseif isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterParGuesses)
+            elseif isempty(p.Results.numFilterParGuesses) && ~isempty(p.Results.filterParGuesses)
                 obj.fixedFilterParGuesses = p.Results.fixedFilterParGuesses;
                 obj.numGuesses = size(p.Results.fixedFilterParGuesses,2);
                 
-            elseif ~isempty(p.Results.numGuesses) && ~isempty(p.Results.fixedFilterParGuesses)
-                if p.Results.numGuesses == size( p.Results.fixedFilterParGuesses,2)
-                    obj.fixedFilterParGuesses = p.Results.fixedFilterParGuesses;
-                    obj.numGuesses = p.Results.fixedFilterParGuesses;
+            elseif ~isempty(p.Results.numFilterParGuesses) && ~isempty(p.Results.filterParGuesses)
+                if p.Results.numFilterParGuesses == size( p.Results.filterParGuesses,2)
+                    obj.filterParGuesses = p.Results.filterParGuesses;
+                    obj.numFilterParGuesses = p.Results.numFilterParGuesses;
                 else
                     error('numGuesses and fixedFilterParGuesses optional parameters are not consistent.');
                 end
@@ -249,7 +249,7 @@ classdef tikhonov < filter
         
         function obj = range(obj)
             
-            if isempty(obj.fixedFilterParGuesses)
+            if isempty(obj.filterParGuesses)
             
                 % TODO: @Ale: Smart computation of eigmin and eigmax starting from the
                 % tridiagonal matrix U
@@ -311,12 +311,13 @@ classdef tikhonov < filter
                 powers = linspace(1,0,obj.numGuesses);
                 tmp = (lmin.*(lmax/lmin).^(powers)) / obj.n;
                 
-            else
-                tmp = obj.fixedFilterParGuesses;
+%             else
+%                 tmp = obj.filterParGuesses;
+                obj.filterParGuesses = tmp;
             end
             
 %             obj.rng = num2cell(tmp);
-            obj.filterParGuesses = num2cell(tmp);
+%             obj.filterParGuesses = num2cell(tmp);
 
         end
         
@@ -363,14 +364,22 @@ classdef tikhonov < filter
         function available = next(obj)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty,obj.filterParGuesses)
+%             if cellfun(@isempty,obj.filterParGuesses)
+%                 obj.range();
+%             end
+            if isempty(obj.filterParGuesses)
                 obj.range();
             end
-
+            
             available = false;
+%             if length(obj.filterParGuesses) > obj.currentParIdx
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.filterParGuesses{obj.currentParIdx};
+%                 available = true;
+%             end
             if length(obj.filterParGuesses) > obj.currentParIdx
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.filterParGuesses{obj.currentParIdx};
+                obj.currentPar = obj.filterParGuesses(:,obj.currentParIdx);
                 available = true;
             end
         end
