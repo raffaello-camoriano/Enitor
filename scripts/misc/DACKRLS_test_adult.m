@@ -21,8 +21,9 @@ ds = Adult(7000,16282,'plusMinusOne');
 % Algorithm init
 map = @gaussianKernel;  
 fil = @tikhonov;
-mGuesses = [5 , 10 , 15 , 20];
-verbose = 1;
+% mGuesses = [5 , 10 , 15 , 20];
+mGuesses = 5:10:500;
+verbose = 0;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;
 storeFullTestPerf = 1;
@@ -36,5 +37,16 @@ exp = experiment(alg , ds , 1 , true , true , '' , resdir);
 exp.run();
 
 exp.result
-exp.result.mapParStar
-exp.result.filterParStar
+
+%% Results plotting
+
+figure
+plot(mGuesses,cell2mat(exp.algo.trainPerformance));
+hold on;
+plot(mGuesses,cell2mat(exp.algo.valPerformance));
+plot(mGuesses,cell2mat(exp.algo.testPerformance));
+hold off;
+title('Performances for Varying # of Splits')
+legend('Training perf','Validation perf','Test perf')
+xlabel('# of Splits')
+ylabel('Performance')

@@ -221,19 +221,24 @@ classdef dackrls < algorithm
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
-                obj.trainPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
+%                 obj.trainPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.trainPerformance = cell(1,obj.numMGuesses);
             end
             if obj.storeFullValPerf == 1
-                obj.valPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
+%                 obj.valPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.valPerformance = cell(1,obj.numMGuesses);
             end
             if obj.storeFullTestPerf == 1
-                obj.testPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
+%                 obj.testPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.testPerformance = cell(1,obj.numMGuesses);
             end
             
             % Initializations
             obj.c = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
 %             YvalPred = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
             valPerf = cell(1,obj.numMGuesses);
+            trainPerf = cell(1,obj.numMGuesses);
+            testPerf = cell(1,obj.numMGuesses);
 %             kernelVal = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
             valM = inf;     % Keeps track of the lowest validation error
                                 
@@ -314,9 +319,64 @@ classdef dackrls < algorithm
                 % Compute performance
                 valPerf{i} = performanceMeasure( Yval , fullPred  , valIdx );
 
-                % Populate full performance matrices
-%                 trainPerformance(i,j) = performanceMeasure( kernel.K * filter.weights, Ytrain);
-%                 obj.valPerformance = [obj.valPerformance valPerf];
+                if obj.storeFullValPerf == 1
+                    obj.valPerformance{i} = valPerf{i};
+                end
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Populate training perforance matrix %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                if obj.storeFullTrainPerf == 1                    
+
+                    for j = 1:obj.mGuesses(i)
+
+                        % Initialize TrainTrain kernel
+                        argin = {};
+                        argin = [argin , 'mapParGuesses' , obj.mapParStar];
+                        if ~isempty(obj.verbose)
+                            argin = [argin , 'verbose' , obj.verbose];
+                        end                    
+                        kernelTrain = obj.map(Xtr(obj.XtrSplit{i,j},:) , Xtr(obj.XtrSplit{i,j},:) , argin{:});
+                        kernelTrain.next();
+                        kernelTrain.compute();
+
+                        % Compute partial prediction
+                        partialPred{j} = kernelTrain.K * obj.c{i,j};
+                    end
+
+                    % Combine partial predictions
+                    fullPred = mean(cell2mat(partialPred),2);
+
+                    % Compute performance
+                    obj.trainPerformance{i} = performanceMeasure( Ytr(obj.XtrSplit{i,j},:) , fullPred );
+                end
+
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %   Populate test perforance matrix   %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                if obj.storeFullTestPerf == 1                    
+
+                    for j = 1:obj.mGuesses(i)
+                        % Initialize TrainTest kernel
+                        argin = {};
+                        argin = [argin , 'mapParGuesses' , obj.mapParStar];
+                        if ~isempty(obj.verbose)
+                            argin = [argin , 'verbose' , obj.verbose];
+                        end                    
+                        kernelTest = obj.map(Xte , Xtr(obj.XtrSplit{i,j},:) , argin{:});
+                        kernelTest.next();
+                        kernelTest.compute();
+
+                        % Compute partial prediction
+                        partialPred{j} = kernelTest.K * obj.c{i,j};
+                    end
+
+                    % Combine partial predictions
+                    fullPred = mean(cell2mat(partialPred),2);
+
+                    % Compute performance
+                    obj.testPerformance{i} = performanceMeasure( Yte , fullPred );
+                end
 
                 if valPerf{i} < valM
                     obj.mStar = obj.mGuesses(i);
@@ -330,7 +390,7 @@ classdef dackrls < algorithm
 
                     %Update best validation performance measurement
                     valM = valPerf{i};
-                end                
+                end
             end
             
             % Print best kernel hyperparameter(s)
