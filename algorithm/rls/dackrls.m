@@ -16,10 +16,11 @@ classdef dackrls < algorithm
         testPerformance     % Test performance matrix
         
         mGuesses        % Guesses vector of the number of chunks m for each partition
-        numMGuesses     
+        numMGuesses     % Cardinality of number of splits guesses
+        mStar           % Best number of splits
+        mStarIdx        % Best number of splits index
         XtrSplit        % Contains the indexes of the samples of each split
-        X               % Full dataset inputs
-        Y               % Full dataset outputs
+        Xtr               % Training inputs
         NTr             % Total number of training samples
         nTr             % Number of training samples of the current partition
         partitionIdx    % Cell array containing the disjoint sample indexes sets of the current partitions
@@ -129,6 +130,10 @@ classdef dackrls < algorithm
             
             if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
                 error('mapParGuesses and numMapParGuesses cannot be specified together');
+            end    
+            
+            if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                obj.numMapParGuesses = size(obj.mapParGuesses,2);
             end
             
             if isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
@@ -138,7 +143,12 @@ classdef dackrls < algorithm
             if ~isempty(obj.filterParGuesses) && ~isempty(obj.numFilterParGuesses)
                 error('filterParGuesses and numFilterParGuesses cannot be specified together');
             end
+            
+            if ~isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
+                obj.numFilterParGuesses = size(obj.filterParGuesses,2);
+            end
                
+            warning('DACKRLS does not support map and filter hyperparameter selection yet.');
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart, varargin)
@@ -172,6 +182,8 @@ classdef dackrls < algorithm
 
             % Parse function inputs
             parse(p, Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin{:})
+            
+            obj.Xtr = p.Results.Xtr;
             
             Xte = p.Results.Xte;
             Yte = p.Results.Yte;
@@ -209,21 +221,25 @@ classdef dackrls < algorithm
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
-                obj.trainPerformance = zeros(obj.numMGuesses, size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+                obj.trainPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
             end
             if obj.storeFullValPerf == 1
-                obj.valPerformance = zeros(obj.numMGuesses, size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+                obj.valPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
             end
             if obj.storeFullTestPerf == 1
-                obj.testPerformance = zeros(obj.numMGuesses, size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+                obj.testPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
             end
-                    
+            
+            % Initializations
+            obj.c = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
+%             YvalPred = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
+            valPerf = cell(1,obj.numMGuesses);
+%             kernelVal = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
+            valM = inf;     % Keeps track of the lowest validation error
+                                
             for i = 1:obj.numMGuesses
                 for j = 1:obj.mGuesses(i)
                     
-                    % Initialize TrainVal kernel
-                    kernelVal = obj.map(Xval,Xtr(obj.XtrSplit{i,j},:));
-
                     % Initialize Train kernel
                     argin = {};
                     if ~isempty(obj.numMapParGuesses)
@@ -236,21 +252,13 @@ classdef dackrls < algorithm
                         argin = [argin , 'verbose' , obj.verbose];
                     end
                     kernelTrain = obj.map( Xtr(obj.XtrSplit{i,j},:) , Xtr(obj.XtrSplit{i,j},:) , argin{:});
-                    
-                    % Number of samples of the current disjoint training subset
-                    numSamples = size(kernelTrain, 1);
-
-                    valM = inf;     % Keeps track of the lowest validation error
-
+                   
                     while kernelTrain.next()
 
-                        % Compute kernel according to current hyperparameters
+                        % Compute kernels according to current hyperparameters
                         kernelTrain.compute();
-                        kernelVal.compute(kernelTrain.currentPar);
-
-
-                        % Initialize filter
-
+                        
+                        % Initialize regularization filter
                         argin = {};
                         if ~isempty(obj.numFilterParGuesses)
                             argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
@@ -261,91 +269,93 @@ classdef dackrls < algorithm
                         if ~isempty(obj.verbose)
                             argin = [argin , 'verbose' , obj.verbose];
                         end
-
-                        filter = obj.filter( kernelTrain.K , Ytr(obj.XtrSplit{i,j},:) , numSamples , argin{:});
-
-%                         obj.filterParGuesses = [obj.filterParGuesses ; filter.rng];
+                        filter = obj.filter( kernelTrain.K , Ytr(obj.XtrSplit{i,j},:) , size(kernelTrain, 1) , argin{:});
 
                         while filter.next()
 
                             % Compute filter according to current hyperparameters
                             filter.compute();
 
-                            % Compute predictions matrix
-                            YvalPred = kernelVal.K * filter.weights;
-
-                            % Compute performance
-                            valPerf = performanceMeasure( Yval , YvalPred , valIdx );
-
-
-                            % Populate full performance matrices
-        %                     trainPerformance(i,j) = performanceMeasure( kernel.K * filter.weights, Ytrain);
-%                             obj.valPerformance = [obj.valPerformance valPerf];
-
-                            if valPerf < valM
-
-                                % Update best kernel parameter combination
-                                obj.mapParStar = kernelTrain.currentPar;
-
-                                %Update best filter parameter
-                                obj.filterParStar = filter.currentPar;
-
-                                %Update best validation performance measurement
-                                valM = valPerf;
-
-                                if ~recompute
-
-                                    % Update internal model samples matrix
-                                    obj.Xmodel = Xtr(obj.XtrSplit{i,j},:);
-
-                                    % Update coefficients vector
-                                    obj.c = filter.weights;
-                                end
-                            end
+                            % Update coefficients vector
+                            obj.c{i,j} = filter.weights;
+                            
+                            obj.mapParStar = kernelTrain.currentPar;
+                            obj.filterParStar = filter.currentPar;
                         end
                     end
                 end
+                
+                %%%%%%%%%%%%%%%%%%%%%%
+                % Combine estimators %
+                %%%%%%%%%%%%%%%%%%%%%%
+
+                % Compute partial predictions matrix
+                partialPred = cell(1,obj.mGuesses(i));
+
+                for j = 1:obj.mGuesses(i)
+
+                    % Initialize TrainVal kernel
+                    kernelVal = obj.map(Xval,Xtr(obj.XtrSplit{i,j},:));
+                    kernelVal.compute(obj.mapParStar);
+
+                    % Compute partial prediction
+                    partialPred{j} = kernelVal.K * obj.c{i,j};
+                end
+
+                % Combine partial predictions
+                fullPred = mean(cell2mat(partialPred),2);
+
+                % Compute performance
+                valPerf{i} = performanceMeasure( Yval , fullPred  , valIdx );
+
+                % Populate full performance matrices
+%                 trainPerformance(i,j) = performanceMeasure( kernel.K * filter.weights, Ytrain);
+%                 obj.valPerformance = [obj.valPerformance valPerf];
+
+                if valPerf{i} < valM
+                    obj.mStar = obj.mGuesses(i);
+                    obj.mStarIdx = i;
+
+%                         % Update best kernel parameter combination
+%                         obj.mapParStar = kernelTrain.currentPar;
+% 
+%                         %Update best filter parameter
+%                         obj.filterParStar = filter.currentPar;
+
+                    %Update best validation performance measurement
+                    valM = valPerf{i};
+                end                
             end
             
-            
             % Print best kernel hyperparameter(s)
-            display('Best kernel hyperparameter(s):')
-            obj.mapParStar
-
-            % Print best filter hyperparameter(s)
-            display('Best filter hyperparameter(s):')
-            obj.filterParStar
+            display(['Best number of splits: ' , num2str(obj.mStar)]);
             
-%             if (nargin > 4) && (recompute)
-%                 
-%                 % Recompute kernel on the whole training set with the best
-%                 % kernel parameter
-%                 kernel.init(Xtr, Xtr);
-%                 kernel.compute(obj.kerParStar);
-%                 
-%                 % Recompute filter on the whole training set with the best
-%                 % filter parameter
-%                 numSamples = size(Xtr , 1);
+%             % Print best kernel hyperparameter(s)
+%             display(['Best kernel hyperparameter(s): ' , num2str(obj.mapParStar)]);
 % 
-%                 filter.init( kernel.K , Ytr , numSamples);
-%                 filter.compute(obj.filterParStar);
-%                 
-%                 % Update internal model samples matrix
-%                 obj.Xmodel = Xtr;
-%                 
-%                 % Update coefficients vector
-%                 obj.c = filter.weights;
-%             end        
+%             % Print best filter hyperparameter(s)
+%             display(['Best filter hyperparameter(s): ' , num2str(obj.filterParStar)]);
+%             
         end
         
         function Ypred = test( obj , Xte )
 
-            % Get kernel type and instantiate train-test kernel (including sigma)
-            kernelTest = obj.map(Xte , obj.Xmodel);
-            kernelTest.compute(obj.mapParStar);
+            % Compute partial predictions matrix
+            partialPred = cell(1,obj.mStar);
             
-            % Compute scores
-            Ypred = kernelTest.K * obj.c;
+            for j = 1:obj.mStar
+                
+                % Get kernel type and instantiate train-test kernel (including sigma)
+                kernelTest = obj.map(Xte , obj.Xtr(obj.XtrSplit{obj.mStarIdx,j},:));
+                kernelTest.compute(obj.mapParStar);
+
+                % Compute partial prediction
+                partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j};
+                
+            end
+            
+            % Combine partial predictions into full prediction
+            Ypred = mean(cell2mat(partialPred),2);
         end
     end
 end

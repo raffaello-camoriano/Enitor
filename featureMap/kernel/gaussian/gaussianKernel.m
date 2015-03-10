@@ -56,7 +56,7 @@ classdef gaussianKernel < kernel
             
             % numMapParGuesses        % Number of map parameter guesses
             defaultNumMapParGuesses = [];
-            checkNumMapParGuesses = @(x) isinteger(x) && x > 0 ;            
+            checkNumMapParGuesses = @(x) x > 0 ;            
             addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
             
             % verbose             % 1: verbose; 0: silent      
@@ -68,14 +68,6 @@ classdef gaussianKernel < kernel
             if isempty(varargin{:})
                 parse(p, X1 , X2)
             else
-%                 varargin1 = cell(size(varargin,1),size(varargin,2));
-%                 for i = 1:numel(varargin)
-%                     if mod(i,2) == 1
-%                         varargin1{i} = varargin{i};
-%                     else
-%                         varargin1{i} = varargin(i);
-%                     end
-%                 end
                 parse(p, X1 , X2 , varargin{:}{:})
             end
             
@@ -96,8 +88,12 @@ classdef gaussianKernel < kernel
 %                 error('either mapParGuesses or numMapParGuesses must be specified');
 %             end    
 %             
-            if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
-                error('mapParGuesses and numMapParGuesses cannot be specified together');
+%             if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
+%                 error('mapParGuesses and numMapParGuesses cannot be specified together');
+%             end
+            
+            if (~isempty(obj.mapParGuesses)) && (~isempty(obj.numMapParGuesses)) && (size(obj.mapParGuesses,2) ~= obj.numMapParGuesses)
+                error('The size of mapParGuesses and numMapParGuesses are different');
             end
             
             if size(X2,2) ~= size(X1,2)
@@ -151,7 +147,7 @@ classdef gaussianKernel < kernel
                 maxGuess = eps;
             end	
             
-            tmp = linspace(minGuess, maxGuess , obj.numGuesses);
+            tmp = linspace(minGuess, maxGuess , obj.numMapParGuesses);
 %             obj.mapParGuesses = num2cell(tmp);
             obj.mapParGuesses = tmp;
         end
