@@ -295,8 +295,14 @@ classdef dackrls < algorithm
                 for j = 1:obj.mGuesses(i)
 
                     % Initialize TrainVal kernel
-                    kernelVal = obj.map(Xval,Xtr(obj.XtrSplit{i,j},:));
-                    kernelVal.compute(obj.mapParStar);
+                    argin = {};
+                    argin = [argin , 'mapParGuesses' , obj.mapParStar];
+                    if ~isempty(obj.verbose)
+                        argin = [argin , 'verbose' , obj.verbose];
+                    end                    
+                    kernelVal = obj.map(Xval , Xtr(obj.XtrSplit{i,j},:) , argin{:});
+                    kernelVal.next();
+                    kernelVal.compute();
 
                     % Compute partial prediction
                     partialPred{j} = kernelVal.K * obj.c{i,j};
@@ -346,8 +352,14 @@ classdef dackrls < algorithm
             for j = 1:obj.mStar
                 
                 % Get kernel type and instantiate train-test kernel (including sigma)
-                kernelTest = obj.map(Xte , obj.Xtr(obj.XtrSplit{obj.mStarIdx,j},:));
-                kernelTest.compute(obj.mapParStar);
+                argin = {};
+                argin = [argin , 'mapParGuesses' , obj.mapParStar];
+                if ~isempty(obj.verbose)
+                    argin = [argin , 'verbose' , obj.verbose];
+                end
+                kernelTest = obj.map(Xte , obj.Xtr(obj.XtrSplit{obj.mStarIdx,j},:) , argin{:});
+                kernelTest.next();
+                kernelTest.compute();
 
                 % Compute partial prediction
                 partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j};

@@ -16,19 +16,6 @@ classdef gaussianKernel < kernel
     end
     
     methods
-        
-%         function obj = gaussianKernel( X1 , X2 , numGuesses , verbose)
-% 
-%             if  nargin > 0
-%                 if  nargin > 3
-%                     obj.init( X1 , X2 , numGuesses , verbose);
-%                 elseif  nargin > 2
-%                     obj.init( X1 , X2 , numGuesses);
-%                 else                    
-%                     obj.init( X1 , X2);
-%                 end
-%             end
-%         end        
         function obj = gaussianKernel( X1 , X2 , varargin)
             obj.init( X1 , X2 , varargin);
         end
@@ -84,9 +71,9 @@ classdef gaussianKernel < kernel
                 error('size(X1,2) ~= size(X2,1)');
             end
 %             
-%             if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
-%                 error('either mapParGuesses or numMapParGuesses must be specified');
-%             end    
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                error('either mapParGuesses or numMapParGuesses must be specified');
+            end    
 %             
 %             if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
 %                 error('mapParGuesses and numMapParGuesses cannot be specified together');
@@ -106,7 +93,7 @@ classdef gaussianKernel < kernel
             obj.computeSqDistMat(X1,X2);
             
             % Conditional range computation
-            if ~isempty(obj.numMapParGuesses)
+            if isempty(obj.mapParGuesses)
                 display('Computing Gaussian kernel range');
                 obj.range();    % Compute range
             end

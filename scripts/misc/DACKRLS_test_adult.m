@@ -26,7 +26,7 @@ verbose = 1;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;
 storeFullTestPerf = 1;
-mapParGuesses = 1;
+mapParGuesses = 10;
 filterParGuesses = 0.1;
 alg = dackrls(map , fil , mGuesses , 'mapParGuesses' , mapParGuesses , 'filterParGuesses' , filterParGuesses , 'verbose' , verbose , 'storeFullTrainPerf' , storeFullTrainPerf , 'storeFullValPerf' , storeFullValPerf , 'storeFullTestPerf' , storeFullTestPerf);
 
