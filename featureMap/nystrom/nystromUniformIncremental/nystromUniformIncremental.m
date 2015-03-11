@@ -7,12 +7,14 @@ classdef nystromUniformIncremental < nystrom
 
     
     properties
-        numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
+        numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
         
-        filterParGuesses    % Vector of Tikhonov regularization parameter guesses
+        filterParGuesses        % Filter parameter guesses
+        numFilterParGuesses     % Number of filter parameter guesses
         
-        fixedMapPar     % Fixed mapping parameter
+        mapParGuesses           % mapping parameter guesses
+        numMapParGuesses        % Number of mapping parameter guesses
         
         kernelType      % Type of approximated kernel
         sampledPoints   % Current sampled columns
@@ -33,46 +35,152 @@ classdef nystromUniformIncremental < nystrom
     
     methods
         % Constructor
-        function obj = nystromUniformIncremental( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
-            
-            obj.init( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
-            
-            warning('Kernel type set by default to "gaussian"');
-            obj.kernelType = @gaussianKernel;
+%         function obj = nystromUniformIncremental( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
+%             
+%             obj.init( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
+%             
+%             warning('Kernel type set by default to "gaussian"');
+%             obj.kernelType = @gaussianKernel;
+%         end
+        
+        function obj = nystromUniformIncremental( X1 , X2 , ntr , varargin)
+            obj.init( X1 , X2 , ntr , varargin);
         end
         
         % Initialization function
-        function obj = init(obj , X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
+%         function obj = init(obj , X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
+%             
+%             obj.X = X;
+%             obj.Y = Y;
+%             obj.ntr =  ntr;
+%             obj.numKerParRangeSamples = numKerParRangeSamples;
+%             obj.d = size(X , 2);     
+%             obj.maxRank = maxRank;
+%             obj.fixedMapPar = fixedMapPar;
+%             obj.filterParGuesses = filterParGuesses;
+%             
+%             if ~isempty(fixedMapPar)
+%                 obj.numMapParGuesses = 1;
+%             else
+%                 obj.numMapParGuesses = numMapParGuesses;
+%             end
+%             
+%             obj.numNysParGuesses = numNysParGuesses;
+%             
+%             obj.verbose = 0;
+%             if verbose == 1
+%                 obj.verbose = 1;
+%             end
+%             
+%             % Compute range
+%             obj.range();
+%             obj.currentParIdx = 0;
+%             obj.currentPar = [];
+%             obj.prevPar = [];
+%         end
+
+        function obj = init(obj , X , Y , ntr , varargin)
             
-            obj.X = X;
-            obj.Y = Y;
-            obj.ntr =  ntr;
-            obj.numKerParRangeSamples = numKerParRangeSamples;
-            obj.d = size(X , 2);     
-            obj.maxRank = maxRank;
-            obj.fixedMapPar = fixedMapPar;
-            obj.filterParGuesses = filterParGuesses;
+
+            p = inputParser;
             
-            if ~isempty(fixedMapPar)
-                obj.numMapParGuesses = 1;
+            %%%% Required parameters
+            % X , Y , ntr
+
+            checkX = @(x) size(x,1) > 0 && size(x,2) > 0;
+            checkY = @(x) size(x,1) > 0 && size(x,2) > 0;
+            checkNtr = @(x) x > 0;
+            
+            addRequired(p,'X',checkX);
+            addRequired(p,'Y',checkY);
+            addRequired(p,'ntr',checkNtr);
+            
+ 
+            %%%% Optional parameters
+            % Optional parameter names:
+            % numNysParGuesses , maxRank , numMapParGuesses , mapParGuesses , filterParGuesses , numMapParRangeSamples  , verbose
+            
+            % numNysParGuesses       % Cardinality of number of samples for Nystrom approximation parameter guesses
+            defaultNumNysParGuesses = [];
+            checkNumNysParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
+            
+            % maxRank        % Maximum rank of the Nystrom approximation
+            defaultMaxRank = [];
+            checkMaxRank = @(x) x > 0 ;            
+            addParameter(p,'maxRank',defaultMaxRank,checkMaxRank);        
+            
+            % numMapParGuesses        % Number of map parameter guesses
+            defaultNumMapParGuesses = [];
+            checkNumMapParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
+            
+            % mapParGuesses        % Map parameter guesses
+            defaultMapParGuesses = [];
+            checkMapParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;      
+            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);        
+            
+            % filterParGuesses       % Filter parameter guesses
+            defaultFilterParGuesses = [];
+            checkFilterParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;            
+            addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                    
+            
+            % numMapParRangeSamples        % Number of map parameter guesses
+            defaultNumMapParRangeSamples = [];
+            checkNumMapParRangeSamples = @(x) x > 0 ;            
+            addParameter(p,'numMapParRangeSamples',defaultNumMapParRangeSamples,checkNumMapParRangeSamples);            
+
+            % verbose             % 1: verbose; 0: silent      
+            defaultVerbose = 0;
+            checkVerbose = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'verbose',defaultVerbose,checkVerbose);
+            
+            % Parse function inputs
+            if isempty(varargin{:})
+                parse(p, X , Y , ntr)
             else
-                obj.numMapParGuesses = numMapParGuesses;
+                parse(p, X , Y , ntr , varargin{:}{:})
             end
             
-            obj.numNysParGuesses = numNysParGuesses;
-            
-            obj.verbose = 0;
-            if verbose == 1
-                obj.verbose = 1;
+            % Assign parsed parameters to object properties
+            fields = fieldnames(p.Results);
+%             fieldsToIgnore = {'X1','X2'};
+%             fields = setdiff(fields, fieldsToIgnore);
+            for idx = 1:numel(fields)
+                obj.(fields{idx}) = p.Results.(fields{idx});
             end
             
-            % Compute range
-            obj.range();
+            % Joint parameters parsing
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                error('either mapParGuesses or numMapParGuesses must be specified');
+            end    
+            
+            if (~isempty(obj.mapParGuesses)) && (~isempty(obj.numMapParGuesses)) && (size(obj.mapParGuesses,2) ~= obj.numMapParGuesses)
+                error('The size of mapParGuesses and numMapParGuesses are different');
+            end
+            
+            if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                obj.numMapParGuesses = size(obj.mapParGuesses,2);
+            end
+            
+            if size(X,1) ~= size(Y,1)
+                error('X and Y have incompatible sizes');
+            end
+            
+            obj.d = size(X , 2);
+            
+            warning('Kernel used by nystromUniformIncremental is set to @gaussianKernel');
+            obj.kernelType = @gaussianKernel;
+
+            % Conditional range computation
+            if isempty(obj.mapParGuesses)
+                display('Computing range');
+                obj.range();    % Compute range
+            end
             obj.currentParIdx = 0;
             obj.currentPar = [];
-            obj.prevPar = [];
         end
-        
+
         function obj = range(obj)
             
             % Compute range of number of sampled columns (m)
@@ -80,7 +188,7 @@ classdef nystromUniformIncremental < nystrom
 
             % Approximated kernel parameter range
             
-            if isempty(obj.fixedMapPar)
+            if isempty(obj.mapParGuesses)
                 % Compute max and min sigma guesses
 
                 % Extract an even number of samples without replacement                
@@ -90,12 +198,12 @@ classdef nystromUniformIncremental < nystrom
 
                 % WARNING: Alternative to datasample below
                 nRows = size(obj.X,1); % number of rows
-                nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
+                nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
                 rndIDX = randperm(nRows); 
                 samp = obj.X(rndIDX(1:nSample), :);   
 
                 % Compute squared distances  vector (D)
-                numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
+                numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
                 D = zeros(1 , numDistMeas);
                 for i = 1:numDistMeas
                     D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
@@ -113,15 +221,16 @@ classdef nystromUniformIncremental < nystrom
                     maxGuess = eps;
                 end	
 
-                tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
+                tmpMapPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
             else
-                tmpKerPar = obj.fixedMapPar;
+                tmpMapPar = obj.mapParGuesses;
             end
 
             % Generate all possible parameters combinations
-            [p,q] = meshgrid(tmpm, tmpKerPar);
+            [p,q] = meshgrid(tmpm, tmpMapPar);
             tmp = [p(:) q(:)]';
-            obj.rng = num2cell(tmp , 1);
+%             obj.rng = num2cell(tmp , 1);
+            obj.rng = tmp;
         end
         
         % Computes the squared distance matrix SqDistMat based on X1, X2
@@ -267,17 +376,25 @@ classdef nystromUniformIncremental < nystrom
         function available = next(obj)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty , obj.rng)
+%             if cellfun(@isempty,obj.mapParGuesses)
+%                 obj.range();
+%             end
+            if isempty(obj.rng)
                 obj.range();
             end
-
+            
             available = false;
+%             if length(obj.mapParGuesses) > obj.currentParIdx
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
+%                 available = true;
+%             end
             if length(obj.rng) > obj.currentParIdx
                 obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.rng{obj.currentParIdx};
+                obj.currentPar = obj.rng(:,obj.currentParIdx);
                 available = true;
             end
-        end        
+        end
     end
 end

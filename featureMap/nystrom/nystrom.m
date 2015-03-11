@@ -8,7 +8,7 @@ classdef nystrom < handle
         kerPar
         rng
      
-        numMapParGuesses
+%         numMapParGuesses
         
         numNysParGuesses    % Number of sampled columns guesses
         

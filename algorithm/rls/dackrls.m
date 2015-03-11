@@ -152,7 +152,6 @@ classdef dackrls < algorithm
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart, varargin)
-            
                         
             p = inputParser;
             
@@ -381,13 +380,7 @@ classdef dackrls < algorithm
                 if valPerf{i} < valM
                     obj.mStar = obj.mGuesses(i);
                     obj.mStarIdx = i;
-
-%                         % Update best kernel parameter combination
-%                         obj.mapParStar = kernelTrain.currentPar;
-% 
-%                         %Update best filter parameter
-%                         obj.filterParStar = filter.currentPar;
-
+                    
                     %Update best validation performance measurement
                     valM = valPerf{i};
                 end
@@ -423,7 +416,6 @@ classdef dackrls < algorithm
 
                 % Compute partial prediction
                 partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j};
-                
             end
             
             % Combine partial predictions into full prediction
@@ -431,4 +423,3 @@ classdef dackrls < algorithm
         end
     end
 end
-

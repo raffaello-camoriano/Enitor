@@ -19,7 +19,7 @@ ds = pumadyn(4096,4096, 32 , 'n' , 'h');
 % Fixed Tikhonov filter lambda parameter guesses
 lMin = -5;
 lMax = 0;
-nLambda = 20;
+nLambda = 1;
 fixedFilterParGuesses = logspace(lMin,lMax,nLambda);
 
 fixedMapPar = 6;     %Pumadyn
