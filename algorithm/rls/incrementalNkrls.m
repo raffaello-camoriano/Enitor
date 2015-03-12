@@ -4,13 +4,13 @@ classdef incrementalNkrls < algorithm
     
     properties
         
-        % Saving options
-        storeFullTrainPerf
-        trainPerformance 
-        storeFullValPerf
-        valPerformance 
-        storeFullTestPerf
-        testPerformance
+        % I/O options
+        storeFullTrainPerf  % Store full training performance matrix 1/0
+        storeFullValPerf    % Store full validation performance matrix 1/0
+        storeFullTestPerf   % Store full test performance matrix 1/0
+        valPerformance      % Validation performance matrix
+        trainPerformance    % Training performance matrix
+        testPerformance     % Test performance matrix
         
         ntr   % Number of training samples
         
@@ -37,22 +37,114 @@ classdef incrementalNkrls < algorithm
     
     methods
         
-        function obj = incrementalNkrls(mapType, numMapParRangeSamples, numNysParGuesses,  numMapParGuesses , filterParGuesses , maxRank , mapParGuesses  , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
-            init( obj , mapType, numMapParRangeSamples ,  numNysParGuesses, numMapParGuesses , filterParGuesses , maxRank , mapParGuesses  , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
+%         function obj = incrementalNkrls(mapType, numMapParRangeSamples, numNysParGuesses,  numMapParGuesses , filterParGuesses , maxRank , mapParGuesses  , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
+%             init( obj , mapType, numMapParRangeSamples ,  numNysParGuesses, numMapParGuesses , filterParGuesses , maxRank , mapParGuesses  , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
+%         end     
+        
+        function obj = incrementalNkrls(mapType , maxRank , varargin)
+            init( obj , mapType, maxRank , varargin)
         end
         
-        function init( obj , mapType, numMapParRangeSamples ,  numNysParGuesses, numMapParGuesses , filterParGuesses , maxRank , mapParGuesses  , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
-            obj.mapType = mapType;
-            obj.numMapParRangeSamples = numMapParRangeSamples;
-            obj.numNysParGuesses = numNysParGuesses;
-            obj.numMapParGuesses = numMapParGuesses;
-            obj.filterParGuesses = filterParGuesses;
-            obj.maxRank = maxRank;
-            obj.mapParGuesses  = mapParGuesses ;
-            obj.verbose = verbose;
-            obj.storeFullTrainPerf = storeFullTrainPerf;
-            obj.storeFullValPerf = storeFullValPerf;
-            obj.storeFullTestPerf = storeFullTestPerf;
+        function init( obj , mapType, maxRank , varargin)
+
+            display('Note that incrementalNkrls can only use the Tikhonov filter in this implementation.');
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            checkMaxRank = @(x) x > 0 ;
+
+            addRequired(p,'mapType');
+            addRequired(p,'maxRank',checkMaxRank);
+            
+            %%%% Optional parameters
+            % Optional parameter names:
+
+            defaultNumNysParGuesses = 1;            
+            checkNumNysParGuesses = @(x) x > 0 ;
+            addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
+            
+            % mapParGuesses       % Map parameter guesses cell array
+            defaultMapParGuesses = [];
+            checkMapParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
+            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);    
+            
+            % numMapParGuesses        % Number of map parameter guesses
+            defaultNumMapParGuesses = [];
+            checkNumMapParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses); 
+            
+            % numMapParRangeSamples        % Number of samples used for map
+            % optimal map parameter range generation
+            defaultNumMapParRangeSamples = [];            
+            checkNumMapParRangeSamples = @(x) x > 0 ;
+            addParameter(p,'numMapParRangeSamples',defaultNumMapParRangeSamples,checkNumMapParRangeSamples);                    
+            
+            % filterParGuesses       % Map parameter guesses cell array
+            defaultfFilterParGuesses = [];
+            checkFilterParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
+            addParameter(p,'filterParGuesses',defaultfFilterParGuesses,checkFilterParGuesses);    
+                   
+            % storeFullTrainPerf  % Store full training performance matrix 1/0
+            defaultStoreFullTrainPerf = 0;
+            checkStoreFullTrainPerf = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullTrainPerf',defaultStoreFullTrainPerf,checkStoreFullTrainPerf);           
+  
+            % storeFullValPerf    % Store full validation performance matrix 1/0
+            defaultStoreFullValPerf = 0;
+            checkStoreFullValPerf = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullValPerf',defaultStoreFullValPerf,checkStoreFullValPerf);           
+  
+            % storeFullTestPerf   % Store full test performance matrix 1/0
+            defaultStoreFullTestPerf = 0;
+            checkStoreFullTestPerf = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf);            
+            
+            % verbose             % 1: verbose; 0: silent      
+            defaultVerbose = 0;
+            checkVerbose = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'verbose',defaultVerbose,checkVerbose);
+            
+            % Parse function inputs
+            if isempty(varargin{:})
+                parse(p, mapType , maxRank )
+            else
+                parse(p, mapType , maxRank ,  varargin{:}{:})
+            end
+            
+            % Assign parsed parameters to object properties
+            fields = fieldnames(p.Results);
+%             fieldsToIgnore = {'X1','X2'};
+%             fields = setdiff(fields, fieldsToIgnore);
+            for idx = 1:numel(fields)
+                obj.(fields{idx}) = p.Results.(fields{idx});
+            end
+            
+            %%% Joint parameters validation
+            
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                error('either mapParGuesses or numMapParGuesses must be specified');
+            end    
+            
+            if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
+                error('mapParGuesses and numMapParGuesses cannot be specified together');
+            end    
+            
+            if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                obj.numMapParGuesses = size(obj.mapParGuesses,2);
+            end
+            
+            if isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
+                error('either filterParGuesses or numFilterParGuesses must be specified');
+            end         
+            
+            if ~isempty(obj.filterParGuesses) && ~isempty(obj.numFilterParGuesses)
+                error('filterParGuesses and numFilterParGuesses cannot be specified together');
+            end
+            
+            if ~isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
+                obj.numFilterParGuesses = size(obj.filterParGuesses,2);
+            end        
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin)

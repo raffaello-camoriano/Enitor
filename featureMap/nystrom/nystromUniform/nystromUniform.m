@@ -6,17 +6,18 @@ classdef nystromUniform < nystrom
     % X: n * d training matrix
     % numMapParGuesses: Number of guesses for the hyperparameters of the
     % mapper
-    % numKerParRangeSamples: Number of samples used for estimating the
+    % numMapParRangeSamples: Number of samples used for estimating the
     % optimal range of the kernel hyperparameter
     % maxRank: Maximum rank of the Nystrom approximation
     
     properties
         prevPar
         
-        numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
+        numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
         
-        fixedMapPar     % Fixed mapping parameter
+        numMapParGuesses
+        mapParGuesses     % Fixed mapping parameter
         
         kernelType      % Type of approximated kernel
         sampledPoints   % Current sampled columns
@@ -28,25 +29,25 @@ classdef nystromUniform < nystrom
     
     methods
         % Constructor
-        function obj = nystromUniform( X , numNysParGuesses , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
+        function obj = nystromUniform( X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , maxRank , mapParGuesses , verbose)
             
-            obj.init( X , numNysParGuesses , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
+            obj.init( X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , maxRank , mapParGuesses , verbose);
             
             warning('Kernel type set by default to "gaussian"');
             obj.kernelType = @gaussianKernel;
         end
         
         % Initialization function
-        function obj = init(obj , X , numNysParGuesses , numMapParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
+        function obj = init(obj , X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , maxRank , mapParGuesses , verbose)
             
             obj.X = X;
-            obj.numKerParRangeSamples = numKerParRangeSamples;
+            obj.numMapParRangeSamples = numMapParRangeSamples;
             obj.d = size(X , 2);     
             obj.maxRank = maxRank;
-            obj.fixedMapPar = fixedMapPar;
+            obj.mapParGuesses = mapParGuesses;
             
-%             if ~isempty(fixedMapPar)
-%                 obj.numMapParGuesses = size(fixedMapPar;
+%             if ~isempty(mapParGuesses)
+%                 obj.numMapParGuesses = size(mapParGuesses;
 %             else
                 obj.numMapParGuesses = numMapParGuesses;
 %             end
@@ -74,22 +75,22 @@ classdef nystromUniform < nystrom
             
             %% Approximated kernel parameter range
             
-            if isempty(obj.fixedMapPar)
+            if isempty(obj.mapParGuesses)
                 % Compute max and min sigma guesses
 
                 % Extract an even number of samples without replacement                
 
                 % WARNING: not compatible with versions older than 2014
-                %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
+                %samp = datasample( obj.X(:,:) , obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2) , 'Replace', false);
 
                 % WARNING: Alternative to datasample below
                 nRows = size(obj.X,1); % number of rows
-                nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
+                nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
                 rndIDX = randperm(nRows); 
                 samp = obj.X(rndIDX(1:nSample), :);   
 
                 % Compute squared distances  vector (D)
-                numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
+                numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
                 D = zeros(1 , numDistMeas);
                 for i = 1:numDistMeas
                     D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
@@ -110,7 +111,7 @@ classdef nystromUniform < nystrom
                 tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
                 
             else
-                tmpKerPar = obj.fixedMapPar;
+                tmpKerPar = obj.mapParGuesses;
             end
 
             %% Generate all possible parameters combinations            
