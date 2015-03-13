@@ -100,7 +100,7 @@ classdef dackrls < algorithm
             
             % numMapParGuesses        % Number of map parameter guesses
             defaultNumMapParGuesses = [];
-            checkNumMapParGuesses = @(x) isinteger(x) && x > 0 ;            
+            checkNumMapParGuesses = @(x) x > 0 ;            
             addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
             
             % filterParGuesses       % filter parameter guesses vector
@@ -110,7 +110,7 @@ classdef dackrls < algorithm
             
             % numFilterParGuesses    % Number of filter parameter guesses vector
             defaultNumFilterParGuesses = [];
-            checkNumFilterParGuesses = @(x) isinteger(x) && x > 0 ;            
+            checkNumFilterParGuesses = @(x) x > 0 ;            
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses);      
             
             % Parse function inputs

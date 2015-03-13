@@ -91,7 +91,7 @@ classdef tikhonov < filter
             addParameter(p,'preMultiplier',defaultPreMultiplier,checkPreMultiplier)
             
             % Parse function inputs
-            parse(p, K , Y , numSamples , varargin{:})
+            parse(p, K , Y , numSamples , varargin{:}{:})
                         
             % Get size of kernel/covariance matrix
             obj.sz = size(p.Results.K,1);
@@ -131,11 +131,11 @@ classdef tikhonov < filter
 
             % Compute hyperparameter(s) range
             if ~isempty(p.Results.numFilterParGuesses) && isempty(p.Results.filterParGuesses)
-                obj.numGuesses = p.Results.numGuesses;
+                obj.numFilterParGuesses = p.Results.numFilterParGuesses;
                 
             elseif isempty(p.Results.numFilterParGuesses) && ~isempty(p.Results.filterParGuesses)
-                obj.fixedFilterParGuesses = p.Results.fixedFilterParGuesses;
-                obj.numGuesses = size(p.Results.fixedFilterParGuesses,2);
+                obj.filterParGuesses = p.Results.filterParGuesses;
+                obj.numFilterParGuesses = size(p.Results.filterParGuesses,2);
                 
             elseif ~isempty(p.Results.numFilterParGuesses) && ~isempty(p.Results.filterParGuesses)
                 if p.Results.numFilterParGuesses == size( p.Results.filterParGuesses,2)
@@ -308,7 +308,7 @@ classdef tikhonov < filter
 
                 lmin = max(min(lmax*smallnumber, eigmin), 200 * sqrt(eps));
 
-                powers = linspace(1,0,obj.numGuesses);
+                powers = linspace(1,0,obj.numFilterParGuesses);
                 tmp = (lmin.*(lmax/lmin).^(powers)) / obj.n;
                 
 %             else

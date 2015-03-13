@@ -155,7 +155,7 @@ h.Label.String = 'RMSE';
 %%
 figure
 hold on
-title({'Incremental Nystrom performance';'Training Set'})
+title({'Incremental Nystrom performance';'Validation Set'})
 colormap jet
 cc=jet(size(expNysInc.algo.nyMapper.rng(1,:),2));    
 for i = 1:size(expNysInc.algo.nyMapper.rng(1,:),2)
@@ -182,7 +182,7 @@ h.Label.String = 'RMSE';
 %%
 figure
 hold on
-title({'Incremental Nystrom performance';'Training Set'})
+title({'Incremental Nystrom performance';'Test Set'})
 colormap jet
 cc=jet(size(expNysInc.algo.nyMapper.rng(1,:),2));    
 for i = 1:size(expNysInc.algo.nyMapper.rng(1,:),2)

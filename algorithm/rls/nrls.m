@@ -196,7 +196,7 @@ classdef nrls < algorithm
 
             % Train kernel
             obj.nyMapper = obj.mapType(Xtrain, obj.numNysParGuesses , obj.numMapParGuesses , obj.numMapParRangeSamples , obj.maxRank , obj.mapParGuesses , obj.verbose);
-            obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
+%             obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
 %             obj.filterParGuesses = [];
             
             valM = inf;     % Keeps track of the lowest validation error
@@ -255,7 +255,6 @@ classdef nrls < algorithm
                     
                     if obj.storeFullTrainPerf == 1         
                         
-                        
                         % Initialize TrainTrain kernel
                         argin = {};
                         argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
@@ -279,8 +278,6 @@ classdef nrls < algorithm
                         obj.valPerformance(obj.nyMapper.currentParIdx , filter.currentParIdx) = valPerf;
                     end
                     if obj.storeFullTestPerf == 1      
-                        
-                        
                         
                         % Initialize TrainTest kernel
                         argin = {};
