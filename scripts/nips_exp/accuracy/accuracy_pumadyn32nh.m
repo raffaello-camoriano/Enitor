@@ -28,8 +28,8 @@ numRep = 1;
 
 %% Load dataset
 
-ds = pumadyn(4096,4096, 32 , 'n' , 'h');
-% ds = pumadyn(2000,4096, 32 , 'n' , 'h');
+% ds = pumadyn(4096,4096, 32 , 'n' , 'h');
+ds = pumadyn(2000,4096, 32 , 'n' , 'h');
 
 %% Exact KRLS
 
@@ -57,7 +57,7 @@ krls_plots
 % Algorithm init
 map = @gaussianKernel;  
 fil = @tikhonov;
-mGuesses = [10 100 500 1000];
+mGuesses = [10 50 100];
 verbose = 0;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;
@@ -65,7 +65,9 @@ storeFullTestPerf = 1;
 mapParGuesses = expKRLS.algo.mapParStar;
 mapParStarIdx = find(expKRLS.algo.mapParGuesses==mapParGuesses);
 filterParGuesses = expKRLS.algo.filterParGuessesStorage(mapParStarIdx,:);
-alg = dackrls(map , fil , mGuesses , 'mapParGuesses' , mapParGuesses , 'filterParGuesses' , filterParGuesses , 'verbose' , verbose , 'storeFullTrainPerf' , storeFullTrainPerf , 'storeFullValPerf' , storeFullValPerf , 'storeFullTestPerf' , storeFullTestPerf);
+alg = dackrls(map , fil , mGuesses , 'mapParGuesses' , mapParGuesses , 'filterParGuesses' , filterParGuesses ,...
+    'verbose' , verbose , 'storeFullTrainPerf' , storeFullTrainPerf , 'storeFullValPerf' , storeFullValPerf ,...
+    'storeFullTestPerf' , storeFullTestPerf);
 
 % Exp init
 expDACKRLS = experiment(alg , ds , 1 , true , true , '' , resdir);
@@ -100,9 +102,9 @@ dackrls_plots
 
 map = @nystromUniformIncremental;
 
-numNysParGuesses = 40;
+numNysParGuesses = 10;
 
-alg = incrementalNkrls(map , 3000 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
+alg = incrementalNkrls(map , 1000 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
                         'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
                         'storeFullTrainPerf' , 1 , 'storeFullValPerf' , 1 , 'storeFullTestPerf' , 1);
                     

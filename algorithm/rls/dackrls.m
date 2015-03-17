@@ -36,12 +36,14 @@ classdef dackrls < algorithm
         numMapParGuesses        % Number of map parameter guesses vector
 %         numMapParRangeSamples   % Number of samples used for map parameter guesses range generation
         mapParStar              % Optimal selected map parameter
+        mapParStarIdx           % Optimal selected map parameter index
 
         % Filter properties
         filter                 % Handle to the specified filter
         filterParGuesses       % filter parameter guesses vector
         numFilterParGuesses    % Number of filter parameter guesses vector
         filterParStar          % Optimal selected filter parameter
+        filterParStarIdx       % Optimal selected filter parameter index
         isFilterParGuessesFixed
     end
     
@@ -196,12 +198,12 @@ classdef dackrls < algorithm
 %             obj.trainIdx = shuffledIdx(1 : tmp1);
 %             valIdx = shuffledIdx(tmp1 + 1 : end);
             obj.trainIdx = 1 : ntr;
-            valIdx = ntr + 1 : size(Xtr,1);
+            obj.valIdx = ntr + 1 : size(Xtr,1);
             
             Xtrain = Xtr(obj.trainIdx,:);
             Ytrain = Ytr(obj.trainIdx,:);
-            Xval = Xtr(valIdx,:);
-            Yval = Ytr(valIdx,:);
+            Xval = Xtr(obj.valIdx,:);
+            Yval = Ytr(obj.valIdx,:);
             
             %%% Training set splitting in m disjoint chunks (divide)
             display('Training set splitting in m disjoint chunks (divide)');
@@ -237,9 +239,7 @@ classdef dackrls < algorithm
             
             % Initializations
             obj.c = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
-%             YvalPred = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
             valPerf = cell(obj.numMGuesses,obj.numMapParGuesses,obj.numFilterParGuesses);
-%             kernelVal = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
             valM = inf;     % Keeps track of the lowest validation error
                                 
             for i = 1:obj.numMGuesses
@@ -286,7 +286,7 @@ classdef dackrls < algorithm
                             % Compute filter according to current hyperparameters
                             filter.compute();
 
-                            % Update coefficients vector
+                            % Store coefficients vector
                             obj.c{i,j,kernelTrain.currentParIdx,filter.currentParIdx} = filter.weights;
                             
                         end
@@ -319,12 +319,19 @@ classdef dackrls < algorithm
                         end
 
                         % Combine partial predictions
-%                         fullPred = mean(cell2mat(partialPred(:,k,l)'),2);
                         ctmp = partialPred(:,k,l);
-                        fullPred = mean(reshape(cell2mat(ctmp), [ size(ctmp{1}), length(ctmp) ]), ndims(ctmp{1})+1);
-    
+                        fullPred = zeros(size(ctmp{1},1) , size(ctmp{1},2));
+                        for ii = 1:numel(ctmp)
+                            fullPred = fullPred + ctmp{ii};
+                        end
+                        fullPred = fullPred/numel(ctmp);
+
+                        %%%%%%%%%%
+                        % BUG!!! %
+                        %%%%%%%%%%
+                        
                         % Compute performance
-                        valPerf{i,k,l} = performanceMeasure( Yval , fullPred  , valIdx );
+                        valPerf{i,k,l} = performanceMeasure( Yval , fullPred );
 
                         if obj.storeFullValPerf == 1
                             obj.valPerformance{i,k,l} = valPerf{i,k,l};
@@ -353,8 +360,12 @@ classdef dackrls < algorithm
 
                             % Combine partial predictions
                             ctmp = partialPred(:,k,l);
-                            fullPred = mean(reshape(cell2mat(ctmp), [ size(ctmp{1}), length(ctmp) ]), ndims(ctmp{1})+1);
-    
+                            fullPred = zeros(size(ctmp{1},1) , size(ctmp{1},2));
+                            for ii = 1:numel(ctmp)
+                                fullPred = fullPred + ctmp{ii};
+                            end
+                            fullPred = fullPred/numel(ctmp);
+                            
                             % Compute performance
                             obj.trainPerformance{i,k,l} = performanceMeasure( Ytr(obj.XtrSplit{i,j},:) , fullPred );
                         end
@@ -381,8 +392,12 @@ classdef dackrls < algorithm
 
                             % Combine partial predictions
                             ctmp = partialPred(:,k,l);
-                            fullPred = mean(reshape(cell2mat(ctmp), [ size(ctmp{1}), length(ctmp) ]), ndims(ctmp{1})+1);
-
+                            fullPred = zeros(size(ctmp{1},1) , size(ctmp{1},2));
+                            for ii = 1:numel(ctmp)
+                                fullPred = fullPred + ctmp{ii};
+                            end
+                            fullPred = fullPred/numel(ctmp);
+                            
                             % Compute performance
                             obj.testPerformance{i,k,l} = performanceMeasure( Yte , fullPred );
                         end
@@ -392,7 +407,10 @@ classdef dackrls < algorithm
                             obj.mStarIdx = i;
 
                             obj.mapParStar = obj.mapParGuesses(k);
+                            obj.mapParStarIdx = k;
+
                             obj.filterParStar = obj.filterParGuesses(l);
+                            obj.filterParStarIdx = l;
 
                             %Update best validation performance measurement
                             valM = valPerf{i,k,l};
@@ -429,11 +447,14 @@ classdef dackrls < algorithm
                 kernelTest.compute();
 
                 % Compute partial prediction
-                partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j};
+%                 partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j}; 
+                partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j,obj.mapParStarIdx,obj.filterParStarIdx}; 
+                
             end
             
             % Combine partial predictions into full prediction
-            Ypred = mean(cell2mat(partialPred),2);
+            ctmp = partialPred;
+            Ypred = mean(reshape(cell2mat(ctmp), [ size(ctmp{1}), length(ctmp) ]), ndims(ctmp{1})+1);
         end
     end
 end

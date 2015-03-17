@@ -9,8 +9,6 @@
 %
 % The benchmark dataset for this experiment is:
 % - MNIST
-% The benchmark dataset for this experiment is:
-% - pumadyn 32 nh
 
 %%
 
@@ -30,14 +28,14 @@ numRep = 1;
 
 %% Load dataset
 
-ds = MNIST(2000,10000,'plusMinusOne');
+ds = MNIST(500,1000,'plusMinusOne');
 
 %% Exact KRLS
 
 map = @gaussianKernel;
 fil = @tikhonov;
 
-alg = krls( map , fil , 'numMapParGuesses' , 10 , 'filterParGuesses' , logspace(-5,1,10) , 'verbose' , 1 , ...
+alg = krls( map , fil , 'numMapParGuesses' , 10 , 'filterParGuesses' , logspace(-5,0,6) , 'verbose' , 0 , ...
                         'storeFullTrainPerf' , 1 , 'storeFullValPerf' , 1 , 'storeFullTestPerf' , 1);
 
 % alg = krls( map , fil , 'numMapParGuesses' , 10 , 'numFilterParGuesses' , 10 , 'verbose' , 1 , ...
@@ -58,7 +56,9 @@ krls_plots
 % Algorithm init
 map = @gaussianKernel;  
 fil = @tikhonov;
-mGuesses = [10 100 500 1000];
+% mGuesses = [10 50 100];
+% mGuesses = [10 50];
+mGuesses = [2 3];
 verbose = 0;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;
@@ -66,7 +66,9 @@ storeFullTestPerf = 1;
 mapParGuesses = expKRLS.algo.mapParStar;
 mapParStarIdx = find(expKRLS.algo.mapParGuesses==mapParGuesses);
 filterParGuesses = expKRLS.algo.filterParGuessesStorage(mapParStarIdx,:);
-alg = dackrls(map , fil , mGuesses , 'mapParGuesses' , mapParGuesses , 'filterParGuesses' , filterParGuesses , 'verbose' , verbose , 'storeFullTrainPerf' , storeFullTrainPerf , 'storeFullValPerf' , storeFullValPerf , 'storeFullTestPerf' , storeFullTestPerf);
+alg = dackrls(map , fil , mGuesses , 'mapParGuesses' , mapParGuesses , 'filterParGuesses' , filterParGuesses ,...
+    'verbose' , verbose , 'storeFullTrainPerf' , storeFullTrainPerf , 'storeFullValPerf' , storeFullValPerf ,...
+    'storeFullTestPerf' , storeFullTestPerf);
 
 % Exp init
 expDACKRLS = experiment(alg , ds , 1 , true , true , '' , resdir);
@@ -101,9 +103,9 @@ dackrls_plots
 
 map = @nystromUniformIncremental;
 
-numNysParGuesses = 40;
+numNysParGuesses = 20;
 
-alg = incrementalNkrls(map , 1000 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
+alg = incrementalNkrls(map , 300 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
                         'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
                         'storeFullTrainPerf' , 1 , 'storeFullValPerf' , 1 , 'storeFullTestPerf' , 1);
                     
