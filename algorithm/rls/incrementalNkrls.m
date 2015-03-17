@@ -331,6 +331,11 @@ classdef incrementalNkrls < algorithm
                 end
             end
             
+            % Free memory
+            obj.nyMapper.M = [];
+            obj.nyMapper.alpha = [];
+            obj.nyMapper.Xs = [];
+            
             if obj.verbose == 1
                 
                 % Print best kernel hyperparameter(s)

@@ -58,7 +58,7 @@ map = @gaussianKernel;
 fil = @tikhonov;
 % mGuesses = [10 50 100];
 % mGuesses = [10 50];
-mGuesses = [2 3];
+mGuesses = 1:10;
 verbose = 0;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;
@@ -103,9 +103,9 @@ dackrls_plots
 
 map = @nystromUniformIncremental;
 
-numNysParGuesses = 20;
+numNysParGuesses = 10;
 
-alg = incrementalNkrls(map , 300 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
+alg = incrementalNkrls(map , 400 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
                         'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
                         'storeFullTrainPerf' , 1 , 'storeFullValPerf' , 1 , 'storeFullTestPerf' , 1);
                     
