@@ -5,6 +5,7 @@ classdef experiment < handle
     properties
 
         algo
+        filter
         ds
         performanceMeasure
         numRep          % Number of repetitions
@@ -143,17 +144,20 @@ classdef experiment < handle
             obj.result.perf = abs(obj.ds.performanceMeasure( Yte , obj.result.Ypred , obj.ds.testIdx));
             
             % Save hyperparameter ranges
-            if isprop(obj.algo,'filterParGuesses')
-                obj.result.filterParGuesses = obj.algo.filterParGuesses;
-            end
-            
-            if isprop(obj.algo,'kerParGuesses')
-                obj.result.kerParGuesses = obj.algo.kerParGuesses;
-            end
-            
-            if isprop(obj.algo,'rfMapper')
-                obj.result.mapParGuesses = obj.algo.mapParGuesses;
-            end
+%             if isprop(obj.algo,'filterParGuesses')
+%                 obj.result.filterParGuesses = obj.algo.filterParGuesses;
+%             end
+%             
+%             if isprop(obj.algo,'kerParGuesses')
+%                 obj.result.kerParGuesses = obj.algo.kerParGuesses;
+%             end
+%             
+%             if isprop(obj.algo,'mapParGuesses')
+%                 obj.result.mapParGuesses = obj.algo.mapParGuesses;
+%             end
+
+            obj.result.algo = obj.algo;
+            obj.result.filter = obj.filter;
                         
             
             % Save best hyperparameters

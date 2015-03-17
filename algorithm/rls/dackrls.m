@@ -42,7 +42,7 @@ classdef dackrls < algorithm
         filterParGuesses       % filter parameter guesses vector
         numFilterParGuesses    % Number of filter parameter guesses vector
         filterParStar          % Optimal selected filter parameter
-        
+        isFilterParGuessesFixed
     end
     
     methods
@@ -146,6 +146,9 @@ classdef dackrls < algorithm
             
             if ~isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
                 obj.numFilterParGuesses = size(obj.filterParGuesses,2);
+                obj.isFilterParGuessesFixed = 1;
+            else
+                obj.isFilterParGuessesFixed = 0;
             end
                
             warning('DACKRLS does not support map and filter hyperparameter selection yet.');
@@ -221,27 +224,26 @@ classdef dackrls < algorithm
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
 %                 obj.trainPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
-                obj.trainPerformance = cell(1,obj.numMGuesses);
+                obj.trainPerformance = cell(obj.numMGuesses,obj.numMapParGuesses,obj.numFilterParGuesses);
             end
             if obj.storeFullValPerf == 1
 %                 obj.valPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
-                obj.valPerformance = cell(1,obj.numMGuesses);
+                obj.valPerformance = cell(obj.numMGuesses,obj.numMapParGuesses,obj.numFilterParGuesses);
             end
             if obj.storeFullTestPerf == 1
 %                 obj.testPerformance = cell(obj.numMGuesses, obj.numMapParGuesses, obj.numFilterParGuesses);
-                obj.testPerformance = cell(1,obj.numMGuesses);
+                obj.testPerformance = cell(obj.numMGuesses,obj.numMapParGuesses,obj.numFilterParGuesses);
             end
             
             % Initializations
             obj.c = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
 %             YvalPred = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
-            valPerf = cell(1,obj.numMGuesses);
-            trainPerf = cell(1,obj.numMGuesses);
-            testPerf = cell(1,obj.numMGuesses);
+            valPerf = cell(obj.numMGuesses,obj.numMapParGuesses,obj.numFilterParGuesses);
 %             kernelVal = cell(obj.numMGuesses,max(obj.mGuesses),obj.numMapParGuesses,obj.numFilterParGuesses);
             valM = inf;     % Keeps track of the lowest validation error
                                 
             for i = 1:obj.numMGuesses
+                Ktr = cell(obj.mGuesses(i),obj.numMapParGuesses);
                 for j = 1:obj.mGuesses(i)
                     
                     % Initialize Train kernel
@@ -262,6 +264,10 @@ classdef dackrls < algorithm
                         % Compute kernels according to current hyperparameters
                         kernelTrain.compute();
                         
+                        if obj.storeFullTrainPerf == 1                    
+                            Ktr{j,kernelTrain.currentParIdx} = kernelTrain.K;
+                        end
+                        
                         % Initialize regularization filter
                         argin = {};
                         if ~isempty(obj.numFilterParGuesses)
@@ -281,10 +287,8 @@ classdef dackrls < algorithm
                             filter.compute();
 
                             % Update coefficients vector
-                            obj.c{i,j} = filter.weights;
+                            obj.c{i,j,kernelTrain.currentParIdx,filter.currentParIdx} = filter.weights;
                             
-                            obj.mapParStar = kernelTrain.currentPar;
-                            obj.filterParStar = filter.currentPar;
                         end
                     end
                 end
@@ -294,107 +298,117 @@ classdef dackrls < algorithm
                 %%%%%%%%%%%%%%%%%%%%%%
 
                 % Compute partial predictions matrix
-                partialPred = cell(1,obj.mGuesses(i));
+                partialPred = cell(obj.mGuesses(i),obj.numMapParGuesses,obj.numFilterParGuesses);
 
-                for j = 1:obj.mGuesses(i)
+                for k = 1:obj.numMapParGuesses
+                    for l = 1:obj.numFilterParGuesses              
+                        for j = 1:obj.mGuesses(i)
 
-                    % Initialize TrainVal kernel
-                    argin = {};
-                    argin = [argin , 'mapParGuesses' , obj.mapParStar];
-                    if ~isempty(obj.verbose)
-                        argin = [argin , 'verbose' , obj.verbose];
-                    end                    
-                    kernelVal = obj.map(Xval , Xtr(obj.XtrSplit{i,j},:) , argin{:});
-                    kernelVal.next();
-                    kernelVal.compute();
+                            % Initialize TrainVal kernel
+                            argin = {};
+                            argin = [argin , 'mapParGuesses' , obj.mapParGuesses(k)];
+                            if ~isempty(obj.verbose)
+                                argin = [argin , 'verbose' , obj.verbose];
+                            end                    
+                            kernelVal = obj.map(Xval , Xtr(obj.XtrSplit{i,j},:) , argin{:});
+                            kernelVal.next();
+                            kernelVal.compute();
 
-                    % Compute partial prediction
-                    partialPred{j} = kernelVal.K * obj.c{i,j};
-                end
+                            % Compute partial prediction
+                            partialPred{j,k,l} = kernelVal.K * obj.c{i,j,k,l};
+                        end
 
-                % Combine partial predictions
-                fullPred = mean(cell2mat(partialPred),2);
+                        % Combine partial predictions
+%                         fullPred = mean(cell2mat(partialPred(:,k,l)'),2);
+                        ctmp = partialPred(:,k,l);
+                        fullPred = mean(reshape(cell2mat(ctmp), [ size(ctmp{1}), length(ctmp) ]), ndims(ctmp{1})+1);
+    
+                        % Compute performance
+                        valPerf{i,k,l} = performanceMeasure( Yval , fullPred  , valIdx );
 
-                % Compute performance
-                valPerf{i} = performanceMeasure( Yval , fullPred  , valIdx );
+                        if obj.storeFullValPerf == 1
+                            obj.valPerformance{i,k,l} = valPerf{i,k,l};
+                        end
 
-                if obj.storeFullValPerf == 1
-                    obj.valPerformance{i} = valPerf{i};
-                end
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Populate training perforance matrix %
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if obj.storeFullTrainPerf == 1                    
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        % Populate training perforance matrix %
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        if obj.storeFullTrainPerf == 1                    
 
-                    for j = 1:obj.mGuesses(i)
+                            for j = 1:obj.mGuesses(i)
 
-                        % Initialize TrainTrain kernel
-                        argin = {};
-                        argin = [argin , 'mapParGuesses' , obj.mapParStar];
-                        if ~isempty(obj.verbose)
-                            argin = [argin , 'verbose' , obj.verbose];
-                        end                    
-                        kernelTrain = obj.map(Xtr(obj.XtrSplit{i,j},:) , Xtr(obj.XtrSplit{i,j},:) , argin{:});
-                        kernelTrain.next();
-                        kernelTrain.compute();
+                                % Initialize TrainTrain kernel
+                                argin = {};
+                                argin = [argin , 'mapParGuesses' , obj.mapParStar];
+                                if ~isempty(obj.verbose)
+                                    argin = [argin , 'verbose' , obj.verbose];
+                                end                    
+%                                 kernelTrain = obj.map(Xtr(obj.XtrSplit{i,j},:) , Xtr(obj.XtrSplit{i,j},:) , argin{:});
+%                                 kernelTrain.next();
+%                                 kernelTrain.compute();
 
-                        % Compute partial prediction
-                        partialPred{j} = kernelTrain.K * obj.c{i,j};
+                                % Compute partial prediction
+                                partialPred{j,k,l} = Ktr{j,k} * obj.c{i,j,k,l};
+                            end
+
+                            % Combine partial predictions
+                            ctmp = partialPred(:,k,l);
+                            fullPred = mean(reshape(cell2mat(ctmp), [ size(ctmp{1}), length(ctmp) ]), ndims(ctmp{1})+1);
+    
+                            % Compute performance
+                            obj.trainPerformance{i,k,l} = performanceMeasure( Ytr(obj.XtrSplit{i,j},:) , fullPred );
+                        end
+
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        %   Populate test perforance matrix   %
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        if obj.storeFullTestPerf == 1                    
+
+                            for j = 1:obj.mGuesses(i)
+                                % Initialize TrainTest kernel
+                                argin = {};
+                                argin = [argin , 'mapParGuesses' , obj.mapParGuesses(k)];
+                                if ~isempty(obj.verbose)
+                                    argin = [argin , 'verbose' , obj.verbose];
+                                end                    
+                                kernelTest = obj.map(Xte , Xtr(obj.XtrSplit{i,j},:) , argin{:});
+                                kernelTest.next();
+                                kernelTest.compute();
+
+                                % Compute partial prediction
+                                partialPred{j,k,l} = kernelTest.K * obj.c{i,j,k,l};
+                            end
+
+                            % Combine partial predictions
+                            ctmp = partialPred(:,k,l);
+                            fullPred = mean(reshape(cell2mat(ctmp), [ size(ctmp{1}), length(ctmp) ]), ndims(ctmp{1})+1);
+
+                            % Compute performance
+                            obj.testPerformance{i,k,l} = performanceMeasure( Yte , fullPred );
+                        end
+
+                        if valPerf{i,k,l} < valM
+                            obj.mStar = obj.mGuesses(i);
+                            obj.mStarIdx = i;
+
+                            obj.mapParStar = obj.mapParGuesses(k);
+                            obj.filterParStar = obj.filterParGuesses(l);
+
+                            %Update best validation performance measurement
+                            valM = valPerf{i,k,l};
+                        end
                     end
-
-                    % Combine partial predictions
-                    fullPred = mean(cell2mat(partialPred),2);
-
-                    % Compute performance
-                    obj.trainPerformance{i} = performanceMeasure( Ytr(obj.XtrSplit{i,j},:) , fullPred );
-                end
-
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                %   Populate test perforance matrix   %
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if obj.storeFullTestPerf == 1                    
-
-                    for j = 1:obj.mGuesses(i)
-                        % Initialize TrainTest kernel
-                        argin = {};
-                        argin = [argin , 'mapParGuesses' , obj.mapParStar];
-                        if ~isempty(obj.verbose)
-                            argin = [argin , 'verbose' , obj.verbose];
-                        end                    
-                        kernelTest = obj.map(Xte , Xtr(obj.XtrSplit{i,j},:) , argin{:});
-                        kernelTest.next();
-                        kernelTest.compute();
-
-                        % Compute partial prediction
-                        partialPred{j} = kernelTest.K * obj.c{i,j};
-                    end
-
-                    % Combine partial predictions
-                    fullPred = mean(cell2mat(partialPred),2);
-
-                    % Compute performance
-                    obj.testPerformance{i} = performanceMeasure( Yte , fullPred );
-                end
-
-                if valPerf{i} < valM
-                    obj.mStar = obj.mGuesses(i);
-                    obj.mStarIdx = i;
-                    
-                    %Update best validation performance measurement
-                    valM = valPerf{i};
                 end
             end
             
             % Print best kernel hyperparameter(s)
             display(['Best number of splits: ' , num2str(obj.mStar)]);
             
-%             % Print best kernel hyperparameter(s)
-%             display(['Best kernel hyperparameter(s): ' , num2str(obj.mapParStar)]);
-% 
-%             % Print best filter hyperparameter(s)
-%             display(['Best filter hyperparameter(s): ' , num2str(obj.filterParStar)]);
-%             
+            % Print best kernel hyperparameter(s)
+            display(['Best kernel hyperparameter(s): ' , num2str(obj.mapParStar)]);
+
+            % Print best filter hyperparameter(s)
+            display(['Best filter hyperparameter(s): ' , num2str(obj.filterParStar)]);
         end
         
         function Ypred = test( obj , Xte )

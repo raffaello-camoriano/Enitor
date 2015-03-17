@@ -13,7 +13,7 @@ mkdir(resdir);
 %ds = Adult;
 
 % Load small dataset
-ds = Adult(7000,16282,'plusMinusOne');
+ds = Adult(2000,16282,'plusMinusOne');
 
 
 %% Experiment setup: DACKRLS
@@ -23,7 +23,7 @@ map = @gaussianKernel;
 fil = @tikhonov;
 % mGuesses = [5 , 10 , 15 , 20];
 % mGuesses = 5:10:500;
-mGuesses = 1:50;
+mGuesses = 1:10:50;
 verbose = 0;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;

@@ -32,7 +32,7 @@ classdef tikhonov < filter
       
         function obj = tikhonov( K , Y , numSamples , varargin)
 
-            obj.init(  K , Y , numSamples , varargin{:} );            
+            obj.init(  K , Y , numSamples , varargin );            
         end
         
 %         function obj = tikhonov( K , Y , numSamples , numGuesses , M , fixedFilterPar , verbose , preMultiplier)

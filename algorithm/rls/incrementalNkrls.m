@@ -196,8 +196,30 @@ classdef incrementalNkrls < algorithm
             
             obj.ntr = size(Xtrain,1);
             
-            % Train kernel            
-            obj.nyMapper = obj.mapType(Xtrain, Ytrain , obj.ntr , 'numNysParGuesses' , obj.numNysParGuesses , 'maxRank' , obj.maxRank , 'numMapParGuesses' , obj.numMapParGuesses , 'mapParGuesses' , obj.mapParGuesses , 'filterParGuesses' , obj.filterParGuesses , 'numMapParRangeSamples' , obj.numMapParRangeSamples , 'verbose' , obj.verbose );
+            % Initialize Nystrom Mapper
+            argin = {};
+            if ~isempty(obj.numNysParGuesses)
+                argin = [argin , 'numNysParGuesses' , obj.numNysParGuesses];
+            end      
+            if ~isempty(obj.maxRank)
+                argin = [argin , 'maxRank' , obj.maxRank];
+            end      
+            if ~isempty(obj.numMapParGuesses)
+                argin = [argin , 'numMapParGuesses' , obj.numMapParGuesses];
+            end      
+            if ~isempty(obj.mapParGuesses)
+                argin = [argin , 'mapParGuesses' , obj.mapParGuesses];
+            end      
+            if ~isempty(obj.filterParGuesses)
+                argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
+            end           
+            if ~isempty(obj.numMapParRangeSamples)
+                argin = [argin , 'numMapParRangeSamples' , obj.numMapParRangeSamples];
+            end     
+            if ~isempty(obj.verbose)
+                argin = [argin , 'verbose' , obj.verbose];
+            end
+            obj.nyMapper = obj.mapType(Xtrain, Ytrain , obj.ntr , argin{:} );
             obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
             
             valM = inf;     % Keeps track of the lowest validation error

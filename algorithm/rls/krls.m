@@ -235,7 +235,7 @@ classdef krls < algorithm
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
-                filter = obj.filter( kernelTrain.K, Ytrain , numSamples , argin);
+                filter = obj.filter( kernelTrain.K, Ytrain , numSamples , argin{:});
                 
 %                 filter = obj.filter( nyMapper.C' * nyMapper.C, nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , nyMapper.W , 'fixedFilterPar' , obj.fixedFilterPar , 'verbose' , obj.verbose);
                 
