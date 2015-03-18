@@ -54,8 +54,8 @@ classdef Gas < dataset
                 obj.testIdx = tmp(obj.nTr+1:obj.nTr+obj.nTe);
             end
             
-%             obj.shuffleTrainIdx();
-%             obj.shuffleTestIdx();
+            obj.shuffleTrainIdx();
+            obj.shuffleTestIdx();
             
             % Reformat output columns
             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))

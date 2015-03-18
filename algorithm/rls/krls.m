@@ -214,7 +214,7 @@ classdef krls < algorithm
 
                 % Initialize TrainVal kernel
                 argin = {};
-                argin = [argin , 'mapParGuesses' , kernelTrain.currentPar(1)];
+                argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar(1))];
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end                    
@@ -277,7 +277,7 @@ classdef krls < algorithm
                         
                         % Initialize TrainTest kernel
                         argin = {};
-                        argin = [argin , 'mapParGuesses' , kernelTrain.currentPar];
+                        argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar)];
                         if ~isempty(obj.verbose)
                             argin = [argin , 'verbose' , obj.verbose];
                         end                  
@@ -358,7 +358,7 @@ classdef krls < algorithm
 
             % Get kernel type and instantiate train-test kernel (including sigma)
             argin = {};
-            argin = [argin , 'mapParGuesses' , obj.mapParStar];
+            argin = [argin , 'mapParGuesses' , full(obj.mapParStar)];
             if ~isempty(obj.verbose)
                 argin = [argin , 'verbose' , obj.verbose];
             end

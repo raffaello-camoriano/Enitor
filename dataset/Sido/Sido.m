@@ -56,6 +56,10 @@ classdef Sido < dataset
                 obj.testIdx = 10001:10000 + obj.nTe;
             end
             
+            % Shuffle indexes
+            obj.shuffleTrainIdx();
+            obj.shuffleTestIdx();
+            
             % Reformat output columns
 %             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
 %                 obj.outputFormat = outputFormat;

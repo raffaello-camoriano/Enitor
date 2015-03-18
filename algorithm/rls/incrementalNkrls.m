@@ -208,7 +208,7 @@ classdef incrementalNkrls < algorithm
                 argin = [argin , 'numMapParGuesses' , obj.numMapParGuesses];
             end      
             if ~isempty(obj.mapParGuesses)
-                argin = [argin , 'mapParGuesses' , obj.mapParGuesses];
+                argin = [argin , 'mapParGuesses' , full(obj.mapParGuesses)];
             end      
             if ~isempty(obj.filterParGuesses)
                 argin = [argin , 'filterParGuesses' , obj.filterParGuesses];

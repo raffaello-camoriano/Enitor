@@ -29,6 +29,8 @@ h = surf(expNysBat.algo.testPerformance);
 alpha(h,0.2)
 hold off
 legend('Training','Validation','Test');
+view(45,45)
+
 
 %% Batch Nystrom performance (only train)
 

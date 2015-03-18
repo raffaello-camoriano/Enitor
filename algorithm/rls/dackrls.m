@@ -252,7 +252,7 @@ classdef dackrls < algorithm
                         argin = [argin , 'numMapParGuesses' , obj.numMapParGuesses];
                     end
                     if ~isempty(obj.mapParGuesses)
-                        argin = [argin , 'mapParGuesses' , obj.mapParGuesses];
+                        argin = [argin , 'mapParGuesses' , full(obj.mapParGuesses)];
                     end
                     if ~isempty(obj.verbose)
                         argin = [argin , 'verbose' , obj.verbose];
@@ -306,7 +306,7 @@ classdef dackrls < algorithm
 
                             % Initialize TrainVal kernel
                             argin = {};
-                            argin = [argin , 'mapParGuesses' , obj.mapParGuesses(k)];
+                            argin = [argin , 'mapParGuesses' , full(obj.mapParGuesses(k))];
                             if ~isempty(obj.verbose)
                                 argin = [argin , 'verbose' , obj.verbose];
                             end                    
@@ -346,7 +346,7 @@ classdef dackrls < algorithm
 
                                 % Initialize TrainTrain kernel
                                 argin = {};
-                                argin = [argin , 'mapParGuesses' , obj.mapParStar];
+                                argin = [argin , 'mapParGuesses' , full(obj.mapParStar)];
                                 if ~isempty(obj.verbose)
                                     argin = [argin , 'verbose' , obj.verbose];
                                 end                    
@@ -378,7 +378,7 @@ classdef dackrls < algorithm
                             for j = 1:obj.mGuesses(i)
                                 % Initialize TrainTest kernel
                                 argin = {};
-                                argin = [argin , 'mapParGuesses' , obj.mapParGuesses(k)];
+                                argin = [argin , 'mapParGuesses' , full(obj.mapParGuesses(k))];
                                 if ~isempty(obj.verbose)
                                     argin = [argin , 'verbose' , obj.verbose];
                                 end                    
@@ -438,7 +438,7 @@ classdef dackrls < algorithm
                 
                 % Get kernel type and instantiate train-test kernel (including sigma)
                 argin = {};
-                argin = [argin , 'mapParGuesses' , obj.mapParStar];
+                argin = [argin , 'mapParGuesses' , full(obj.mapParStar)];
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end

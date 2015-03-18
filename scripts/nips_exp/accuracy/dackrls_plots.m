@@ -21,6 +21,7 @@ ylabel('# of Splits')
 zlabel('Performance')
 set(gca,'XScale','log')
 set(gca,'YScale','log')
+view(45,45)
 
 %% DACKRLS performance (only train)
 

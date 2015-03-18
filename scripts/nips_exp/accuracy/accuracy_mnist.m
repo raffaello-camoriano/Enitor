@@ -1,16 +1,19 @@
-%% Author: Raffaello Camoriano
+%% Scaling up Kernel Methods Experiments
+% Author: Raffaello Camoriano
+%
 % In this experiment, we compare the accuracy of the following methods:
 %
-% - Exact KRLS
-% - Divide & conquer KRLS
-% - Batch Nystrom KRLS
-% - Incremental Nystrom KRLS
-% - Random Features KRLS
+% * Exact KRLS
+% * Divide & conquer KRLS
+% * Batch Nystrom KRLS
+% * Incremental Nystrom KRLS
+% * Random Features KRLS
 %
 % The benchmark dataset for this experiment is:
-% - MNIST
+% * MNIST
 
-%%
+
+%% Setup
 
 setenv('LC_ALL','C');
 % addpath(genpath('.'));
@@ -19,7 +22,7 @@ clearAllButBP;
 close all;
 
 % Set experimental results relative directory name
-resdir = 'scripts/nips_exp/accuracy/results';
+resdir = 'scripts/nips_exp/accuracy/results/mnist/';
 mkdir(resdir);
 addpath(genpath('.'));
 
@@ -28,7 +31,7 @@ numRep = 1;
 
 %% Load dataset
 
-ds = MNIST(500,1000,'plusMinusOne');
+ds = MNIST(1000,1000,'plusMinusOne');
 
 %% Exact KRLS
 
@@ -58,7 +61,7 @@ map = @gaussianKernel;
 fil = @tikhonov;
 % mGuesses = [10 50 100];
 % mGuesses = [10 50];
-mGuesses = 1:10;
+mGuesses = 2:10;
 verbose = 0;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;
@@ -105,7 +108,7 @@ map = @nystromUniformIncremental;
 
 numNysParGuesses = 10;
 
-alg = incrementalNkrls(map , 400 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
+alg = incrementalNkrls(map , 800 , 'numNysParGuesses' , numNysParGuesses , 'mapParGuesses' , mapParGuesses ,  ...
                         'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
                         'storeFullTrainPerf' , 1 , 'storeFullValPerf' , 1 , 'storeFullTestPerf' , 1);
                     
@@ -143,6 +146,6 @@ title('Best test performance')
 ylabel('Relative Classification Error')
 
 %% Save figures
-figsdir = 'scripts/nips_exp/accuracy/results/figures/mnist';
-mkdir(figsdir);
+figsdir = resdir;
+% mkdir(figsdir);
 saveAllFigs

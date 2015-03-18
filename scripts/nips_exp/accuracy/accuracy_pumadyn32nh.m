@@ -1,16 +1,19 @@
-%% Author: Raffaello Camoriano
+%% Scaling up Kernel Methods Experiments
+% Author: Raffaello Camoriano
+%
 % In this experiment, we compare the accuracy of the following methods:
 %
-% - Exact KRLS
-% - Divide & conquer KRLS
-% - Batch Nystrom KRLS
-% - Incremental Nystrom KRLS
-% - Random Features KRLS
+% * Exact KRLS
+% * Divide & conquer KRLS
+% * Batch Nystrom KRLS
+% * Incremental Nystrom KRLS
+% * Random Features KRLS
 %
 % The benchmark dataset for this experiment is:
-% - pumadyn 32 nh
+% * Pumadyn32nh
 
-%%
+
+%% Setup
 
 setenv('LC_ALL','C');
 % addpath(genpath('.'));
@@ -19,7 +22,7 @@ clearAllButBP;
 close all;
 
 % Set experimental results relative directory name
-resdir = 'scripts/nips_exp/accuracy/results';
+resdir = 'scripts/nips_exp/accuracy/results/pumadyn32nh/';
 mkdir(resdir);
 addpath(genpath('.'));
 
@@ -57,7 +60,7 @@ krls_plots
 % Algorithm init
 map = @gaussianKernel;  
 fil = @tikhonov;
-mGuesses = 1:10;
+mGuesses = 2:10;
 verbose = 0;
 storeFullTrainPerf = 1;
 storeFullValPerf = 1;
@@ -142,6 +145,6 @@ title('Best test performance')
 ylabel('Relative Error')
 
 %% Save figures
-figsdir = 'scripts/nips_exp/accuracy/results/figures/pumadyn';
-mkdir(figsdir);
+figsdir = resdir;
+% mkdir(figsdir);
 saveAllFigs

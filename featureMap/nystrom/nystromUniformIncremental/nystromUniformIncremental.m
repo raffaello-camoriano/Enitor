@@ -346,7 +346,7 @@ classdef nystromUniformIncremental < nystrom
                     if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
                         
                     end
-                    [U, S] = eig(A' * A - B' * MB);
+                    [U, S] = eig(full(A' * A - B' * MB));
                     ds = diag(S);
                     ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0
                     ds = real((ds>0).*ds);    % Set eigenvalues < 0 for numerical reasons to 0
