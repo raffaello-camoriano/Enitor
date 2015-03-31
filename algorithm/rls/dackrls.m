@@ -447,9 +447,7 @@ classdef dackrls < algorithm
                 kernelTest.compute();
 
                 % Compute partial prediction
-%                 partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j}; 
                 partialPred{j} = kernelTest.K * obj.c{obj.mStarIdx,j,obj.mapParStarIdx,obj.filterParStarIdx}; 
-                
             end
             
             % Combine partial predictions into full prediction

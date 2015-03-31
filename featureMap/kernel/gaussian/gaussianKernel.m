@@ -94,7 +94,9 @@ classdef gaussianKernel < kernel
             
             % Conditional range computation
             if isempty(obj.mapParGuesses)
-                display('Computing Gaussian kernel range');
+                if obj.verbose == 1
+                    display('Computing Gaussian kernel range');
+                end
                 obj.range();    % Compute range
             end
             obj.currentParIdx = 0;

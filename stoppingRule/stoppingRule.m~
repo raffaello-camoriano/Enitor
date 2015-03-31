@@ -1,0 +1,25 @@
+classdef stoppingRule
+    %STOPPINGRULE Summary of this class goes here
+    %   Detailed explanation goes here
+    
+    properties
+        previousPerf    % Performance value at the previous step
+        mode            % 1: Increasing ; 2: Decreasing
+    end
+    
+    methods
+        function obj = stoppingRule(mode)
+            init( obj , mode)
+        end
+        
+        function init( obj , mode)
+            
+            if mode ~=  1
+            obj.mode = mode;
+            obj.previousPerf = 
+
+        end
+    end
+    
+end
+

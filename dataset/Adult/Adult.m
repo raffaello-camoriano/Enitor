@@ -15,7 +15,7 @@ classdef Adult < dataset
 %             fclose(fid);
             
 
-            warning('This implementation of the Adult dataset considers all the available attributes, (d = 123)');
+            display('This implementation of the Adult dataset considers all the available attributes, (d = 123)');
             obj.d = 123;        % Fixed size for the full dataset
             data = load('adult.mat');
             
@@ -115,11 +115,13 @@ classdef Adult < dataset
                 Ypred = -1/(obj.t - 1) * ones(size(Yscores));
             end
             
-            for i = 1:size(Ypred,1)
-                if Yscores(i) > 0
-                    Ypred(i) = 1;
-                end
-            end
+%             for i = 1:size(Ypred,1)
+%                 if Yscores(i) > 0
+%                     Ypred(i) = 1;
+%                 end
+%             end
+            
+            Ypred(Yscores>0) = 1;
         end
             
         % Compute performance measure on the given outputs according to the
@@ -127,18 +129,21 @@ classdef Adult < dataset
         function perf = performanceMeasure(obj , Y , Ypred , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.
-            if obj.hasRealValues(Ypred)
+%             if obj.hasRealValues(Ypred)
                 Ypred = obj.scoresToClasses(Ypred);
-            end
+%             end
             
             % Compute error rate
-            numCorrect = 0;
+%             numCorrect = 0;
             
-            for i = 1:size(Y,1)
-                if Y(i) == Ypred(i)
-                    numCorrect = numCorrect +1;
-                end
-            end
+%             for i = 1:size(Y,1)
+%                 if Y(i) == Ypred(i)
+%                     numCorrect = numCorrect +1;
+%                 end
+%             end
+            
+            correctIdx = Y == Ypred;
+            numCorrect = sum(correctIdx);
             
             perf = 1 - (numCorrect / size(Y,1));
         end

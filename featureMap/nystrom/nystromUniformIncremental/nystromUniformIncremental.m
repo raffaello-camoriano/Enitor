@@ -29,6 +29,12 @@ classdef nystromUniformIncremental < nystrom
         
         prevPar
         
+        % Variables for computeSqDistMat efficiency
+        X1
+        X2
+        Sx1
+        Sx2
+        
         M
         alpha
     end
@@ -173,10 +179,10 @@ classdef nystromUniformIncremental < nystrom
             obj.kernelType = @gaussianKernel;
 
             % Conditional range computation
-            if isempty(obj.mapParGuesses)
+%             if isempty(obj.mapParGuesses)
                 display('Computing range');
                 obj.range();    % Compute range
-            end
+%             end
             obj.currentParIdx = 0;
             obj.currentPar = [];
         end
@@ -236,11 +242,27 @@ classdef nystromUniformIncremental < nystrom
         % Computes the squared distance matrix SqDistMat based on X1, X2
         function computeSqDistMat(obj , X1 , X2)
             
-            Sx1 = sum( X1.*X1 , 2);
-            Sx2 = sum( X2.*X2 , 2)';
-            Sx1x2 = X1 * X2';
-            
-            obj.SqDistMat = repmat(Sx1 , 1 , size(X2,1)) -2*Sx1x2 + repmat(Sx2 , size(X1,1) , 1);
+            if ~isempty(X1)
+                obj.X1 = X1;
+                obj.Sx1 = sum( X1.*X1 , 2);
+            end
+            if ~isempty(X2)
+                obj.X2 = X2;
+                obj.Sx2 = sum( X2.*X2 , 2)';
+            end
+            if ~isempty(X1) && ~isempty(X2)
+                Sx1x2 = X1 * X2';
+                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(X1,1) , 1);
+            elseif isempty(X1) && ~isempty(X2)
+                Sx1x2 = obj.X1 * X2';
+                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(obj.X1,1) , 1);
+            elseif ~isempty(X1) && isempty(X2)
+                Sx1x2 = X1 * obj.X2';
+                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(obj.X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(X1,1) , 1);
+            else
+                Sx1x2 = obj.X1 * obj.X2';
+                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(obj.X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(obj.X1,1) , 1);
+            end
         end
         
         function compute(obj , mapPar)
@@ -309,7 +331,13 @@ classdef nystromUniformIncremental < nystrom
                 obj.s = chosenPar(1) - obj.prevPar(1);  % Number of new columns
                 XsNew = obj.X(sampledPoints,:);
                 obj.Xs = [ obj.Xs ; XsNew ];
-                obj.computeSqDistMat(obj.X , XsNew);
+                
+                if isempty(obj.Sx1)
+                    obj.computeSqDistMat(obj.X , XsNew);
+                else
+                    obj.computeSqDistMat([] , XsNew);
+                end
+                
                 A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
                
                 A = A/sqrt(obj.ntr);
@@ -343,9 +371,9 @@ classdef nystromUniformIncremental < nystrom
 %                     sum(sum(isinf(A)))
 %                     sum(sum(isinf(B)))
 %                     sum(sum(isinf(MB)))     
-                    if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
-                        
-                    end
+%                     if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
+%                         
+%                     end
                     [U, S] = eig(full(A' * A - B' * MB));
                     ds = diag(S);
                     ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0

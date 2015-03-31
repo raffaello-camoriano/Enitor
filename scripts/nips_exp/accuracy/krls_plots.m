@@ -1,25 +1,51 @@
 %% KRLS performance (train, val, test)
 
-figure
-title('KRLS performance')
-hold on    
-h = surf(expKRLS.algo.filterParGuessesStorage,expKRLS.algo.mapParGuesses,expKRLS.algo.trainPerformance);
-set(h,'FaceColor',[1 0 0])   
-alpha(h,0.4)
-h = surf(expKRLS.algo.filterParGuessesStorage,expKRLS.algo.mapParGuesses,expKRLS.algo.valPerformance);
-set(h,'FaceColor',[0 1 0])   
-alpha(h,0.4)
-% h = surf(expKRLS.algo.filterParGuesses,expKRLS.algo.mapParGuesses,expKRLS.algo.testPerformance);
-% set(h,'FaceColor',[0 0 1])   
-% alpha(h,0.4)
-hold off
-ylabel('\sigma','fontsize',16)
-xlabel('\lambda','fontsize',16)
-zlabel('RMSE','fontsize',16)
-set(gca,'XScale','log')
-% legend('Training','Validation','Test');
-legend('Training','Validation');
-view([45 -45])
+if size(expKRLS.algo.valPerformance,1)>1 && size(expKRLS.algo.valPerformance,2)>1 
+    figure
+    title('KRLS performance')
+    hold on    
+    h = surf(expKRLS.algo.filterParGuessesStorage,expKRLS.algo.mapParGuesses,expKRLS.algo.trainPerformance);
+    set(h,'FaceColor',[1 0 0])   
+    alpha(h,0.4)
+    h = surf(expKRLS.algo.filterParGuessesStorage,expKRLS.algo.mapParGuesses,expKRLS.algo.valPerformance);
+    set(h,'FaceColor',[0 1 0])   
+    alpha(h,0.4)
+    % h = surf(expKRLS.algo.filterParGuesses,expKRLS.algo.mapParGuesses,expKRLS.algo.testPerformance);
+    % set(h,'FaceColor',[0 0 1])   
+    % alpha(h,0.4)
+    hold off
+    ylabel('\sigma','fontsize',16)
+    xlabel('\lambda','fontsize',16)
+    zlabel('RMSE','fontsize',16)
+    set(gca,'XScale','log')
+    % legend('Training','Validation','Test');
+    legend('Training','Validation');
+    view([45 45])
+elseif size(expKRLS.algo.valPerformance,1)>1 && size(expKRLS.algo.valPerformance,2)==1
+    figure
+    title('KRLS performance')
+    hold on    
+    plot(expKRLS.algo.mapParGuesses,expKRLS.algo.trainPerformance);
+    plot(expKRLS.algo.mapParGuesses,expKRLS.algo.valPerformance);
+    % plot(expKRLS.algo.mapParGuesses,expKRLS.algo.testPerformance);
+    hold off
+    ylabel('\sigma','fontsize',16)
+    xlabel('\lambda','fontsize',16)
+    legend('Training','Validation');    
+    set(gca,'XScale','log')
+elseif size(expKRLS.algo.valPerformance,1)==1 && size(expKRLS.algo.valPerformance,2)>1
+    figure
+    title('KRLS performance')
+    hold on    
+    plot(expKRLS.algo.filterParGuessesStorage,expKRLS.algo.trainPerformance);
+    plot(expKRLS.algo.filterParGuessesStorage,expKRLS.algo.valPerformance);
+%     plot(expKRLS.algo.filterParGuessesStorage,expKRLS.algo.testPerformance);
+    hold off
+    ylabel('\sigma','fontsize',16)
+    xlabel('\lambda','fontsize',16)
+    legend('Training','Validation');    
+    set(gca,'XScale','log')
+end
 
 %% KRLS performance (only train)
 
