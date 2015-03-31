@@ -40,6 +40,10 @@ classdef kgdesc < algorithm
         
         trainIdx % Actual training indexes
         valIdx   % Actual validation indexes
+        
+        % Stopping rule
+        stoppingRule        % Handle to the stopping rule
+        
     end
     
     methods
@@ -113,6 +117,11 @@ classdef kgdesc < algorithm
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x)  x > 0 ;            
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses);      
+            
+            % stoppingRule
+            defaultStoppingRule = [];
+            checkStoppingRule = @(x) isobject(x);
+            addParameter(p,'stoppingRule', defaultStoppingRule , checkStoppingRule);            
             
             % Parse function inputs
             parse(p, map, filter, varargin{:}{:})
@@ -274,9 +283,19 @@ classdef kgdesc < algorithm
 
                     % Compute predictions matrix
                     YvalPred = kernelVal.K * filter.weights;
-                    
+
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred ,obj.valIdx );
+                    
+                    % Apply early stopping criterion
+                    stop = 0;
+                    if ~isempty(obj.stoppingRule)
+                        stop = obj.stoppingRule.evaluate(valPerf);
+                    end
+                    
+                    if stop == 1
+                        break;
+                    end
                     
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     %  Store performance matrices  %

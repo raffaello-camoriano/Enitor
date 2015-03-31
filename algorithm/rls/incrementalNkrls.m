@@ -32,7 +32,10 @@ classdef incrementalNkrls < algorithm
         numFilterParGuesses    
         
         Xmodel     % Training samples actually used for training. they are part of the learned model
-        c       % Coefficients vector
+        c       % Coefficients vector        
+        
+        % Stopping rule
+        stoppingRule        % Handle to the stopping rule
     end
     
     methods
@@ -104,6 +107,12 @@ classdef incrementalNkrls < algorithm
             defaultVerbose = 0;
             checkVerbose = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'verbose',defaultVerbose,checkVerbose);
+    
+            % stoppingRule
+            defaultStoppingRule = [];
+            checkStoppingRule = @(x) isobject(x);
+            addParameter(p,'stoppingRule', defaultStoppingRule , checkStoppingRule);            
+            
             
             % Parse function inputs
             if isempty(varargin{:})
@@ -258,6 +267,16 @@ classdef incrementalNkrls < algorithm
                     % Compute validation performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
 
+                    % Apply early stopping criterion
+                    stop = 0;
+                    if ~isempty(obj.stoppingRule)
+                        stop = obj.stoppingRule.evaluate(valPerf);
+                    end
+                    
+                    if stop == 1
+                        break;
+                    end
+                    
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     %  Store performance matrices  %
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
