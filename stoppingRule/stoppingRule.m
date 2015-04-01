@@ -11,6 +11,7 @@ classdef stoppingRule < handle
 %         stoppingRule(mode)
         init( obj , mode)
         evaluate(perf)
+        reset()
     end
     
 end

@@ -235,31 +235,33 @@ classdef incrementalNkrls < algorithm
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
-                obj.trainPerformance = zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+                obj.trainPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
             if obj.storeFullValPerf == 1
-                obj.valPerformance = zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+                obj.valPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
             if obj.storeFullTestPerf == 1
-                obj.testPerformance = zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+                obj.testPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
             
-            while obj.nyMapper.next()
+            for i = 1:size(obj.filterParGuesses,2)
                 
-                obj.nyMapper.compute();
-                
-                % Compute Kvm TrainVal kernel
-                % Initialize TrainVal kernel
-                argin = {};
-                argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
-                if ~isempty(obj.verbose)
-                    argin = [argin , 'verbose' , obj.verbose];
-                end                    
-                kernelVal = obj.nyMapper.kernelType(Xval,obj.nyMapper.Xs, argin{:});
-                kernelVal.next();
-                kernelVal.compute();
-                
-                for i = 1:size(obj.filterParGuesses,2)
+                obj.nyMapper.resetPar();
+                obj.stoppingRule.reset();
+
+                while obj.nyMapper.next()
+
+                    obj.nyMapper.compute();
+
+                    % Initialize TrainVal kernel
+                    argin = {};
+                    argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
+                    if ~isempty(obj.verbose)
+                        argin = [argin , 'verbose' , obj.verbose];
+                    end                    
+                    kernelVal = obj.nyMapper.kernelType(Xval,obj.nyMapper.Xs, argin{:});
+                    kernelVal.next();
+                    kernelVal.compute();
 
                     % Compute predictions matrix
                     YvalPred = kernelVal.K * obj.nyMapper.alpha{i};
@@ -272,17 +274,18 @@ classdef incrementalNkrls < algorithm
                     if ~isempty(obj.stoppingRule)
                         stop = obj.stoppingRule.evaluate(valPerf);
                     end
-                    
+
                     if stop == 1
+                        obj.nyMapper.resetPar();
                         break;
                     end
-                    
+
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     %  Store performance matrices  %
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    
+
                     if obj.storeFullTrainPerf == 1                    
-                        
+
                         % Initialize TrainTrain kernel
                         argin = {};
                         argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
@@ -295,19 +298,19 @@ classdef incrementalNkrls < algorithm
 
                         % Compute training predictions matrix
                         YtrainPred = kernelTrain.K * obj.nyMapper.alpha{i};
-                        
+
                         % Compute training performance
                         trainPerf = performanceMeasure( Ytrain , YtrainPred , trainIdx );
-                        
+
                         obj.trainPerformance(obj.nyMapper.currentParIdx , i) = trainPerf;
                     end
-                    
+
                     if obj.storeFullValPerf == 1
                         obj.valPerformance(obj.nyMapper.currentParIdx , i) = valPerf;
                     end
-                    
+
                     if obj.storeFullTestPerf == 1                    
-                        
+
                         % Initialize TrainTest kernel
                         argin = {};
                         argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
@@ -317,16 +320,16 @@ classdef incrementalNkrls < algorithm
                         kernelTest = obj.nyMapper.kernelType(Xte , obj.nyMapper.Xs , argin{:});
                         kernelTest.next();
                         kernelTest.compute();
-                        
+
                         % Compute scores
                         YtestPred = kernelTest.K * obj.nyMapper.alpha{i};
 
                         % Compute training performance
                         testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );
-                        
+
                         obj.testPerformance(obj.nyMapper.currentParIdx , i) = testPerf;
                     end
-                    
+
                     %%%%%%%%%%%%%%%%%%%%
                     % Store best model %
                     %%%%%%%%%%%%%%%%%%%%

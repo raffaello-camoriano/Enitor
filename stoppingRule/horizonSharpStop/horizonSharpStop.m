@@ -9,7 +9,7 @@ classdef horizonSharpStop < stoppingRule
     end
     
     methods
-        function obj = horizonSharpStop (mode, horizonLength)
+        function obj = horizonSharpStop (mode, horizonLength )
             init( obj , mode , horizonLength)
         end
         
@@ -40,7 +40,7 @@ classdef horizonSharpStop < stoppingRule
         function stop = evaluate(obj, perf)
             
             if obj.mode == 1
-                if perf >= obj.previousPerf
+                if perf > obj.previousPerf
                     stop = 0;
                     obj.conditionCount = 0;
                     obj.previousPerf = perf;
@@ -53,7 +53,7 @@ classdef horizonSharpStop < stoppingRule
                     end
                 end
             else
-                if perf <= obj.previousPerf
+                if perf < obj.previousPerf
                     stop = 0;
                     obj.conditionCount = 0;
                     obj.previousPerf = perf;
@@ -66,6 +66,15 @@ classdef horizonSharpStop < stoppingRule
                     end
                 end
             end
+        end
+        
+        function reset(obj)
+            if obj.mode == 1
+                obj.previousPerf = 0;
+            else
+                obj.previousPerf = inf;
+            end
+            obj.conditionCount = 0;
         end
     end
 end

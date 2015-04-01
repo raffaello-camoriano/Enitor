@@ -229,16 +229,16 @@ classdef kgdesc < algorithm
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
-                obj.trainPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.trainPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
             end
             if obj.storeFullTrainPred == 1
                 obj.trainPred = zeros(obj.numMapParGuesses, obj.numFilterParGuesses,size(Xtrain,1));
             end
             if obj.storeFullValPerf == 1
-                obj.valPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.valPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
             end
             if obj.storeFullTestPerf == 1
-                obj.testPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.testPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
             end
             if obj.storeFullTestPred == 1
                 obj.testPred = zeros(obj.numMapParGuesses, obj.numFilterParGuesses,size(Xte,1));

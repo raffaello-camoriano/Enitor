@@ -12,7 +12,7 @@ mkdir(resdir);
 
 numRep =  1;
 storeFullTrainPerf = 0;
-storeFullValPerf = 1;
+storeFullValPerf = 0;
 storeFullTestPerf = 0;
 verbose = 0;
 
@@ -44,28 +44,17 @@ for k = 1:numRep
 
     % Load dataset
     % ds = Adult(7000,16282,'plusMinusOne');
-    ds = Adult(4000,16282,'plusMinusOne');
+    ds = Adult(2000,16282,'plusMinusOne');
     
     %% Experiment 1 setup, Landweber, Gaussian kernel
 
     map = @gaussianKernel;
     fil = @gdesc_square_loss;
     maxiter = 7000;
-%     stoppingRule = sharpStop(2);
-%     stoppingRule = tolerantStop(2,0.005);
-    stoppingRule = horizonSharpStop(2,100);
 
 
     alg = kgdesc( map , fil , 'numMapParGuesses' , 1 , 'filterParGuesses' , 1:maxiter   , 'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-                            'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf , ...
-                            'stoppingRule' , stoppingRule);
-
-%     alg = kgdesc( map , fil , 'numMapParGuesses' , 1 , 'filterParGuesses' , 1:maxiter   , 'verbose' , 0 , ...
-%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
-%                             'storeFullValPerf' , storeFullValPerf , ...
-%                             'storeFullTestPerf' , storeFullTestPerf);
+                            'storeFullTrainPerf' , storeFullTrainPerf , 'storeFullValPerf' , storeFullValPerf , 'storeFullTestPerf' , storeFullTestPerf);
 
     expLandweber = experiment(alg , ds , 1 , true , true , '' , resdir);
 
@@ -78,36 +67,19 @@ for k = 1:numRep
     
     
     % landweber_plots
-    
-    figure
-    plot(expLandweber.algo.valPerformance)
-    title({'Landweber Grid Search';'with Early Stopping'})
-    ylabel('Error')
-    xlabel('t')
 
     % plot_1_padova
+
+
 
     %% Experiment 2 setup, nu method, Gaussian kernel
 
     map = @gaussianKernel;
     fil = @numethod_square_loss;
     maxiter = 100;
-    stoppingRule = horizonSharpStop(2,20);
 
-%     alg = kgdesc( map , fil , 'numMapParGuesses' , 1 , ...
-%                             'filterParGuesses' , 1:maxiter   ,...
-%                             'verbose' , 0 , ...
-%                             'storeFullTrainPerf' , storeFullTrainPerf ,...
-%                             'storeFullValPerf' , storeFullValPerf ,...
-%                             'storeFullTestPerf' , storeFullTestPerf);
-                        
-    alg = kgdesc( map , fil , 'numMapParGuesses' , 1 , ...
-                            'filterParGuesses' , 1:maxiter   ,...
-                            'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf ,...
-                            'storeFullValPerf' , storeFullValPerf ,...
-                            'storeFullTestPerf' , storeFullTestPerf, ...
-                            'stoppingRule' , stoppingRule);
+    alg = kgdesc( map , fil , 'numMapParGuesses' , 1 , 'filterParGuesses' , 1:maxiter   , 'verbose' , 0 , ...
+                            'storeFullTrainPerf' , storeFullTrainPerf , 'storeFullValPerf' , storeFullValPerf , 'storeFullTestPerf' , storeFullTestPerf);
 
     expNuMethod = experiment(alg , ds , 1 , true , true , '' , resdir);
 
@@ -120,12 +92,6 @@ for k = 1:numRep
     NuMethod_cumulative_test_perf(k) = expNuMethod.result.perf;
     
     % numethod_plots
-    
-    figure
-    plot(expNuMethod.algo.valPerformance)
-    title({'Nu method Grid Search';'with Early Stopping'})
-    ylabel('Error')
-    xlabel('t')
 
 
     %% Exact KRLS
@@ -206,26 +172,15 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    filterParGuesses = expKRLS.algo.filterParStar;
     numNysParGuesses = 20;
-    stoppingRule = horizonSharpStop(2,5);
-
-%     alg = incrementalNkrls(map , 200 , 'numNysParGuesses' , numNysParGuesses ,...
-%                             'mapParGuesses' , mapParGuesses ,  ...
-%                             'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
-%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
-%                             'storeFullValPerf' , storeFullValPerf , ...
-%                             'storeFullTestPerf' , storeFullTestPerf);
 
     alg = incrementalNkrls(map , 200 , 'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ...
                             'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf, ...
-                            'stoppingRule' , stoppingRule);
+                            'storeFullTestPerf' , storeFullTestPerf);
 
-                        
     expNysInc = experiment(alg , ds , 1 , true , true , 'nm' , resdir , 0);
     expNysInc.run();
     expNysInc.result
@@ -234,39 +189,8 @@ for k = 1:numRep
     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
     NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
 
-    nysParGuesses = alg.mapParGuesses(1,1:numel(mapParGuesses):end);
-    
     % incrementalnkrls_plots
-    
 
-    %     view(225,45)
-    
-    if size(expNysInc.algo.valPerformance,1) > 1 && size(expNysInc.algo.valPerformance,2) > 1
-        figure
-        plot3(repmat(filterParGuesses,numNysParGuesses,1),repmat(nysParGuesses,size(filterParGuesses,2),1)',expNysInc.algo.valPerformance)
-        title({'Incremental Nystrom Grid Search';'with Early Stopping'})
-        ylabel('m')
-        xlabel('\lambda')
-        zlabel('Error')
-        set(gca,'XScale','log')
-
-        figure
-        pcolor(filterParGuesses,nysParGuesses,expNysInc.algo.valPerformance)
-        title({'Incremental Nystrom Grid Search';'with Early Stopping'})    
-        ylabel('m')
-        xlabel('\lambda')
-        colorbar
-        set(gca,'XScale','log')
-    else
-    
-        figure
-        plot(nysParGuesses,expNysInc.algo.valPerformance)
-        title({'Incremental Nystrom Grid Search';'with Early Stopping'})
-        ylabel('Error')
-        xlabel('m')        
-    end
-
-    
     %% Random Features KRLS
 
 
@@ -274,29 +198,29 @@ end
 
 
 %% Plot timing
-% 
-% figure
-% trainingTimes = [ expKRLS.result.time.train , expDACKRLS.result.time.train , expNysInc.result.time.train , expLandweber.result.time.train , expNuMethod.result.time.train ];
-% bar(trainingTimes)
-% set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'Landweber' , '\nu method'})
-% title('Training & Model Selection Times')
-% ylabel('Time (s)')
-% 
-% figure
-% trainingTimes = [ expKRLS.result.time.test , expDACKRLS.result.time.test , expNysInc.result.time.test , expLandweber.result.time.test , expNuMethod.result.time.test];
-% bar(trainingTimes)
-% set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'Landweber' , '\nu method'})
-% title('Testing Times')
-% ylabel('Time (s)')
-% 
-% %% Plot best test performances
-% 
-% figure
-% testPerf = [ expKRLS.result.perf , expDACKRLS.result.perf , expNysInc.result.perf , expLandweber.result.perf , expNuMethod.result.perf];
-% bar(testPerf)
-% set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'Landweber' , '\nu method'})
-% title('Best test performance')
-% ylabel('Relative Error')
+
+figure
+trainingTimes = [ expKRLS.result.time.train , expDACKRLS.result.time.train , expNysInc.result.time.train , expLandweber.result.time.train , expNuMethod.result.time.train ];
+bar(trainingTimes)
+set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'Landweber' , '\nu method'})
+title('Training & Model Selection Times')
+ylabel('Time (s)')
+
+figure
+trainingTimes = [ expKRLS.result.time.test , expDACKRLS.result.time.test , expNysInc.result.time.test , expLandweber.result.time.test , expNuMethod.result.time.test];
+bar(trainingTimes)
+set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'Landweber' , '\nu method'})
+title('Testing Times')
+ylabel('Time (s)')
+
+%% Plot best test performances
+
+figure
+testPerf = [ expKRLS.result.perf , expDACKRLS.result.perf , expNysInc.result.perf , expLandweber.result.perf , expNuMethod.result.perf];
+bar(testPerf)
+set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'Landweber' , '\nu method'})
+title('Best test performance')
+ylabel('Relative Error')
 
 %%
 % 

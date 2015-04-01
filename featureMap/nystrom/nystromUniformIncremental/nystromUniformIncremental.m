@@ -399,6 +399,13 @@ classdef nystromUniformIncremental < nystrom
             end
         end
         
+        function resetPar(obj)
+            
+            obj.currentParIdx = 0;
+            obj.currentPar = [];
+        
+        end
+        
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'
         function available = next(obj)
