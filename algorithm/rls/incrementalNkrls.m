@@ -247,8 +247,10 @@ classdef incrementalNkrls < algorithm
             for i = 1:size(obj.filterParGuesses,2)
                 
                 obj.nyMapper.resetPar();
-                obj.stoppingRule.reset();
-
+                if ~isempty(obj.stoppingRule)
+                    obj.stoppingRule.reset();
+                end
+                
                 while obj.nyMapper.next()
 
                     obj.nyMapper.compute();

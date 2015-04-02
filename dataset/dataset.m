@@ -8,6 +8,8 @@ classdef dataset < handle
         n
         nTr
         nTe
+        
+        nTot
         nTrTot
         nTeTot
         d
