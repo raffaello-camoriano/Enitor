@@ -36,7 +36,7 @@ verbose = 1;
 classesComb = nchoosek(0:9 , 2);
 ncomb = size(classesComb,1);
 T = cell(ncomb,5,5);    % Results storage vector
-nTrPerClass = 1000;
+nTrPerClass = 500;
 nTePerClass = 1000;
 
 for i = 1:ncomb
@@ -55,7 +55,7 @@ for i = 1:ncomb
 
     %% Knn
     intRegPar = 1:10;
-    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('knn', Xtr, Ytr,[], 0.5, 5, intRegPar, []);
+    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('knn', Xtr, Ytr,[], 0.8, 1, intRegPar, []);
 
     Ypred = kNNClassify(Xtr, Ytr, l, Xts);
     tsErr = calcErr(Ypred, Yts);
@@ -72,7 +72,7 @@ for i = 1:ncomb
     %% RLS
 
     intRegPar = logspace(0,-5,6);
-    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('rls', Xtr, Ytr,[], 0.5, 5, intRegPar, []);
+    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('rls', Xtr, Ytr,[], 0.8, 1, intRegPar, []);
 
     w = regularizedLSTrain(Xtr, Ytr, l);
     Ypred = sign(regularizedLSTest(w, Xts));
@@ -91,16 +91,14 @@ for i = 1:ncomb
 
     kernel = 'gaussian';
 
-    intRegPar = logspace(-3,-7,5);
+    intRegPar = logspace(0,-7,8);
     intKerPar = 4:10;
-    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('krls', Xtr, Ytr, kernel , 0.5, 5, intRegPar, intKerPar);
+    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('krls', Xtr, Ytr, kernel , 0.8, 1, intRegPar, intKerPar);
 
     c = regularizedKernLSTrain(Xtr, Ytr, kernel, s, l);
     Ypred = sign(regularizedKernLSTest(c, Xtr, kernel, s, Xts));
     tsErr = calcErr(Ypred, Yts);
-    display('Kernel Regularized Least Squares')
-    display(['Test error = ', num2str(tsErr), ' with optimal lambda* = ' , num2str(l) , ' and optimal sigma* = ' , num2str(s)]);
-
+    
     % Display & save results
     T{i,1,3} = cellstr('Kernel Regularized Least Squares');
     display(T{i,1,3})
@@ -113,7 +111,7 @@ for i = 1:ncomb
     %% LR
 
     intRegPar = logspace(0,-5,6);
-    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('lr', Xtr, Ytr,[], 0.5, 1, intRegPar, []);
+    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('lr', Xtr, Ytr,[], 0.8, 1, intRegPar, []);
 
     w = linearLRTrain(Xtr, Ytr, l);
     [Ypred, ppred] = linearLRTest(w, Xts);
@@ -132,9 +130,9 @@ for i = 1:ncomb
     %% KLR
     kernel = 'gaussian';
 
-    intRegPar = logspace(-3,-7,5);
+    intRegPar = logspace(0,-7,8);
     intKerPar = 4:10;
-    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('klr', Xtr, Ytr, kernel , 0.5, 1, intRegPar, intKerPar);
+    [l, s, Vm, Vs, Tm, Ts] = holdoutCV('klr', Xtr, Ytr, kernel , 0.8, 1, intRegPar, intKerPar);
 
     c = kernLRTrain(Xtr, Ytr, kernel, s, l);
     [Ypred, ppred] =  kernLRTest(c, Xtr, kernel, s, Xts);
