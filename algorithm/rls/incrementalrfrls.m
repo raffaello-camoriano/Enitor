@@ -1,4 +1,4 @@
-classdef incrementalNkrls < algorithm
+classdef incrementalrfrls < algorithm
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -23,7 +23,7 @@ classdef incrementalNkrls < algorithm
         numMapParGuesses
         maxRank
         
-        numNysParGuesses
+        numRFParGuesses
 
         % Filter props
         filterType
@@ -40,17 +40,13 @@ classdef incrementalNkrls < algorithm
     
     methods
         
-%         function obj = incrementalNkrls(mapType, numMapParRangeSamples, numNysParGuesses,  numMapParGuesses , filterParGuesses , maxRank , mapParGuesses  , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
-%             init( obj , mapType, numMapParRangeSamples ,  numNysParGuesses, numMapParGuesses , filterParGuesses , maxRank , mapParGuesses  , verbose , storeFullTrainPerf, storeFullValPerf, storeFullTestPerf)
-%         end     
-        
-        function obj = incrementalNkrls(mapType , maxRank , varargin)
+        function obj = incrementalrfrls(mapType , maxRank , varargin)
             init( obj , mapType, maxRank , varargin)
         end
         
         function init( obj , mapType, maxRank , varargin)
 
-            display('Note that incrementalNkrls can only use the Tikhonov filter in this implementation.');
+            display('Note that incrementalrfrls can only use the Tikhonov filter in this implementation.');
             p = inputParser;
             
             %%%% Required parameters
@@ -63,9 +59,9 @@ classdef incrementalNkrls < algorithm
             %%%% Optional parameters
             % Optional parameter names:
 
-            defaultNumNysParGuesses = 1;            
-            checkNumNysParGuesses = @(x) x > 0 ;
-            addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
+            defaultNumRFParGuesses = 1;            
+            checkNumRFParGuesses = @(x) x > 0 ;
+            addParameter(p,'numRFParGuesses',defaultNumRFParGuesses,checkNumRFParGuesses);                    
             
             % mapParGuesses       % Map parameter guesses cell array
             defaultMapParGuesses = [];
