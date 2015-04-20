@@ -3,31 +3,120 @@ classdef fastfoodGaussian < fastfood
     %   Detailed explanation goes here
     
     properties
-        numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
-        numRF                % Maximum number of random features to be used
+        numMapParRangeSamples    % Number of samples of X considered for estimating the maximum and minimum sigmas
+        numRFParGuesses
+        maxRank     % Maximum number of random features to be used
+        kernelType
+        
+        mapParGuesses
+        
+        ntr     % Number of training points
         
         use_spiral
         
+        verbose
+        
+        Y
+
     end
     
     methods
         % Constructor
-        function obj = fastfoodGaussian( X , numMapParGuesses , numKerParRangeSamples , numRF )
+        function obj = fastfoodGaussian(  X , Y , ntr , varargin)
             
-            obj.init( X , numMapParGuesses , numKerParRangeSamples , numRF);
+            obj.init(  X , Y , ntr , varargin)
         end
         
         % Initialization function
-        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , numRF)
+        function obj = init(obj ,  X , Y , ntr , varargin)
             
-            obj.X = X;
-            obj.numMapParGuesses = numMapParGuesses;
-            obj.numKerParRangeSamples = numKerParRangeSamples;
-            obj.d = size(X , 2);     
-            obj.numRF = numRF;
+            p = inputParser;
+            
+            %%%% Required parameters
+            % X , Y , ntr
+
+            checkX = @(x) size(x,1) > 0 && size(x,2) > 0;
+            checkY = @(x) size(x,1) > 0 && size(x,2) > 0;
+            checkNtr = @(x) x > 0;
+            
+            addRequired(p,'X',checkX);
+            addRequired(p,'Y',checkY);
+            addRequired(p,'ntr',checkNtr);
+            
+ 
+            %%%% Optional parameters
+            % Optional parameter names:
+            % numRFParGuesses , maxRank , numMapParGuesses , mapParGuesses , filterParGuesses , numMapParRangeSamples  , verbose
+            
+            % numRFParGuesses       % Cardinality of number of samples for Nystrom approximation parameter guesses
+            defaultNumRFParGuesses = [];
+            checkNumRFParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numRFParGuesses',defaultNumRFParGuesses,checkNumRFParGuesses);                    
+            
+            % maxRank        % Maximum rank of the Nystrom approximation
+            defaultMaxRank = [];
+            checkMaxRank = @(x) x > 0 ;            
+            addParameter(p,'maxRank',defaultMaxRank,checkMaxRank);        
+            
+            % numMapParGuesses        % Number of map parameter guesses
+            defaultNumMapParGuesses = [];
+            checkNumMapParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
+            
+            % mapParGuesses        % Map parameter guesses
+            defaultMapParGuesses = [];
+            checkMapParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;      
+            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);        
+            
+            % numMapParRangeSamples        % Number of map parameter guesses
+            defaultNumMapParRangeSamples = [];
+            checkNumMapParRangeSamples = @(x) x > 0 ;            
+            addParameter(p,'numMapParRangeSamples',defaultNumMapParRangeSamples,checkNumMapParRangeSamples);            
+
+            % verbose             % 1: verbose; 0: silent      
+            defaultVerbose = 0;
+            checkVerbose = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'verbose',defaultVerbose,checkVerbose);
+            
+            % Parse function inputs
+            if isempty(varargin{:})
+                parse(p, X , Y , ntr)
+            else
+                parse(p, X , Y , ntr , varargin{:}{:})
+            end
+            
+            % Assign parsed parameters to object properties
+            fields = fieldnames(p.Results);
+%             fieldsToIgnore = {'X1','X2'};
+%             fields = setdiff(fields, fieldsToIgnore);
+            for idx = 1:numel(fields)
+                obj.(fields{idx}) = p.Results.(fields{idx});
+            end
+            
+            % Joint parameters parsing
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                error('either mapParGuesses or numMapParGuesses must be specified');
+            end    
+            
+            if (~isempty(obj.mapParGuesses)) && (~isempty(obj.numMapParGuesses)) && (size(obj.mapParGuesses,2) ~= obj.numMapParGuesses)
+                error('The size of mapParGuesses and numMapParGuesses are different');
+            end
+            
+            if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                obj.numMapParGuesses = size(obj.mapParGuesses,2);
+            end
+            
+            if size(X,1) ~= size(Y,1)
+                error('X and Y have incompatible sizes');
+            end
+            
+            obj.d = size(X , 2);
+            
+            warning('Kernel used by randomFeaturesGaussianIncremental is set to @gaussianKernel');
+            obj.kernelType = @gaussianKernel;
             
             % Compute Fastfood parameters
-            obj.para = FastfoodPara(numRF, obj.d);
+            obj.para = FastfoodPara(obj.maxRank, obj.d);
             
             obj.use_spiral = 0;
 
@@ -39,128 +128,102 @@ classdef fastfoodGaussian < fastfood
         
         function mappedSample = map(obj , inputSample)
             
-            mappedSample = FastfoodForKernel(inputSample, obj.para, obj.currentPar(1), obj.use_spiral);
+            mappedSample = transpose(FastfoodForKernel(inputSample', obj.para, obj.currentPar(1), obj.use_spiral));
       
         end
         
         function obj = range(obj)
-            %% Range of the number of Random Fourier Features
-            
-            %tmpNumRF = round(linspace(obj.maxNumRF/10, obj.maxNumRF , obj.numMapParGuesses));   
-            tmpNumRF = obj.maxNumRF;
-            
-            %% Approximated kernel parameter range
-            
-            % Compute max and min sigma guesses
-                
-            % Extract an even number of samples without replacement                
-            
-            % WARNING: not compatible with versions older than 2014
-            %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
-            
-            % WARNING: Alternative to datasample below
-            nRows = size(obj.X,1); % number of rows
-            nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
-            rndIDX = randperm(nRows); 
-            samp = obj.X(rndIDX(1:nSample), :);   
-            
-            % Compute squared distances  vector (D)
-            numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
-            D = zeros(1 , numDistMeas);
-            for i = 1:numDistMeas
-                D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
-            end
-            D = sort(D);
+                        
+            % Range of the number of Random Fourier Features
+            tmpNumRF = round(linspace(1, obj.maxRank , obj.numRFParGuesses));   
+           
+            if isempty(obj.mapParGuesses)
+                % Compute max and min sigma guesses
 
-            firstPercentile = round(0.01 * numel(D) + 0.5);
-            minGuess = sqrt( D(firstPercentile));
-            maxGuess = sqrt( max(D) );
+                % Extract an even number of samples without replacement                
 
-            if minGuess <= 0
-                minGuess = eps;
+                % WARNING: not compatible with versions older than 2014
+                %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
+
+                % WARNING: Alternative to datasample below
+                nRows = size(obj.X,1); % number of rows
+                nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
+                rndIDX = randperm(nRows); 
+                samp = obj.X(rndIDX(1:nSample), :);   
+
+                % Compute squared distances  vector (D)
+                numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
+                D = zeros(1 , numDistMeas);
+                for i = 1:numDistMeas
+                    D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
+                end
+                D = sort(D);
+
+                firstPercentile = round(0.01 * numel(D) + 0.5);
+                minGuess = sqrt( D(firstPercentile));
+                maxGuess = sqrt( max(D) );
+
+                if minGuess <= 0
+                    minGuess = eps;
+                end
+                if maxGuess <= 0
+                    maxGuess = eps;
+                end	
+
+                tmpMapPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
+            else
+                tmpMapPar = obj.mapParGuesses;
             end
-            if maxGuess <= 0
-                maxGuess = eps;
-            end	
-            
-            tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
-            
-            %% Generate all possible parameters combinations            
-            
-            [p,q] = meshgrid(tmpNumRF, tmpKerPar);
+
+            % Generate all possible parameters combinations
+            [p,q] = meshgrid(tmpNumRF, tmpMapPar);
             tmp = [p(:) q(:)]';
-            
-            obj.rng = num2cell(tmp , 1);
-            
+%             obj.rng = num2cell(tmp , 1);
+            obj.rng = tmp;
+
         end
         
         function compute(obj , mapPar)
             
             if( nargin > 1 )
                 
-                disp('Mapping will be computed according to the provided hyperparameter(s)');
-                mapPar
+                if(obj.verbose == 1)
+                    disp('Mapping will be computed according to the provided hyperparameter(s)');
+                    mapPar
+                end
                 chosenPar = mapPar;
-                
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 
                 % If any current value for any of the parameters is not available, abort.
                 error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
-            
             else
-                
-                disp('Mapping will be computed according to the current internal hyperparameter(s)');
-                obj.currentPar
+                if(obj.verbose == 1)
+                    disp('Mapping will be computed according to the current internal hyperparameter(s)');
+                    obj.currentPar
+                end
                 chosenPar = obj.currentPar;
-                
             end
             
-            obj.generateProj(chosenPar);
-           
-            % cos sin mapping
-%             V =  obj.X * obj.omega;
-%             obj.Xrf = sqrt( 2 / chosenPar(1) ) * [cos(V) , sin(V)];
-            
-            % cos(wx+b) mapping
-            V =  obj.X * obj.omega + repmat(obj.b , size(obj.X,1) , 1);
-            obj.Xrf = sqrt( 2 / chosenPar(1) ) * cos(V);
-        end
-        
-        function obj = generateProj(obj , mapPar)
-            
-            % [ sin(wx) , cos(wx) ] mapping
-            %             It is common that M is a diagonal matrix with diag (M ) =
-            % 2 , . . . , 2 , such that it suffices to draw ω from a standard normal distribution N (0, 1) and sub-
-            % n
-            % 1
-            % sequently scale these by l
-%             obj.omega =  mapPar(2) * randn(obj.d, mapPar(1));
-
-            % cos(wx + b) mapping
-            %obj.omega =  2 * mapPar(2) .* randn(obj.d, mapPar(1));
-            obj.omega =  randn(obj.d, mapPar(1)) / mapPar(2) ;
-            obj.b =  rand(1,mapPar(1))* 2 * pi;
-
-            %obj.omega = sqrt(2) * randn(obj.d, mapPar(1));
-            %obj.omega = mapPar(2) * randn(obj.d, mapPar(1));
-            %obj.omega = mapPar(2) * (2 * pi)^(-mapPar(1)/2) * randn(obj.d, mapPar(1));
+            obj.Xrf = FastfoodForKernel(obj.X', obj.para, chosenPar(1), obj.use_spiral);
+            obj.Xrf = obj.Xrf';
         end
         
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'
         function available = next(obj)
 
-            % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty , obj.rng)
+            if isempty(obj.rng)
                 obj.range();
             end
-
+            
             available = false;
+            
             if length(obj.rng) > obj.currentParIdx
+                obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.rng{obj.currentParIdx};
+                obj.currentPar = obj.rng(:,obj.currentParIdx);
                 available = true;
             end
-        end        
+        end    
     end
 end

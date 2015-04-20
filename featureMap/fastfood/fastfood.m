@@ -17,6 +17,7 @@ classdef fastfood < handle
         
         currentPar
         currentParIdx
+        prevPar        
         
         X
         Xrf
