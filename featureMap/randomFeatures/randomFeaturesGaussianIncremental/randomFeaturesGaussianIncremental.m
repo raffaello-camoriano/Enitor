@@ -1,4 +1,4 @@
-classdef nystromUniformIncremental < nystrom
+classdef randomFeaturesGaussianIncremental < randomFeatures
     %NYSTROMUNIFORM Implementation of an integrated incremental Nystrom low-rank
     %approximator/regularizer and Tikhonov regularizer.
     %
@@ -7,6 +7,10 @@ classdef nystromUniformIncremental < nystrom
 
     
     properties
+                
+        numRFParGuesses
+        verbose
+        
         numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
         
@@ -14,15 +18,15 @@ classdef nystromUniformIncremental < nystrom
         numFilterParGuesses     % Number of filter parameter guesses
         
         mapParGuesses           % mapping parameter guesses
-        numMapParGuesses        % Number of mapping parameter guesses
+%         numMapParGuesses        % Number of mapping parameter guesses
         
         kernelType      % Type of approximated kernel
-        sampledPoints   % Current sampled columns
         SqDistMat       % Squared distances matrix
-        Xs              % Sampled points
         Y               % Training outputs
-        C               % Current n-by-l matrix, composed of the evaluations of the kernel function for the sampled columns
+%         Xrf               % Current n-by-l matrix, composed of the evaluations of the kernel function for the sampled columns
         W               % Current l-by-l matrix, s. t. K ~ C * W^{-1} * C^T
+        M
+        alpha
         
         s               % Number of new columns
         ntr             % Total number of training samples
@@ -34,57 +38,14 @@ classdef nystromUniformIncremental < nystrom
         X2
         Sx1
         Sx2
-        
-        M
-        alpha
     end
     
     methods
-        % Constructor
-%         function obj = nystromUniformIncremental( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
-%             
-%             obj.init( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
-%             
-%             warning('Kernel type set by default to "gaussian"');
-%             obj.kernelType = @gaussianKernel;
-%         end
         
-        function obj = nystromUniformIncremental( X1 , X2 , ntr , varargin)
+        function obj = randomFeaturesGaussianIncremental( X1 , X2 , ntr , varargin)
             obj.init( X1 , X2 , ntr , varargin);
         end
         
-        % Initialization function
-%         function obj = init(obj , X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
-%             
-%             obj.X = X;
-%             obj.Y = Y;
-%             obj.ntr =  ntr;
-%             obj.numKerParRangeSamples = numKerParRangeSamples;
-%             obj.d = size(X , 2);     
-%             obj.maxRank = maxRank;
-%             obj.fixedMapPar = fixedMapPar;
-%             obj.filterParGuesses = filterParGuesses;
-%             
-%             if ~isempty(fixedMapPar)
-%                 obj.numMapParGuesses = 1;
-%             else
-%                 obj.numMapParGuesses = numMapParGuesses;
-%             end
-%             
-%             obj.numNysParGuesses = numNysParGuesses;
-%             
-%             obj.verbose = 0;
-%             if verbose == 1
-%                 obj.verbose = 1;
-%             end
-%             
-%             % Compute range
-%             obj.range();
-%             obj.currentParIdx = 0;
-%             obj.currentPar = [];
-%             obj.prevPar = [];
-%         end
-
         function obj = init(obj , X , Y , ntr , varargin)
             
 
@@ -104,12 +65,12 @@ classdef nystromUniformIncremental < nystrom
  
             %%%% Optional parameters
             % Optional parameter names:
-            % numNysParGuesses , maxRank , numMapParGuesses , mapParGuesses , filterParGuesses , numMapParRangeSamples  , verbose
+            % numRFParGuesses , maxRank , numMapParGuesses , mapParGuesses , filterParGuesses , numMapParRangeSamples  , verbose
             
-            % numNysParGuesses       % Cardinality of number of samples for Nystrom approximation parameter guesses
-            defaultNumNysParGuesses = [];
-            checkNumNysParGuesses = @(x) x > 0 ;            
-            addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
+            % numRFParGuesses       % Cardinality of number of samples for Nystrom approximation parameter guesses
+            defaultNumRFParGuesses = [];
+            checkNumRFParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numRFParGuesses',defaultNumRFParGuesses,checkNumRFParGuesses);                    
             
             % maxRank        % Maximum rank of the Nystrom approximation
             defaultMaxRank = [];
@@ -175,7 +136,7 @@ classdef nystromUniformIncremental < nystrom
             
             obj.d = size(X , 2);
             
-            warning('Kernel used by nystromUniformIncremental is set to @gaussianKernel');
+            warning('Kernel used by randomFeaturesGaussianIncremental is set to @gaussianKernel');
             obj.kernelType = @gaussianKernel;
 
             % Conditional range computation
@@ -187,13 +148,22 @@ classdef nystromUniformIncremental < nystrom
             obj.currentPar = [];
         end
 
+        function mappedSample = map(obj , inputSample)
+            
+            % [cos sin] mapping
+%             V = inputSample * obj.omega;
+%             mappedSample = sqrt( 2 / obj.currentPar(1) ) * [cos(V) , sin(V)];
+            
+            % cos(wx+b) mapping
+            V =  inputSample * obj.omega + repmat(obj.b , size(inputSample,1) , 1);            
+            mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
+        end
+        
         function obj = range(obj)
-            
-            % Compute range of number of sampled columns (m)
-            tmpm = round(linspace(1, obj.maxRank , obj.numNysParGuesses));   
-
-            % Approximated kernel parameter range
-            
+                        
+            % Range of the number of Random Fourier Features
+            tmpNumRF = round(linspace(1, obj.maxRank , obj.numRFParGuesses));   
+           
             if isempty(obj.mapParGuesses)
                 % Compute max and min sigma guesses
 
@@ -233,36 +203,11 @@ classdef nystromUniformIncremental < nystrom
             end
 
             % Generate all possible parameters combinations
-            [p,q] = meshgrid(tmpm, tmpMapPar);
+            [p,q] = meshgrid(tmpNumRF, tmpMapPar);
             tmp = [p(:) q(:)]';
 %             obj.rng = num2cell(tmp , 1);
             obj.rng = tmp;
-        end
-        
-        % Computes the squared distance matrix SqDistMat based on X1, X2
-        function computeSqDistMat(obj , X1 , X2)
-            
-            if ~isempty(X1)
-                obj.X1 = X1;
-                obj.Sx1 = sum( X1.*X1 , 2);
-            end
-            if ~isempty(X2)
-                obj.X2 = X2;
-                obj.Sx2 = sum( X2.*X2 , 2)';
-            end
-            if ~isempty(X1) && ~isempty(X2)
-                Sx1x2 = X1 * X2';
-                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(X1,1) , 1);
-            elseif isempty(X1) && ~isempty(X2)
-                Sx1x2 = obj.X1 * X2';
-                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(obj.X1,1) , 1);
-            elseif ~isempty(X1) && isempty(X2)
-                Sx1x2 = X1 * obj.X2';
-                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(obj.X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(X1,1) , 1);
-            else
-                Sx1x2 = obj.X1 * obj.X2';
-                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(obj.X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(obj.X1,1) , 1);
-            end
+
         end
         
         function compute(obj , mapPar)
@@ -302,16 +247,16 @@ classdef nystromUniformIncremental < nystrom
                 obj.alpha = cell(size(obj.filterParGuesses));
                 [obj.alpha{:,:}] = deal(zeros(obj.maxRank,size(obj.Y,2)));
                 
-                sampledPoints = 1:chosenPar(1);
-                obj.s = chosenPar(1);  % Number of new columns
-                obj.Xs = obj.X(sampledPoints,:);
-                obj.computeSqDistMat(obj.X , obj.Xs);
-                A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
-                
-                A = A/sqrt(obj.ntr);
+                obj.s = chosenPar(1);
+                [obj.omega , obj.b] = obj.generateProj(chosenPar);
 
-                % Set C_2
-                obj.C = A;
+                % cos(wx+b) mapping
+                V =  obj.X * obj.omega + repmat(obj.b , size(obj.X,1) , 1);
+                A = sqrt( 2 / chosenPar(1) ) * cos(V);
+%                 A = A/sqrt(obj.ntr);
+
+                % Set Xrf_2
+                obj.Xrf = A;
 
                 for i = 1:size(obj.filterParGuesses,2)
                     % D_1
@@ -325,28 +270,23 @@ classdef nystromUniformIncremental < nystrom
             elseif obj.prevPar(1) ~= chosenPar(1)
                
                 %%% Generic i-th incremental update step
-                
-                %Sample new columns of K
-                sampledPoints = (obj.prevPar(1)+1):chosenPar(1);
+
                 obj.s = chosenPar(1) - obj.prevPar(1);  % Number of new columns
-                XsNew = obj.X(sampledPoints,:);
-                obj.Xs = [ obj.Xs ; XsNew ];
+     
+                % Generate new random projections
+                [newOmega , newB] = obj.generateProj([obj.s ; chosenPar(2)]);
+                obj.omega = [obj.omega , newOmega];
+                obj.b = [obj.b , newB];
                 
-                if isempty(obj.Sx1)
-                    obj.computeSqDistMat(obj.X , XsNew);
-                else
-                    obj.computeSqDistMat([] , XsNew);
-                end
-                
-                A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
-               
-                A = A/sqrt(obj.ntr);
+                % cos(wx+b) mapping
+                V =  obj.X * newOmega + repmat(newB , size(obj.X,1) , 1);
+                A = sqrt( 2 / chosenPar(1) ) * cos(V);
                 
                 % Update B_(t)
-                B = obj.C' * A;
+                B = obj.Xrf' * A;
                 
-                % Update C_(t+1)
-                obj.C = [obj.C A];
+                % Update Xrf_(t+1)
+                obj.Xrf = [obj.Xrf A];
                 
                 Aty = A' * obj.Y/sqrt(obj.ntr);
                 
@@ -354,38 +294,16 @@ classdef nystromUniformIncremental < nystrom
                 
                 for i = 1:size(obj.filterParGuesses,2)
 
-%                     max(max(obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1))))
                     MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
 
-                    %D = inv(A' * A - B' * MB +  obj.filterParGuesses(i) * eye(obj.s));
-
-%                     sum(sum(isinf(A' * A - B' * MB)))
-%                     sum(sum(isnan(A' * A - B' * MB)))
-                    
-%                     isreal(A)
-%                     isreal(B)
-%                     isreal(MB)
-%                     sum(sum(isnan(A)))
-%                     sum(sum(isnan(B)))
-%                     sum(sum(isnan(MB)))  
-%                     sum(sum(isinf(A)))
-%                     sum(sum(isinf(B)))
-%                     sum(sum(isinf(MB)))     
-%                     if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
-%                         
-%                     end
                     [U, S] = eig(full(A' * A - B' * MB));
                     ds = diag(S);
                     ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0
                     ds = real((ds>0).*ds);    % Set eigenvalues < 0 for numerical reasons to 0
                     U = real(U);
                     D = U * diag(1./(ds + obj.filterParGuesses(i))) * U';
-%                     isreal(D)
-%                     isreal(U)
-%                     isreal(diag(1./(ds + obj.filterParGuesses(i))))
-                    
+
                     MBD = MB * D;
-%                     isreal(MBD)
 
                     df = B' * obj.alpha{i} - Aty;
                     obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
@@ -406,6 +324,15 @@ classdef nystromUniformIncremental < nystrom
         
         end
         
+        function [omega , b] = generateProj(obj , mapPar)
+
+%             obj.omega =  randn(obj.d, mapPar(1)) / mapPar(2) ;
+%             obj.b =  rand(1,mapPar(1))* 2 * pi;
+
+            omega =  randn(obj.d, mapPar(1)) / mapPar(2) ;
+            b =  rand(1,mapPar(1))* 2 * pi;
+        end
+
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'
         function available = next(obj)

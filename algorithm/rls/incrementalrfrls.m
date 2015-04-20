@@ -14,8 +14,13 @@ classdef incrementalrfrls < algorithm
         
         ntr   % Number of training samples
         
+        % Mapped data
+        XValTilda
+        XTestTilda
+        
+        
         % Kernel props
-        nyMapper
+        rfMapper
         mapType
         numMapParRangeSamples
         mapParGuesses
@@ -31,8 +36,11 @@ classdef incrementalrfrls < algorithm
         filterParGuesses
         numFilterParGuesses    
         
-        Xmodel     % Training samples actually used for training. they are part of the learned model
-        c       % Coefficients vector        
+        XrfStar                 % Best mapping of the training set
+        rfOmegaStar             % Best random omega matrix
+        rfBStar                 % Best coefficients vector b
+        
+        w           % Weights vector        
         
         % Stopping rule
         stoppingRule        % Handle to the stopping rule
@@ -201,10 +209,10 @@ classdef incrementalrfrls < algorithm
             
             obj.ntr = size(Xtrain,1);
             
-            % Initialize Nystrom Mapper
+            % Initialize Random Features Mapper
             argin = {};
-            if ~isempty(obj.numNysParGuesses)
-                argin = [argin , 'numNysParGuesses' , obj.numNysParGuesses];
+            if ~isempty(obj.numRFParGuesses)
+                argin = [argin , 'numRFParGuesses' , obj.numRFParGuesses];
             end      
             if ~isempty(obj.maxRank)
                 argin = [argin , 'maxRank' , obj.maxRank];
@@ -224,8 +232,8 @@ classdef incrementalrfrls < algorithm
             if ~isempty(obj.verbose)
                 argin = [argin , 'verbose' , obj.verbose];
             end
-            obj.nyMapper = obj.mapType(Xtrain, Ytrain , obj.ntr , argin{:} );
-            obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
+            obj.rfMapper = obj.mapType(Xtrain, Ytrain , obj.ntr , argin{:} );
+            obj.mapParGuesses = obj.rfMapper.rng;   % Warning: rename to mapParGuesses
             
             valM = inf;     % Keeps track of the lowest validation error
             
@@ -242,27 +250,26 @@ classdef incrementalrfrls < algorithm
             
             for i = 1:size(obj.filterParGuesses,2)
                 
-                obj.nyMapper.resetPar();
+                obj.rfMapper.resetPar();
                 if ~isempty(obj.stoppingRule)
                     obj.stoppingRule.reset();
                 end
                 
-                while obj.nyMapper.next()
+                while obj.rfMapper.next()
 
-                    obj.nyMapper.compute();
+                    obj.rfMapper.compute();
 
                     % Initialize TrainVal kernel
                     argin = {};
-                    argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
+                    argin = [argin , 'mapParGuesses' , obj.rfMapper.currentPar(2)];
                     if ~isempty(obj.verbose)
                         argin = [argin , 'verbose' , obj.verbose];
-                    end                    
-                    kernelVal = obj.nyMapper.kernelType(Xval,obj.nyMapper.Xs, argin{:});
-                    kernelVal.next();
-                    kernelVal.compute();
-
+                    end          
+                    
+                    obj.XValTilda = obj.rfMapper.map(Xval);
+                    
                     % Compute predictions matrix
-                    YvalPred = kernelVal.K * obj.nyMapper.alpha{i};
+                    YvalPred = obj.XValTilda * obj.rfMapper.alpha{i};
 
                     % Compute validation performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
@@ -274,7 +281,7 @@ classdef incrementalrfrls < algorithm
                     end
 
                     if stop == 1
-                        obj.nyMapper.resetPar();
+                        obj.rfMapper.resetPar();
                         break;
                     end
 
@@ -284,48 +291,30 @@ classdef incrementalrfrls < algorithm
 
                     if obj.storeFullTrainPerf == 1                    
 
-                        % Initialize TrainTrain kernel
-                        argin = {};
-                        argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
-                        if ~isempty(obj.verbose)
-                            argin = [argin , 'verbose' , obj.verbose];
-                        end                    
-                        kernelTrain = obj.nyMapper.kernelType(Xtrain , obj.nyMapper.Xs , argin{:});
-                        kernelTrain.next();
-                        kernelTrain.compute();
+                        % Compute predictions matrix
+                        YtrainPred = obj.rfMapper.Xrf * obj.rfMapper.alpha{i};
 
-                        % Compute training predictions matrix
-                        YtrainPred = kernelTrain.K * obj.nyMapper.alpha{i};
+                        % Compute validation performance
+                        trainPerf = performanceMeasure( Ytrain , YtrainPred , trainIdx );                
 
-                        % Compute training performance
-                        trainPerf = performanceMeasure( Ytrain , YtrainPred , trainIdx );
-
-                        obj.trainPerformance(obj.nyMapper.currentParIdx , i) = trainPerf;
+                        obj.trainPerformance(obj.rfMapper.currentParIdx , i) = trainPerf;
                     end
 
                     if obj.storeFullValPerf == 1
-                        obj.valPerformance(obj.nyMapper.currentParIdx , i) = valPerf;
+                        obj.valPerformance(obj.rfMapper.currentParIdx , i) = valPerf;
                     end
 
                     if obj.storeFullTestPerf == 1                    
 
-                        % Initialize TrainTest kernel
-                        argin = {};
-                        argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
-                        if ~isempty(obj.verbose)
-                            argin = [argin , 'verbose' , obj.verbose];
-                        end                    
-                        kernelTest = obj.nyMapper.kernelType(Xte , obj.nyMapper.Xs , argin{:});
-                        kernelTest.next();
-                        kernelTest.compute();
+                        obj.XTestTilda = obj.rfMapper.map(Xtest);
 
-                        % Compute scores
-                        YtestPred = kernelTest.K * obj.nyMapper.alpha{i};
+                        % Compute predictions matrix
+                        YtestPred = obj.XTestTilda * obj.rfMapper.alpha{i};
 
-                        % Compute training performance
-                        testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );
+                        % Compute validation performance
+                        testPerf = performanceMeasure( Ytest , YtestPred , testIdx );                
 
-                        obj.testPerformance(obj.nyMapper.currentParIdx , i) = testPerf;
+                        obj.testPerformance(obj.rfMapper.currentParIdx , i) = testPerf;
                     end
 
                     %%%%%%%%%%%%%%%%%%%%
@@ -334,27 +323,32 @@ classdef incrementalrfrls < algorithm
                     if valPerf < valM
 
                         % Update best kernel parameter combination
-                        obj.mapParStar = obj.nyMapper.currentPar;
+                        obj.mapParStar = obj.rfMapper.currentPar;
 
-                        %Update best filter parameter
-                        obj.filterParStar = obj.nyMapper.filterParGuesses(i);
+                        % Update best filter parameter
+                        obj.filterParStar = obj.rfMapper.filterParGuesses(i);
 
-                        %Update best validation performance measurement
+                        % Update best validation performance measurement
                         valM = valPerf;
 
-                        % Update internal model samples matrix
-                        obj.Xmodel = obj.nyMapper.Xs;
-
                         % Update coefficients vector
-                        obj.c = obj.nyMapper.alpha{i};
+                        obj.w = obj.rfMapper.alpha{i};
+                    
+                        % Update best mapped samples
+                        obj.XrfStar = obj.rfMapper.Xrf;
+                        
+                        % Update best projections matrix
+                        obj.rfOmegaStar = obj.rfMapper.omega;
+                        
+                        % Update bestb coefficients
+                        obj.rfBStar = obj.rfMapper.b;
                     end
                 end
             end
             
             % Free memory
-            obj.nyMapper.M = [];
-            obj.nyMapper.alpha = [];
-            obj.nyMapper.Xs = [];
+            obj.rfMapper.M = [];
+            obj.rfMapper.alpha = [];
             
             if obj.verbose == 1
                 
@@ -369,19 +363,21 @@ classdef incrementalrfrls < algorithm
         end
         
         function Ypred = test( obj , Xte )
-                
-            % Get kernel type and instantiate train-test kernel (including sigma)
-            argin = {};
-            argin = [argin , 'mapParGuesses' , obj.mapParStar(2)];
-            if ~isempty(obj.verbose)
-                argin = [argin , 'verbose' , obj.verbose];
-            end
-            kernelTest = obj.nyMapper.kernelType(Xte , obj.Xmodel , argin{:});
-            kernelTest.next();
-            kernelTest.compute();
             
-            % Compute scores
-            Ypred = kernelTest.K * obj.c;
+            % Set best omega
+            obj.rfMapper.omega = obj.rfOmegaStar;
+            
+            % Set best b
+            obj.rfMapper.b = obj.rfBStar;
+            
+            % Set best mapping parameters
+            obj.rfMapper.currentPar = obj.mapParStar;
+            
+            % Map test data
+            XteRF = obj.rfMapper.map(Xte);
+
+            % Compute predictions matrix
+            Ypred = XteRF * obj.w;
         end        
     end
 end

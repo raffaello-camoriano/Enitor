@@ -203,8 +203,10 @@ classdef rfrls < algorithm
             % Set best mapping parameters
             obj.rfMapper.currentPar = obj.mapParStar;
             
-            % Compute scores
+            % Map test data
             XteRF = obj.rfMapper.map(Xte);
+            
+            % Compute predictions matrix
             Ypred = XteRF * obj.w;
         end
     end
