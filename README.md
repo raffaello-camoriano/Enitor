@@ -5,9 +5,9 @@ Enitor
 
 ![Scaling up!](http://s14.postimg.org/7qmk8bzsx/Haba_Snow_Mountain_Climbing11.jpg)
 
-Enitor is object-oriented large-scale machine learning framework for MATLAB.
+Enitor is an object-oriented large-scale machine learning framework.
 
-
+It is currently implemented in MATLAB.
 
 Implemented methods:
 --------------------
