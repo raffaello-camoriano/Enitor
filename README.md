@@ -14,10 +14,15 @@ Implemented methods:
 
 - RLS
 - KRLS
-- Random Features KRLS
+- Batch Random Features KRLS
 - Batch Nystrom KRLS
 - Incremental Nystrom KRLS
+- Incremental Random Features KRLS
+- Fastfood
 - Divide & Conquer KRLS
+- nu method
+- Landweber iteration
+- SVM subgradient descent
 
 Commands to launch an experiment script from command line:
 ----------------------------------------------------------
