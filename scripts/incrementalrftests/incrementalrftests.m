@@ -5,7 +5,7 @@ clearAllButBP;
 close all;
 
 % Set experimental results relative directory name
-resdir = 'scripts/hinge_subgradient/plots/';
+resdir = 'scripts/incrementalrftests/plots/';
 mkdir(resdir);
 
 %% Initialization
