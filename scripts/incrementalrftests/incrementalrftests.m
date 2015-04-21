@@ -27,6 +27,7 @@ NuMethod_cumulative_training_time= zeros(numRep,1);
 NysInc_cumulative_training_time= zeros(numRep,1);
 RFInc_cumulative_training_time= zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_training_time= zeros(numRep,1);
+FFRLS_cumulative_training_time = zeros(numRep,1);
 
 % Testing time
 KRLS_cumulative_testing_time= zeros(numRep,1);
@@ -36,6 +37,7 @@ NuMethod_cumulative_testing_time= zeros(numRep,1);
 NysInc_cumulative_testing_time= zeros(numRep,1);
 RFInc_cumulative_testing_time= zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_testing_time= zeros(numRep,1);
+FFRLS_cumulative_testing_time = zeros(numRep,1);
 
 
 % Test performance
@@ -46,6 +48,7 @@ NuMethod_cumulative_test_perf= zeros(numRep,1);
 NysInc_cumulative_test_perf = zeros(numRep,1);
 RFInc_cumulative_test_perf = zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_test_perf= zeros(numRep,1);
+FFRLS_cumulative_test_perf = zeros(numRep,1);
 
 for k = 1:numRep
 
@@ -53,7 +56,7 @@ for k = 1:numRep
     % ds = Adult(7000,16282,'plusMinusOne');
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
-    ds = Cifar10(2000,1000,'plusMinusOne',[1,2]);
+    ds = Cifar10(500,1000,'plusMinusOne',[1,2]);
     
     %% Experiment 1 setup, Landweber, Gaussian kernel
 
@@ -146,7 +149,7 @@ for k = 1:numRep
     % alg = krls( map , fil , 'mapParGuesses' , linspace(1,5,10) , 'filterParGuesses' , logspace(-5,1,10) , 'verbose' , 1 , ...
     %                         'storeFullTrainPerf' , 1 , 'storeFullValPerf' , 1 , 'storeFullTestPerf' , 1);
 
-    expKRLS = experiment(alg , ds , 1 , true , true , 'nh' , resdir);
+    expKRLS = experiment(alg , ds , 1 , true , saveResult , 'nh' , resdir);
 
     expKRLS.run();
     expKRLS.result
@@ -190,7 +193,7 @@ for k = 1:numRep
     %     'storeFullTestPerf' , storeFullTestPerf);
     % Exp init
     
-    expDACKRLS = experiment(alg , ds , 1 , true , true , '' , resdir);
+    expDACKRLS = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
 
     expDACKRLS.run();
     expDACKRLS.result
@@ -216,14 +219,14 @@ for k = 1:numRep
 %                             'storeFullValPerf' , storeFullValPerf , ...
 %                             'storeFullTestPerf' , storeFullTestPerf);
 
-    alg = incrementalNkrls(map , 3000 , 'numNysParGuesses' , numNysParGuesses ,...
+    alg = incrementalNkrls(map , 400 , 'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ...
                             'filterParGuesses', logspace(0,-5,7) , 'verbose' , 0 , ...
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
                             'storeFullTestPerf' , storeFullTestPerf);
 
-    expNysInc = experiment(alg , ds , 1 , true , true , 'nm' , resdir , 0);
+    expNysInc = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
     expNysInc.run();
     expNysInc.result
 
@@ -238,19 +241,19 @@ for k = 1:numRep
 
     map = @randomFeaturesGaussianIncremental;
 
-    numRFParGuesses = 20;
+    numRFParGuesses = 1;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(-5,0,10);
     filterParGuesses = expKRLS.algo.filterParStar;
     
-    alg = incrementalrfrls(map , 3000 , 'numRFParGuesses' , numRFParGuesses ,...
+    alg = incrementalrfrls(map , 8192 , 'numRFParGuesses' , numRFParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ...
                             'filterParGuesses', logspace(0,-5,7) , 'verbose' , 0 , ...
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
                             'storeFullTestPerf' , storeFullTestPerf);
 
-    expRFInc = experiment(alg , ds , 1 , true , true , 'nm' , resdir , 0);
+    expRFInc = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
     expRFInc.run();
     expRFInc.result
 
@@ -260,31 +263,59 @@ for k = 1:numRep
 
     % incrementalrfrls_plots
 
+    %% Fastfood Gaussian Kernel approx RLS
+
+    map = @fastfoodGaussian;
+    fil = @tikhonov;
+
+    numRFParGuesses = 20;
+%     filterParGuesses = expKRLS.algo.filterParStar;
+%     filterParGuesses = logspace(-5,0,10);
+    filterParGuesses = expKRLS.algo.filterParStar;
+    
+%     alg = rfrls(map , 3000 ,...
+%                             'mapParGuesses' , mapParGuesses ,  ...
+%                             'filterParGuesses', logspace(0,-5,7) , 'verbose' , 0 , ...
+%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                             'storeFullValPerf' , storeFullValPerf , ...
+%                             'storeFullTestPerf' , storeFullTestPerf);
+
+    alg =  ffrls(map , 200 , fil,  1 , 10, 500);
+                        
+    expFFRLS = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
+    expFFRLS.run();
+    expFFRLS.result
+
+    FFRLS_cumulative_training_time(k) = expFFRLS.time.train;
+    FFRLS_cumulative_testing_time(k) = expFFRLS.time.test;
+    FFRLS_cumulative_test_perf(k) = expFFRLS.result.perf;
+    
+    
 end
 
 
 %% Plot timing
 
 figure
-trainingTimes = [ expKRLS.result.time.train , expDACKRLS.result.time.train , expNysInc.result.time.train , expRFInc.result.time.train , expLandweber.result.time.train , expNuMethod.result.time.train expgdesc_kernel_hinge_loss.result.time.train];
+trainingTimes = [ expKRLS.result.time.train , expDACKRLS.result.time.train , expNysInc.result.time.train , expRFInc.result.time.train , expLandweber.result.time.train , expNuMethod.result.time.train expgdesc_kernel_hinge_loss.result.time.train , expFFRLS.result.time.train];
 bar(trainingTimes)
-set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM'})
+set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM' , 'Fastfood'})
 title('Training & Model Selection Times')
 ylabel('Time (s)')
 
 figure
-trainingTimes = [ expKRLS.result.time.test , expDACKRLS.result.time.test , expNysInc.result.time.test , expRFInc.result.time.test , expLandweber.result.time.test , expNuMethod.result.time.test , expgdesc_kernel_hinge_loss.result.time.test];
+trainingTimes = [ expKRLS.result.time.test , expDACKRLS.result.time.test , expNysInc.result.time.test , expRFInc.result.time.test , expLandweber.result.time.test , expNuMethod.result.time.test , expgdesc_kernel_hinge_loss.result.time.test , expFFRLS.result.time.test];
 bar(trainingTimes)
-set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM'})
+set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM', 'Fastfood'})
 title('Testing Times')
 ylabel('Time (s)')
 
 %% Plot best test performances
 
 figure
-testPerf = [ expKRLS.result.perf , expDACKRLS.result.perf , expNysInc.result.perf, expRFInc.result.perf , expLandweber.result.perf , expNuMethod.result.perf , expgdesc_kernel_hinge_loss.result.perf];
+testPerf = [ expKRLS.result.perf , expDACKRLS.result.perf , expNysInc.result.perf, expRFInc.result.perf , expLandweber.result.perf , expNuMethod.result.perf , expgdesc_kernel_hinge_loss.result.perf , expFFRLS.result.perf];
 bar(testPerf)
-set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS' , 'Landweber' , '\nu method', 'Subgr. SVM'})
+set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS' , 'Landweber' , '\nu method', 'Subgr. SVM', 'Fastfood'})
 title('Best test performance')
 ylabel('Relative Error')
 

@@ -4,6 +4,10 @@ classdef rfrls < algorithm
     
     properties
         
+        ntr   % Number of training samples
+        
+        maxRank     % Maximum number of RF
+
         % Feature mapping props
         mapType
         mapParGuesses
@@ -13,9 +17,10 @@ classdef rfrls < algorithm
         XrfStar                 % Best mapping of the training set
         rfOmegaStar             % Best random omega matrix
         rfBStar                 % Best coefficients vector b
-        numKerParRangeSamples   % Number of samples used for kernel hyperparameter range guesses creation
+        numMapParRangeSamples   % Number of samples used for kernel hyperparameter range guesses creation
         maxNumRF                % Maximum number of random features to be used
-
+        numRFParGuesses
+        
         % Filter props
         filterType
         filterParStar
@@ -28,20 +33,20 @@ classdef rfrls < algorithm
     
     methods
         
-        function obj = rfrls(mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxNumRF)
-            init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxNumRF)
+        function obj = rfrls(mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
+            init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
         end
         
-        function init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxNumRF)
+        function init( obj , mapTy , numMapParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
             obj.mapType = mapTy;
-            obj.numKerParRangeSamples = numKerParRangeSamples;
+            obj.numMapParRangeSamples = numMapParRangeSamples;
             obj.filterType = filtTy;
             obj.numMapParGuesses = numMapParGuesses;
             obj.numFilterParGuesses = numFilterParGuesses;
-            obj.maxNumRF = maxNumRF;
+            obj.maxRank = maxRank;
         end
         
-        function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart)
+        function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin)
             
             % Training/validation sets splitting
             shuffledIdx = randperm(size(Xtr,1));
@@ -53,11 +58,37 @@ classdef rfrls < algorithm
 %             trainIdx = 1 : tmp1;
 %             valIdx = tmp1 + 1 : size(Xtr,1);      
                 
+            Xtrain = Xtr(trainIdx,:);
+            Xval = Xtr(valIdx,:);    
             Ytrain = Ytr(trainIdx,:);
             Yval = Ytr(valIdx,:);    
             
+            obj.ntr = size(Xtrain,1);
+
+            % Initialize Random Features Mapper
+            argin = {};
+            if ~isempty(obj.numRFParGuesses)
+                argin = [argin , 'numRFParGuesses' , obj.numRFParGuesses];
+            end      
+            if ~isempty(obj.maxRank)
+                argin = [argin , 'maxRank' , obj.maxRank];
+            end      
+            if ~isempty(obj.numMapParGuesses)
+                argin = [argin , 'numMapParGuesses' , obj.numMapParGuesses];
+            end      
+            if ~isempty(obj.mapParGuesses)
+                argin = [argin , 'mapParGuesses' , full(obj.mapParGuesses)];
+            end      
+            if ~isempty(obj.numMapParRangeSamples)
+                argin = [argin , 'numMapParRangeSamples' , obj.numMapParRangeSamples];
+            end     
+            if ~isempty(obj.verbose)
+                argin = [argin , 'verbose' , obj.verbose];
+            end
+            obj.rfMapper = obj.mapType(Xtrain, Ytrain , obj.ntr , argin{:} );
+            
             % mapper instantiation
-            obj.rfMapper = obj.mapType(Xtr , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxNumRF);
+%             obj.rfMapper = obj.mapType(Xtrain , Ytrain , numel(trainIdx) , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxNumRF);
             obj.mapParGuesses = obj.rfMapper.rng;
             obj.filterParGuesses = [];
             

@@ -218,7 +218,7 @@ classdef fastfoodGaussian < fastfood
             
             available = false;
             
-            if length(obj.rng) > obj.currentParIdx
+            if size(obj.rng,2) > obj.currentParIdx
                 obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
                 obj.currentPar = obj.rng(:,obj.currentParIdx);

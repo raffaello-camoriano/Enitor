@@ -41,75 +41,75 @@ classdef randomFeaturesGaussian < randomFeatures
         end
         
         function obj = range(obj)
-            %% Range of the number of Random Fourier Features
-            
-            %tmpNumRF = round(linspace(obj.maxNumRF/10, obj.maxNumRF , obj.numMapParGuesses));   
-            tmpNumRF = obj.maxNumRF;
-            
-            %% Approximated kernel parameter range
-            
-            % Compute max and min sigma guesses
-                
-            % Extract an even number of samples without replacement                
-            
-            % WARNING: not compatible with versions older than 2014
-            %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
-            
-            % WARNING: Alternative to datasample below
-            nRows = size(obj.X,1); % number of rows
-            nSample = obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2); % number of samples
-            rndIDX = randperm(nRows); 
-            samp = obj.X(rndIDX(1:nSample), :);   
-            
-            % Compute squared distances  vector (D)
-            numDistMeas = floor(obj.numKerParRangeSamples/2); % Number of distance measurements
-            D = zeros(1 , numDistMeas);
-            for i = 1:numDistMeas
-                D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
-            end
-            D = sort(D);
+                        
+            % Range of the number of Random Fourier Features
+            tmpNumRF = round(linspace(1, obj.maxRank , obj.numRFParGuesses));   
+           
+            if isempty(obj.mapParGuesses)
+                % Compute max and min sigma guesses
 
-            firstPercentile = round(0.01 * numel(D) + 0.5);
-            minGuess = sqrt( D(firstPercentile));
-            maxGuess = sqrt( max(D) );
+                % Extract an even number of samples without replacement                
 
-            if minGuess <= 0
-                minGuess = eps;
+                % WARNING: not compatible with versions older than 2014
+                %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
+
+                % WARNING: Alternative to datasample below
+                nRows = size(obj.X,1); % number of rows
+                nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
+                rndIDX = randperm(nRows); 
+                samp = obj.X(rndIDX(1:nSample), :);   
+
+                % Compute squared distances  vector (D)
+                numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
+                D = zeros(1 , numDistMeas);
+                for i = 1:numDistMeas
+                    D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
+                end
+                D = sort(D);
+
+                firstPercentile = round(0.01 * numel(D) + 0.5);
+                minGuess = sqrt( D(firstPercentile));
+                maxGuess = sqrt( max(D) );
+
+                if minGuess <= 0
+                    minGuess = eps;
+                end
+                if maxGuess <= 0
+                    maxGuess = eps;
+                end	
+
+                tmpMapPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
+            else
+                tmpMapPar = obj.mapParGuesses;
             end
-            if maxGuess <= 0
-                maxGuess = eps;
-            end	
-            
-            tmpKerPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
-            
-            %% Generate all possible parameters combinations            
-            
-            [p,q] = meshgrid(tmpNumRF, tmpKerPar);
+
+            % Generate all possible parameters combinations
+            [p,q] = meshgrid(tmpNumRF, tmpMapPar);
             tmp = [p(:) q(:)]';
-            
-            obj.rng = num2cell(tmp , 1);
-            
+%             obj.rng = num2cell(tmp , 1);
+            obj.rng = tmp;
+
         end
         
         function compute(obj , mapPar)
             
             if( nargin > 1 )
                 
-                disp('Mapping will be computed according to the provided hyperparameter(s)');
-                mapPar
+                if(obj.verbose == 1)
+                    disp('Mapping will be computed according to the provided hyperparameter(s)');
+                    mapPar
+                end
                 chosenPar = mapPar;
-                
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 
                 % If any current value for any of the parameters is not available, abort.
                 error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
-            
             else
-                
-                disp('Mapping will be computed according to the current internal hyperparameter(s)');
-                obj.currentPar
+                if(obj.verbose == 1)
+                    disp('Mapping will be computed according to the current internal hyperparameter(s)');
+                    obj.currentPar
+                end
                 chosenPar = obj.currentPar;
-                
             end
             
             obj.generateProj(chosenPar);
@@ -153,7 +153,7 @@ classdef randomFeaturesGaussian < randomFeatures
             end
 
             available = false;
-            if length(obj.rng) > obj.currentParIdx
+            if size(obj.rng,2) > obj.currentParIdx
                 obj.currentParIdx = obj.currentParIdx + 1;
                 obj.currentPar = obj.rng{obj.currentParIdx};
                 available = true;

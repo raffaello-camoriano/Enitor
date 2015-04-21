@@ -42,13 +42,12 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
     
     methods
         
-        function obj = randomFeaturesGaussianIncremental( X1 , X2 , ntr , varargin)
-            obj.init( X1 , X2 , ntr , varargin);
+        function obj = randomFeaturesGaussianIncremental( X , Y , ntr , varargin)
+            obj.init( X , Y , ntr , varargin);
         end
         
         function obj = init(obj , X , Y , ntr , varargin)
             
-
             p = inputParser;
             
             %%%% Required parameters
@@ -351,7 +350,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
 %                 obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
 %                 available = true;
 %             end
-            if length(obj.rng) > obj.currentParIdx
+            if size(obj.rng,2) > obj.currentParIdx
                 obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
                 obj.currentPar = obj.rng(:,obj.currentParIdx);
