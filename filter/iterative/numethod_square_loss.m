@@ -11,6 +11,7 @@ classdef numethod_square_loss < filter
         weights                 % Learned weights vector
         n                       % Number of samples
         sz                      % Size of the K or C matrix
+        t                       % Number of outputs
         
         filterParGuesses        % Filter parameter guesses (range)
         numFilterParGuesses     % number of filter hyperparameters guesses
@@ -87,6 +88,7 @@ classdef numethod_square_loss < filter
             % Store full kernel/covariance matrix
             obj.K = p.Results.K;
             obj.Y = p.Results.Y;
+            obj.t = size(obj.Y,2);
 
             % Compute hyperparameter(s) range
             if ~isempty(p.Results.numFilterParGuesses) && isempty(p.Results.filterParGuesses)
@@ -118,7 +120,7 @@ classdef numethod_square_loss < filter
 %             Knorm = norm(obj.K);
 %             obj.tau=1/(2*Knorm);
             
-            obj.alpha=zeros(obj.n,1);
+            obj.alpha=zeros(obj.n,obj.t);
             obj.alpha1=((4*obj.nu + 2)/(4*obj.nu + 1)*obj.tau)*obj.Y;
             obj.alpha2=zeros(obj.n,1);
     
