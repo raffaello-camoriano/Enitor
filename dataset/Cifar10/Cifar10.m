@@ -38,7 +38,7 @@ classdef Cifar10 < dataset
             if  obj.t == 10
                 % Load training batches
                 if ~isempty(nTrPerClass)
-                    numBatches = ceil(nTrPerClass/10000);
+                    numBatches = ceil(nTrPerClass*obj.t/10000);
                 else
                     numBatches = 5;
                 end
