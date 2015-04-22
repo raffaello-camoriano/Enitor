@@ -259,9 +259,6 @@ classdef nystromUniformIncremental < nystrom
             elseif ~isempty(X1) && isempty(X2)
                 Sx1x2 = X1 * obj.X2';
                 obj.SqDistMat = repmat(obj.Sx1 , 1 , size(obj.X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(X1,1) , 1);
-            else
-                Sx1x2 = obj.X1 * obj.X2';
-                obj.SqDistMat = repmat(obj.Sx1 , 1 , size(obj.X2,1)) -2*Sx1x2 + repmat(obj.Sx2 , size(obj.X1,1) , 1);
             end
         end
         
@@ -371,15 +368,18 @@ classdef nystromUniformIncremental < nystrom
 %                     sum(sum(isinf(A)))
 %                     sum(sum(isinf(B)))
 %                     sum(sum(isinf(MB)))     
-%                     if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
-%                         
-%                     end
-                    [U, S] = eig(full(A' * A - B' * MB));
+                    if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
+                        
+                    end
+                    
+                    tA = full(A' * A - B' * MB);
+                    [U, S] = eig((tA + tA')/2);
                     ds = diag(S);
-                    ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0
-                    ds = real((ds>0).*ds);    % Set eigenvalues < 0 for numerical reasons to 0
-                    U = real(U);
-                    D = U * diag(1./(ds + obj.filterParGuesses(i))) * U';
+                    if sum(ds < 0) > 0
+                        
+                    end
+                    ids = double(ds>0);
+                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
 %                     isreal(D)
 %                     isreal(U)
 %                     isreal(diag(1./(ds + obj.filterParGuesses(i))))
@@ -391,6 +391,11 @@ classdef nystromUniformIncremental < nystrom
                     obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
                     obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
                   
+                    % debug
+                    
+                    MBprev = MB;
+                    
+                    %%%%%%%
                     obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
                     obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
