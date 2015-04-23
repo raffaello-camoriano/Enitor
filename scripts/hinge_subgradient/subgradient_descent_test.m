@@ -219,10 +219,6 @@ for k = 1:numRep
     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
     NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
 
-    % incrementalnkrls_plots
-
-    %% Random Features KRLS
-
 
 end
 
