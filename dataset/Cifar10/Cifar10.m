@@ -148,10 +148,10 @@ classdef Cifar10 < dataset
                         obj.Y(i , gnd(i) + 1) = 1;
                     end
                 end
-                
-                obj.shuffleTrainIdx();
-                obj.shuffleTestIdx();
             end
+            
+            obj.shuffleTrainIdx();
+            obj.shuffleTestIdx();         
             
             % Set problem type
             if obj.hasRealValues(obj.Y)
@@ -212,7 +212,6 @@ classdef Cifar10 < dataset
         end
             
         % Compute performance measure on the given outputs according to the
-        % USPS dataset-specific ranking standard measure
         function perf = performanceMeasure(obj , Y , Ypred , varargin)
             
             if size(obj.classes,2) == 2
@@ -232,27 +231,25 @@ classdef Cifar10 < dataset
                 end
 
                 perf = 1 - (numCorrect / size(Y,1));     
+                
+%                 C = transpose(bsxfun(@eq, Y', Ypred'));
+%                 D = sum(C,2);
+%                 E = D == size(Y,2);
+%                 numCorrect = sum(E);
+%                 perf = 1 - (numCorrect / size(Y,1));     
+
             end
         end
         
-        % Scales matrix M between -1 and 1
+        % Scales matrix M between 0 and 1
         function Ms = scale(obj , M)
-                                Ms = M/255;
+            
+            Ms = M/255;
 
-%             mx = max(max(M));
-%             mn = min(min(M));
-%             
-%             Ms = ((M + abs(mn)) / (mx - mn)) * 2 - 1;
-            
-        end
-        
-        function getTrainSet(obj)
-            
-        end
-        
-        function getTestSet(obj)
-            
-        end
-        
+%             mx = max(M);
+%             mn = min(M);
+% 
+%             Ms = ((M - mn) / (mx - mn));
+        end        
    end % methods
 end % classdef

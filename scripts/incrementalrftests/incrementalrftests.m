@@ -58,13 +58,13 @@ for k = 1:numRep
     % ds = Adult(7000,16282,'plusMinusOne');
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
-    ds = Cifar10(5000,1000,'plusMinusOne',[4,7]);
+    ds = Cifar10(1000,1000,'plusMinusOne',[4,7]);
     
     %% Experiment 1 setup, Landweber, Gaussian kernel
 
     map = @gaussianKernel;
     fil = @gdesc_square_loss;
-    maxiter = 7000;
+    maxiter = 5000;
 
 
     alg = kgdesc(map, fil , 'numMapParGuesses' , 1 , ...
@@ -120,7 +120,7 @@ for k = 1:numRep
 
     map = @gaussianKernel;
     fil = @gdesc_kernel_hinge_loss;
-    maxiter = 7000;
+    maxiter = 5000;
 
 
     alg = kgdesc( map , fil , 'numMapParGuesses' , 1 , ...
