@@ -58,7 +58,8 @@ for k = 1:numRep
     % ds = Adult(7000,16282,'plusMinusOne');
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
-    ds = Cifar10(5000,1000,'plusMinusOne',0:9);
+%     ds = Cifar10(5000,1000,'plusMinusOne',0:9);
+    ds = Covertype(522910,58102,'plusOneMinusBalanced');
     
     %% Experiment 1 setup, Landweber, Gaussian kernel
 % 
@@ -216,9 +217,9 @@ for k = 1:numRep
 %     filterParGuesses = expKRLS.algo.filterParStar;
     filterParGuesses = logspace(0,-8,9);
 
-    alg = incrementalNkrls(map , 5000 , 'numNysParGuesses' , numNysParGuesses ,...
+    alg = incrementalNkrls(map , 500 , 'numNysParGuesses' , numNysParGuesses ,...
                             'numMapParGuesses' , 1 ,  ...
-                            'numMapParRangeSamples' , 1000 ,  ...
+                            'numMapParRangeSamples' , 2000 ,  ...
                             'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
@@ -244,9 +245,9 @@ for k = 1:numRep
     filterParGuesses = logspace(0,-8,9);
 %     filterParGuesses = expKRLS.algo.filterParStar;
     
-    alg = incrementalrfrls(map , 5000 , 'numRFParGuesses' , numRFParGuesses ,...
+    alg = incrementalrfrls(map , 500 , 'numRFParGuesses' , numRFParGuesses ,...
                             'numMapParGuesses' , 1 ,  ...
-                            'numMapParRangeSamples' , 1000 ,  ...
+                            'numMapParRangeSamples' , 2000 ,  ...
                             'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
@@ -303,25 +304,25 @@ if numRep == 1
     % ylabel('Time (s)')
 
     figure
-    trainingTimes = [ expNysInc.result.time.train , expRFInc.result.time.train , expNuMethod.result.time.train ];
+    trainingTimes = [ expNysInc.result.time.train , expRFInc.result.time.train ];
     bar(trainingTimes)
-    set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS',  '\nu method' })
+    set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
     title('Training & Model Selection Times')
     ylabel('Time (s)')
 
     figure
-    trainingTimes = [  expNysInc.result.time.test , expRFInc.result.time.test ,  expNuMethod.result.time.test ];
+    trainingTimes = [  expNysInc.result.time.test , expRFInc.result.time.test];
     bar(trainingTimes)
-    set(gca,'XTickLabel',{'incNKRLS', 'incRFRLS',  '\nu method'})
+    set(gca,'XTickLabel',{'incNKRLS', 'incRFRLS'})
     title('Testing Times')
     ylabel('Time (s)')
 
     %% Plot best test performances
 
     figure
-    testPerf = [  expNysInc.result.perf, expRFInc.result.perf ,  expNuMethod.result.perf  ];
+    testPerf = [  expNysInc.result.perf, expRFInc.result.perf   ];
     bar(testPerf)
-    set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' ,  '\nu method'})
+    set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
     title('Best test performance')
     ylabel('Relative Error')
 

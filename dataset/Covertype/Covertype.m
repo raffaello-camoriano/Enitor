@@ -66,7 +66,7 @@ classdef Covertype < dataset
             end
 
             for i = 1:obj.n
-                obj.Y(i , gnd(i) + 1) = 1;
+                obj.Y(i , gnd(i)) = 1;
             end
                
             % Set problem type
@@ -121,9 +121,10 @@ classdef Covertype < dataset
 
             mx = max(M);
             mn = min(M);
-
-            Ms = ((M - mn) / (mx - mn));
-
+            
+            delta = mx - mn;
+            Ms = transpose(bsxfun(@minus, M', mn'));
+            Ms = transpose(bsxfun(@rdivide, Ms', delta'));
         end   
         
         % Checks if matrix Y contains real values. Useful for
