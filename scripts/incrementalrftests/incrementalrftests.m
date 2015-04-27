@@ -55,7 +55,7 @@ for k = 1:numRep
     display([ 'Repetition #', num2str(k)])
      
     % Load dataset
-    % ds = Adult(7000,16282,'plusMinusOne');
+   % ds = Adult(7000,16282,'plusMinusOne');
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
 %     ds = Cifar10(5000,1000,'plusMinusOne',0:9);
