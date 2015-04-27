@@ -59,7 +59,8 @@ for k = 1:numRep
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
 %     ds = Cifar10(5000,1000,'plusMinusOne',0:9);
-    ds = Covertype(522910,58102,'plusOneMinusBalanced');
+%     ds = Covertype(522910,58102,'plusOneMinusBalanced');
+    ds = YearPredictionMSD(463715,51630);
     
     %% Experiment 1 setup, Landweber, Gaussian kernel
 % 
@@ -215,9 +216,10 @@ for k = 1:numRep
 
     numNysParGuesses = 10;
 %     filterParGuesses = expKRLS.algo.filterParStar;
-    filterParGuesses = logspace(0,-8,9);
+%     filterParGuesses = logspace(0,-8,9);
+    filterParGuesses = 1e-8;
 
-    alg = incrementalNkrls(map , 500 , 'numNysParGuesses' , numNysParGuesses ,...
+    alg = incrementalNkrls(map , 3000 , 'numNysParGuesses' , numNysParGuesses ,...
                             'numMapParGuesses' , 1 ,  ...
                             'numMapParRangeSamples' , 2000 ,  ...
                             'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
@@ -242,10 +244,10 @@ for k = 1:numRep
 
     numRFParGuesses = 10;
 %     filterParGuesses = expKRLS.algo.filterParStar;
-    filterParGuesses = logspace(0,-8,9);
-%     filterParGuesses = expKRLS.algo.filterParStar;
+%     filterParGuesses = logspace(0,-8,9);
+    filterParGuesses = 1e-8;
     
-    alg = incrementalrfrls(map , 500 , 'numRFParGuesses' , numRFParGuesses ,...
+    alg = incrementalrfrls(map , 3000 , 'numRFParGuesses' , numRFParGuesses ,...
                             'numMapParGuesses' , 1 ,  ...
                             'numMapParRangeSamples' , 2000 ,  ...
                             'filterParGuesses', filterParGuesses , 'verbose' , 0 , ...
