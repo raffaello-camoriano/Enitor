@@ -131,7 +131,6 @@ classdef gdesc_kernel_hinge_loss < filter
             Ypred = obj.K * obj.weights;
             mask = (sign(Ypred) ~= obj.Y);
             SG = -mask.*obj.Y;                    
-%             SG = -mask.*(obj.K*obj.Y);                    
             obj.weights = obj.weights - obj.gamma * obj.currentPar^(-.5)* SG;
         end
         

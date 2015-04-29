@@ -48,7 +48,8 @@ classdef Covertype < dataset
 
             % Scale attributes
             obj.X = double(obj.X);
-            obj.X = obj.scale(obj.X);
+%             obj.X = obj.scale(obj.X);
+            obj.X = obj.normalize(obj.X);
 
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
@@ -98,19 +99,19 @@ classdef Covertype < dataset
         function perf = performanceMeasure(obj , Y , Ypred , varargin)
             Ypred = obj.scoresToClasses(Ypred);
             % RMSE
-            perf = sqrt(sum((Y - Ypred).^2)/size(Y,1));
+%             perf = sqrt(sum((Y - Ypred).^2)/size(Y,1));
             
 %             Ypred = obj.scoresToClasses(Ypred);
 % 
-%             % Compute error rate
-%             numCorrect = 0;
-%             for i = 1:size(Y,1)
-%                 if sum(Y(i,:) == Ypred(i,:)) == size(Y,2)
-%                     numCorrect = numCorrect +1;
-%                 end
-%             end
-% 
-%             perf = 1 - (numCorrect / size(Y,1));     
+            % Compute error rate
+            numCorrect = 0;
+            for i = 1:size(Y,1)
+                if sum(Y(i,:) == Ypred(i,:)) == size(Y,2)
+                    numCorrect = numCorrect +1;
+                end
+            end
+
+            perf = 1 - (numCorrect / size(Y,1));     
 
 %                 C = transpose(bsxfun(@eq, Y', Ypred'));
 %                 D = sum(C,2);
@@ -128,6 +129,19 @@ classdef Covertype < dataset
             delta = mx - mn;
             Ms = transpose(bsxfun(@minus, M', mn'));
             Ms = transpose(bsxfun(@rdivide, Ms', delta'));
+        end  
+        
+        % Normalizes and centers the columns of M
+        function Ms = normalize(obj , M)
+
+            me = mean(M);
+                        
+            Ms = transpose(bsxfun(@minus, M', me'));
+            
+            sd = std(Ms,1);
+            
+            Ms = transpose(bsxfun(@rdivide, M', sd'));
+            
         end   
         
         % Checks if matrix Y contains real values. Useful for

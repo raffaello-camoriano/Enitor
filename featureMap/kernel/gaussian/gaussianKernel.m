@@ -16,6 +16,7 @@ classdef gaussianKernel < kernel
     end
     
     methods
+        % Construct a size(X1,1) * size(X2,1) Gaussian kernel object 
         function obj = gaussianKernel( X1 , X2 , varargin)
             obj.init( X1 , X2 , varargin);
         end
@@ -140,7 +141,7 @@ classdef gaussianKernel < kernel
 %             obj.mapParGuesses = num2cell(tmp);
             obj.mapParGuesses = tmp;
         end
-        
+        Xtrain 
         % Computes the kernel matrix K based on SqDistMat and
         % kernel parameters
         function compute(obj , kerPar)
