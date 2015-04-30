@@ -351,42 +351,13 @@ classdef nystromUniformIncremental < nystrom
                 
                 for i = 1:size(obj.filterParGuesses,2)
 
-%                     max(max(obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1))))
                     MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
-
-                    %D = inv(A' * A - B' * MB +  obj.filterParGuesses(i) * eye(obj.s));
-
-%                     sum(sum(isinf(A' * A - B' * MB)))
-%                     sum(sum(isnan(A' * A - B' * MB)))
-                    
-%                     isreal(A)
-%                     isreal(B)
-%                     isreal(MB)
-%                     sum(sum(isnan(A)))
-%                     sum(sum(isnan(B)))
-%                     sum(sum(isnan(MB)))  
-%                     sum(sum(isinf(A)))
-%                     sum(sum(isinf(B)))
-%                     sum(sum(isinf(MB)))     
-                    if  ~isreal(A) || ~isreal(B) ||~isreal(MB) || sum(sum(isnan(A))) > 0 || sum(sum(isnan(B)))> 0 || sum(sum(isnan(MB)))> 0 || sum(sum(isinf(A)))> 0 ||sum(sum(isinf(B)))> 0 || sum(sum(isinf(MB)))    
-                        
-                    end
-                    
                     tA = full(A' * A - B' * MB);
                     [U, S] = eig((tA + tA')/2);
                     ds = diag(S);
-                    if sum(ds < 0) > 0
-                        
-                    end
                     ids = double(ds>0);
                     D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
-%                     isreal(D)
-%                     isreal(U)
-%                     isreal(diag(1./(ds + obj.filterParGuesses(i))))
-                    
                     MBD = MB * D;
-%                     isreal(MBD)
-
                     df = B' * obj.alpha{i} - Aty;
                     obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
                     obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;

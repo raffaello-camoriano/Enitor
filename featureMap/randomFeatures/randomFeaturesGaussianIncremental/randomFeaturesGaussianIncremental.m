@@ -294,13 +294,20 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 for i = 1:size(obj.filterParGuesses,2)
 
                     MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
-
-                    [U, S] = eig(full(A' * A - B' * MB));
+                    
+                    tA = full(A' * A - B' * MB);
+                    [U, S] = eig((tA + tA')/2);                    
+                    
+                    
+%                     [U, S] = eig(full(A' * A - B' * MB));
                     ds = diag(S);
-                    ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0
-                    ds = real((ds>0).*ds);    % Set eigenvalues < 0 for numerical reasons to 0
-                    U = real(U);
-                    D = U * diag(1./(ds + obj.filterParGuesses(i))) * U';
+                    ids = double(ds>0);
+                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+                    
+%                     ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0
+%                     ds = real((ds>0).*ds);    % Set eigenvalues < 0 for numerical reasons to 0
+%                     U = real(U);
+%                     D = U * diag(1./(ds + obj.filterParGuesses(i))) * U';
 
                     MBD = MB * D;
 
