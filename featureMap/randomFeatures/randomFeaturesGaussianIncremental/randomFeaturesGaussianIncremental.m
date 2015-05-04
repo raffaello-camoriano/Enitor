@@ -185,9 +185,14 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 end
                 D = sort(D);
 
-                firstPercentile = round(0.01 * numel(D) + 0.5);
-                minGuess = sqrt( D(firstPercentile));
-                maxGuess = sqrt( max(D) );
+%                 firstPercentile = round(0.01 * numel(D) + 0.5);
+%                 minGuess = sqrt( D(firstPercentile));
+%                 maxGuess = sqrt( max(D) );
+                
+                fifthPercentile = round(0.05 * numel(D) + 0.5);
+                ninetyfifthPercentile = round(0.95 * numel(D) - 0.5);
+                minGuess = sqrt( D(fifthPercentile));
+                maxGuess = sqrt( D(ninetyfifthPercentile) );                
 
                 if minGuess <= 0
                     minGuess = eps;

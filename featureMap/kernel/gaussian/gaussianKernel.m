@@ -126,10 +126,18 @@ classdef gaussianKernel < kernel
             % GURLS)
             
             D = sort(obj.SqDistMat(tril(true(obj.n),-1)));
-            firstPercentile = round(0.01*numel(D)+0.5);
-            minGuess = sqrt(D(firstPercentile));
-            maxGuess = sqrt(max(max(obj.SqDistMat)));
 
+            %             firstPercentile = round(0.01*numel(D)+0.5);
+%             minGuess = sqrt(D(firstPercentile));
+%             maxGuess = sqrt(max(max(obj.SqDistMat)));
+            
+            
+            fifthPercentile = round(0.05 * numel(D) + 0.5);
+            ninetyfifthPercentile = round(0.95 * numel(D) - 0.5);
+            minGuess = sqrt( D(fifthPercentile));
+            maxGuess = sqrt( D(ninetyfifthPercentile) );
+                
+                
             if minGuess <= 0
                 minGuess = eps;
             end

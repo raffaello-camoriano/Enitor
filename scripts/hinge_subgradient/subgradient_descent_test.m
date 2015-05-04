@@ -26,6 +26,7 @@ Landweber_cumulative_training_time= zeros(numRep,1);
 NuMethod_cumulative_training_time= zeros(numRep,1);
 NysInc_cumulative_training_time= zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_training_time= zeros(numRep,1);
+stoc_gdesc_kernel_hinge_loss_cumulative_training_time= zeros(numRep,1);
 kernelized_pegasos_hinge_loss_cumulative_training_time= zeros(numRep,1);
 
 % Testing time
@@ -35,6 +36,7 @@ Landweber_cumulative_testing_time= zeros(numRep,1);
 NuMethod_cumulative_testing_time= zeros(numRep,1);
 NysInc_cumulative_testing_time= zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_testing_time= zeros(numRep,1);
+stoc_gdesc_kernel_hinge_loss_cumulative_testing_time= zeros(numRep,1);
 kernelized_pegasos_hinge_loss_cumulative_testing_time= zeros(numRep,1);
 
 
@@ -45,13 +47,14 @@ Landweber_cumulative_test_perf= zeros(numRep,1);
 NuMethod_cumulative_test_perf= zeros(numRep,1);
 NysInc_cumulative_test_perf = zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_test_perf= zeros(numRep,1);
+stoc_gdesc_kernel_hinge_loss_cumulative_test_perf= zeros(numRep,1);
 kernelized_pegasos_hinge_loss_cumulative_test_perf= zeros(numRep,1);
 
 for k = 1:numRep
 
     % Load dataset
     % ds = Adult(7000,16282,'plusMinusOne');
-    ds = Adult(32562,100,'plusMinusOne');
+    ds = Adult(1000,1000,'plusMinusOne');
     
     %% Experiment 1 setup, Landweber, Gaussian kernel
 
@@ -123,6 +126,30 @@ for k = 1:numRep
     gdesc_kernel_hinge_loss_cumulative_training_time(k) = expgdesc_kernel_hinge_loss.time.train;
     gdesc_kernel_hinge_loss_cumulative_testing_time(k) = expgdesc_kernel_hinge_loss.time.test;
     gdesc_kernel_hinge_loss_cumulative_test_perf(k) = expgdesc_kernel_hinge_loss.result.perf;
+    
+%% Experiment 3.1 setup, stochastic subgradient descent, hinge loss, Gaussian kernel
+
+    map = @gaussianKernel;
+    fil = @stoc_gdesc_kernel_hinge_loss;
+    mapParGuesses = expgdesc_kernel_hinge_loss.result.mapParStar;
+    maxiter = 7000;
+
+    alg = Stockgdesc( map , fil , ...
+        'mapParGuesses' , mapParGuesses, ...
+        'filterParGuesses' , 1:maxiter   , ...
+        'verbose' , 0 , ...
+        'storeFullTrainPerf' , storeFullTrainPerf , ...
+        'storeFullValPerf' , storeFullValPerf , ...
+        'storeFullTestPerf' , storeFullTestPerf);
+
+    expstoc_gdesc_kernel_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
+
+    expstoc_gdesc_kernel_hinge_loss.run();
+    expstoc_gdesc_kernel_hinge_loss.result
+
+    stoc_gdesc_kernel_hinge_loss_cumulative_training_time(k) = expstoc_gdesc_kernel_hinge_loss .time.train;
+    stoc_gdesc_kernel_hinge_loss_cumulative_testing_time(k) = expstoc_gdesc_kernel_hinge_loss .time.test;
+    stoc_gdesc_kernel_hinge_loss_cumulative_test_perf(k) = expstoc_gdesc_kernel_hinge_loss .result.perf;
     
     
     %% Experiment 4 setup, Kernelized Pegasos, hinge loss, Gaussian kernel
