@@ -3,30 +3,137 @@ classdef randomFeaturesGaussian < randomFeatures
     %   Detailed explanation goes here
     
     properties
-        numKerParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
-        maxNumRF                % Maximum number of random features to be used
+        
+        
+        prevPar
+        
+        verbose
+        
+        Y
+
+        ntr
+        
+        numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
+        maxRank                % Maximum number of random features to be used
+        
+        kernelType      % Type of approximated kernel
+
+        filterParGuesses        % Filter parameter guesses
+        numFilterParGuesses     % Number of filter parameter guesses
+                
+        mapParGuesses
+        
     end
     
     methods
         % Constructor
-        function obj = randomFeaturesGaussian( X , numMapParGuesses , numKerParRangeSamples , maxNumRF )
-            
-            obj.init( X , numMapParGuesses , numKerParRangeSamples , maxNumRF);
+        function obj = randomFeaturesGaussian( X , Y , ntr , varargin )
+            obj.init( X , Y , ntr , varargin);
+%             obj.init( X , numMapParGuesses , numKerParRangeSamples , maxNumRF);
         end
         
         % Initialization function
-        function obj = init(obj , X , numMapParGuesses , numKerParRangeSamples , maxNumRF)
+        function obj = init( obj , X , Y , ntr , varargin)
             
-            obj.X = X;
-            obj.numMapParGuesses = numMapParGuesses;
-            obj.numKerParRangeSamples = numKerParRangeSamples;
-            obj.d = size(X , 2);     
-            obj.maxNumRF = maxNumRF;
+
+            p = inputParser;
             
-            % Compute range
-            obj.range();
+            %%%% Required parameters
+            % X , Y , ntr
+
+            checkX = @(x) size(x,1) > 0 && size(x,2) > 0;
+            checkY = @(x) size(x,1) > 0 && size(x,2) > 0;
+            checkNtr = @(x) x > 0;
+            
+            addRequired(p,'X',checkX);
+            addRequired(p,'Y',checkY);
+            addRequired(p,'ntr',checkNtr);
+            
+ 
+            %%%% Optional parameters
+            % Optional parameter names:
+            % numRFParGuesses , maxRank , numMapParGuesses , mapParGuesses , filterParGuesses , numMapParRangeSamples  , verbose
+            
+%             % numRFParGuesses       % Cardinality of number of samples for Nystrom approximation parameter guesses
+%             defaultNumRFParGuesses = [];
+%             checkNumRFParGuesses = @(x) x > 0 ;            
+%             addParameter(p,'numRFParGuesses',defaultNumRFParGuesses,checkNumRFParGuesses);                    
+            
+            % maxRank        % Maximum rank of the Nystrom approximation
+            defaultMaxRank = [];
+            checkMaxRank = @(x) x > 0 ;            
+            addParameter(p,'maxRank',defaultMaxRank,checkMaxRank);        
+            
+            % numMapParGuesses        % Number of map parameter guesses
+            defaultNumMapParGuesses = [];
+            checkNumMapParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses);        
+            
+            % mapParGuesses        % Map parameter guesses
+            defaultMapParGuesses = [];
+            checkMapParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;      
+            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);        
+            
+            % filterParGuesses       % Filter parameter guesses
+            defaultFilterParGuesses = [];
+            checkFilterParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;            
+            addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                    
+            
+            % numMapParRangeSamples        % Number of map parameter guesses
+            defaultNumMapParRangeSamples = [];
+            checkNumMapParRangeSamples = @(x) x > 0 ;            
+            addParameter(p,'numMapParRangeSamples',defaultNumMapParRangeSamples,checkNumMapParRangeSamples);            
+
+            % verbose             % 1: verbose; 0: silent      
+            defaultVerbose = 0;
+            checkVerbose = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'verbose',defaultVerbose,checkVerbose);
+            
+            % Parse function inputs
+            if isempty(varargin{:})
+                parse(p, X , Y , ntr)
+            else
+                parse(p, X , Y , ntr , varargin{:}{:})
+            end
+            
+            % Assign parsed parameters to object properties
+            fields = fieldnames(p.Results);
+%             fieldsToIgnore = {'X1','X2'};
+%             fields = setdiff(fields, fieldsToIgnore);
+            for idx = 1:numel(fields)
+                obj.(fields{idx}) = p.Results.(fields{idx});
+            end
+            
+            % Joint parameters parsing
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                error('either mapParGuesses or numMapParGuesses must be specified');
+            end    
+            
+            if (~isempty(obj.mapParGuesses)) && (~isempty(obj.numMapParGuesses)) && (size(obj.mapParGuesses,2) ~= obj.numMapParGuesses)
+                error('The size of mapParGuesses and numMapParGuesses are different');
+            end
+            
+            if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                obj.numMapParGuesses = size(obj.mapParGuesses,2);
+            end
+            
+            if size(X,1) ~= size(Y,1)
+                error('X and Y have incompatible sizes');
+            end
+            
+            obj.d = size(X , 2);
+            
+            warning('Kernel used by randomFeaturesGaussianIncremental is set to @gaussianKernel');
+            obj.kernelType = @gaussianKernel;
+
+            % Conditional range computation
+%             if isempty(obj.mapParGuesses)
+                display('Computing range');
+                obj.range();    % Compute range
+%             end
             obj.currentParIdx = 0;
             obj.currentPar = [];
+            
         end
         
         function mappedSample = map(obj , inputSample)
@@ -42,8 +149,8 @@ classdef randomFeaturesGaussian < randomFeatures
         
         function obj = range(obj)
                         
-            % Range of the number of Random Fourier Features
-            tmpNumRF = round(linspace(1, obj.maxRank , obj.numRFParGuesses));   
+            % Fixed number of Random Fourier Features
+            tmpNumRF = obj.maxRank;   
            
             if isempty(obj.mapParGuesses)
                 % Compute max and min sigma guesses
@@ -152,15 +259,36 @@ classdef randomFeaturesGaussian < randomFeatures
         % updates the current parameter combination 'currentPar'
         function available = next(obj)
 
+%             % If any range for any of the parameters is not available, recompute all ranges.
+%             if cellfun(@isempty , obj.rng)
+%                 obj.range();
+%             end
+% 
+%             available = false;
+%             if size(obj.rng,2) > obj.currentParIdx
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.rng{obj.currentParIdx};
+%                 available = true;
+%             end        
+
             % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty , obj.rng)
+%             if cellfun(@isempty,obj.mapParGuesses)
+%                 obj.range();
+%             end
+            if isempty(obj.rng)
                 obj.range();
             end
-
+            
             available = false;
+%             if length(obj.mapParGuesses) > obj.currentParIdx
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
+%                 available = true;
+%             end
             if size(obj.rng,2) > obj.currentParIdx
+                obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.rng{obj.currentParIdx};
+                obj.currentPar = obj.rng(:,obj.currentParIdx);
                 available = true;
             end
         end        

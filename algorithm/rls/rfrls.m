@@ -4,6 +4,14 @@ classdef rfrls < algorithm
     
     properties
         
+        % I/O options
+        storeFullTrainPerf  % Store full training performance matrix 1/0
+        storeFullValPerf    % Store full validation performance matrix 1/0
+        storeFullTestPerf   % Store full test performance matrix 1/0
+        valPerformance      % Validation performance matrix
+        trainPerformance    % Training performance matrix
+        testPerformance     % Test performance matrix
+        
         ntr   % Number of training samples
         
         maxRank     % Maximum number of RF
@@ -28,35 +36,131 @@ classdef rfrls < algorithm
         numFilterParGuesses
         filter
         
+        filterParGuessesStorage
+        
         w               % Weights vector
+        XValTilda
     end
     
     methods
         
-        function obj = rfrls(mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
-            init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
+        function obj = rfrls(mapType , filterType , maxRank , varargin)
+            init( obj , mapType, filterType , maxRank , varargin)
+%             init( obj , mapTy , numKerParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
         end
         
-        function init( obj , mapTy , numMapParRangeSamples , filtTy,  numMapParGuesses , numFilterParGuesses , maxRank)
-            obj.mapType = mapTy;
-            obj.numMapParRangeSamples = numMapParRangeSamples;
-            obj.filterType = filtTy;
-            obj.numMapParGuesses = numMapParGuesses;
-            obj.numFilterParGuesses = numFilterParGuesses;
-            obj.maxRank = maxRank;
+        function init( obj , mapType, filterType , maxRank , varargin)
+
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            checkMaxRank = @(x) x > 0 ;
+
+            addRequired(p,'mapType');
+            addRequired(p,'filterType');
+            addRequired(p,'maxRank',checkMaxRank);
+            
+            %%%% Optional parameters
+            % Optional parameter names:
+
+%             defaultNumRFParGuesses = 1;            
+%             checkNumRFParGuesses = @(x) x > 0 ;
+%             addParameter(p,'numRFParGuesses',defaultNumRFParGuesses,checkNumRFParGuesses);                    
+            
+            % mapParGuesses       % Map parameter guesses cell array
+            defaultMapParGuesses = [];
+            checkMapParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
+            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);    
+            
+            % numMapParGuesses        % Number of map parameter guesses
+            defaultNumMapParGuesses = [];
+            checkNumMapParGuesses = @(x) x > 0 ;            
+            addParameter(p,'numMapParGuesses',defaultNumMapParGuesses,checkNumMapParGuesses); 
+            
+            % numMapParRangeSamples        % Number of samples used for map
+            % optimal map parameter range generation
+            defaultNumMapParRangeSamples = [];            
+            checkNumMapParRangeSamples = @(x) x > 0 ;
+            addParameter(p,'numMapParRangeSamples',defaultNumMapParRangeSamples,checkNumMapParRangeSamples);                    
+            
+            % filterParGuesses       % Filter parameter guesses cell array
+            defaultfFilterParGuesses = [];
+            checkFilterParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
+            addParameter(p,'filterParGuesses',defaultfFilterParGuesses,checkFilterParGuesses);    
+                   
+            % storeFullTrainPerf  % Store full training performance matrix 1/0
+            defaultStoreFullTrainPerf = 0;
+            checkStoreFullTrainPerf = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullTrainPerf',defaultStoreFullTrainPerf,checkStoreFullTrainPerf);           
+  
+            % storeFullValPerf    % Store full validation performance matrix 1/0
+            defaultStoreFullValPerf = 0;
+            checkStoreFullValPerf = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullValPerf',defaultStoreFullValPerf,checkStoreFullValPerf);           
+  
+            % storeFullTestPerf   % Store full test performance matrix 1/0
+            defaultStoreFullTestPerf = 0;
+            checkStoreFullTestPerf = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf);            
+            
+            % verbose             % 1: verbose; 0: silent      
+            defaultVerbose = 0;
+            checkVerbose = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'verbose',defaultVerbose,checkVerbose);
+    
+            
+            % Parse function inputs
+            if isempty(varargin{:})
+                parse(p, mapType , filterType ,  maxRank )
+            else
+                parse(p, mapType , filterType , maxRank ,  varargin{:}{:})
+            end
+            
+            % Assign parsed parameters to object properties
+            fields = fieldnames(p.Results);
+%             fieldsToIgnore = {'X1','X2'};
+%             fields = setdiff(fields, fieldsToIgnore);
+            for idx = 1:numel(fields)
+                obj.(fields{idx}) = p.Results.(fields{idx});
+            end
+            
+            %%% Joint parameters validation
+            
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                error('either mapParGuesses or numMapParGuesses must be specified');
+            end    
+            
+            if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
+                error('mapParGuesses and numMapParGuesses cannot be specified together');
+            end    
+            
+            if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+                obj.numMapParGuesses = size(obj.mapParGuesses,2);
+            end
+            
+            if isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
+                error('either filterParGuesses or numFilterParGuesses must be specified');
+            end         
+            
+            if ~isempty(obj.filterParGuesses) && ~isempty(obj.numFilterParGuesses)
+                error('filterParGuesses and numFilterParGuesses cannot be specified together');
+            end
+            
+            if ~isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
+                obj.numFilterParGuesses = size(obj.filterParGuesses,2);
+            end                    
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin)
             
             % Training/validation sets splitting
-            shuffledIdx = randperm(size(Xtr,1));
+%             shuffledIdx = randperm(size(Xtr,1));
             tmp1 = floor(size(Xtr,1)*(1-validationPart));
-            trainIdx = shuffledIdx(1 : tmp1);
-            valIdx = shuffledIdx(tmp1 + 1 : end);
-
-%             tmp1 = floor(size(Xtr,1)*(1-validationPart));
-%             trainIdx = 1 : tmp1;
-%             valIdx = tmp1 + 1 : size(Xtr,1);      
+%             trainIdx = shuffledIdx(1 : tmp1);
+%             valIdx = shuffledIdx(tmp1 + 1 : end);
+            trainIdx = 1 : tmp1;
+            valIdx = tmp1 + 1 : size(Xtr,1); 
                 
             Xtrain = Xtr(trainIdx,:);
             Xval = Xtr(valIdx,:);    
@@ -90,7 +194,7 @@ classdef rfrls < algorithm
             % mapper instantiation
 %             obj.rfMapper = obj.mapType(Xtrain , Ytrain , numel(trainIdx) , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxNumRF);
             obj.mapParGuesses = obj.rfMapper.rng;
-            obj.filterParGuesses = [];
+            obj.filterParGuessesStorage = [];
             
             valM = inf;     % Keeps track of the lowest validation error
             
@@ -105,33 +209,98 @@ classdef rfrls < algorithm
                 
                 % Get mapped samples according to the new map parameters
                 % combination
-                Xtrain = obj.rfMapper.Xrf(trainIdx,:);
-                Xval = obj.rfMapper.Xrf(valIdx,:);
-                
+%                 Xtrain = obj.rfMapper.Xrf(trainIdx,:);
+%                 Xval = obj.rfMapper.Xrf(valIdx,:);
+%                 obj.rfMapper.Xrf;
+                obj.XValTilda = obj.rfMapper.map(Xval);
+                    
+                    
                 % Compute covariance matrix of the training samples
-                C = Xtrain' * Xtrain;
+                C = obj.rfMapper.Xrf' * obj.rfMapper.Xrf;
                 
                 % Normalization factors
-                numSamples = size(Xtrain , 1);
+                numSamples = size(obj.rfMapper.Xrf , 1);
                 
-                obj.filter = obj.filterType( C  , Xtrain' * Ytrain , numSamples ,  obj.numFilterParGuesses);
-                obj.filterParGuesses = [obj.filterParGuesses ; obj.filter.rng];
+%                 obj.filter = obj.filterType( C  , obj.rfMapper.Xrf' * Ytrain , numSamples ,  obj.numFilterParGuesses);
                 
+
+                argin = {};
+                if ~isempty(obj.filterParGuesses)
+                    argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
+                end
+                if ~isempty(obj.numFilterParGuesses)
+                    argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
+                end
+                if ~isempty(obj.verbose)
+                    argin = [argin , 'verbose' , obj.verbose];
+                end
+                filter = obj.filterType( C, obj.rfMapper.Xrf' * Ytrain , numSamples , argin{:});
+                                
                 
-                while obj.filter.next()
+                obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
+                
+
+                % Full matrices for performance storage initialization
+                if obj.storeFullTrainPerf == 1
+                    obj.trainPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                end
+                if obj.storeFullValPerf == 1
+                    obj.valPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                end
+                if obj.storeFullTestPerf == 1
+                    obj.testPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                end
+                
+                while filter.next()
                     
                     % Compute filter according to current hyperparameters
-                    obj.filter.compute();
+                    filter.compute();
 
                     % Populate full performance matrices
                     %trainPerformance(i,j) = perfm( kernel.K * obj.filter.coeffs, Ytrain);
                     %valPerformance(i,j) = perfm( kernelVal.K * obj.filter.coeffs, Yval);
                     
                     % Compute predictions matrix
-                    YvalPred = Xval * obj.filter.weights;
+                    YvalPred = obj.XValTilda * filter.weights;
                     
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred );
+                    
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %  Store performance matrices  %
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                    if obj.storeFullTrainPerf == 1                    
+
+                        % Compute predictions matrix
+                        YtrainPred = obj.rfMapper.Xrf * filter.weights;
+
+                        % Compute validation performance
+                        trainPerf = performanceMeasure( Ytrain , YtrainPred , trainIdx );                
+
+                        obj.trainPerformance(obj.rfMapper.currentParIdx , filter.currentParIdx) = trainPerf;
+                    end
+
+                    if obj.storeFullValPerf == 1
+                        obj.valPerformance(obj.rfMapper.currentParIdx , filter.currentParIdx) = valPerf;
+                    end
+
+                    if obj.storeFullTestPerf == 1                    
+
+                        obj.XTestTilda = obj.rfMapper.map(Xtest);
+
+                        % Compute predictions matrix
+                        YtestPred = obj.XTestTilda * filter.weights;
+
+                        % Compute validation performance
+                        testPerf = performanceMeasure( Ytest , YtestPred , testIdx );                
+
+                        obj.testPerformance(obj.rfMapper.currentParIdx , filter.currentParIdx) = testPerf;
+                    end
+
+                    %%%%%%%%%%%%%%%%%%%%
+                    % Store best model %
+                    %%%%%%%%%%%%%%%%%%%%
                     
                     if valPerf < valM
                         
@@ -139,7 +308,7 @@ classdef rfrls < algorithm
                         obj.mapParStar = obj.rfMapper.currentPar;
                         
                         %Update best filter parameter
-                        obj.filterParStar = obj.filter.currentPar;
+                        obj.filterParStar = filter.currentPar;
                         
                         % Update best mapped samples
                         obj.XrfStar = obj.rfMapper.Xrf;
@@ -159,7 +328,7 @@ classdef rfrls < algorithm
 %                             obj.Xmodel = Xtrain;
                             
                             % Update coefficients vector
-                            obj.w = obj.filter.weights;
+                            obj.w = filter.weights;
                         end
                     end
                 end
@@ -191,7 +360,7 @@ classdef rfrls < algorithm
             obj.rfMapper.omega = obj.rfOmegaStar;
             
             % Set best b vector
-            obj.rfMapper.omega = obj.rfOmegaStar;
+%             obj.rfMapper.omega = obj.rfOmegaStar;
             
             % Set best mapping parameters
             obj.rfMapper.currentPar = obj.mapParStar;
@@ -212,14 +381,14 @@ classdef rfrls < algorithm
                 % Normalization factors
                 numSamples = size(obj.XrfStar , 1);
                 
-                obj.filter.init( C  , obj.rfMapper.Xrf' * Ytr , numSamples);
-                obj.filter.compute(obj.filterParStar);
+                filter.init( C  , obj.rfMapper.Xrf' * Ytr , numSamples);
+                filter.compute(obj.filterParStar);
                 
 %                 % Update internal model samples matrix
 %                 obj.Xmodel = Xtr;
                 
                 % Update coefficients vector
-                obj.w = obj.filter.weights;
+                obj.w = filter.weights;
             end        
         end
         

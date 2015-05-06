@@ -1,6 +1,5 @@
 classdef randomFeaturesGaussianIncremental < randomFeatures
-    %NYSTROMUNIFORM Implementation of an integrated incremental Nystrom low-rank
-    %approximator/regularizer and Tikhonov regularizer.
+    % 
     %
     % Input parameters:
     % TO DO.

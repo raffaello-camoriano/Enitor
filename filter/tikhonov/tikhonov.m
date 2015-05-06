@@ -377,8 +377,10 @@ classdef tikhonov < filter
 %                 obj.currentPar = obj.filterParGuesses{obj.currentParIdx};
 %                 available = true;
 %             end
+%             length(obj.filterParGuesses)
             if length(obj.filterParGuesses) > obj.currentParIdx
                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentParIdx
                 obj.currentPar = obj.filterParGuesses(:,obj.currentParIdx);
                 available = true;
             end
