@@ -204,12 +204,12 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             else
                 tmpMapPar = obj.mapParGuesses;
             end
-
+            
             % Generate all possible parameters combinations
-            [p,q] = meshgrid(tmpNumRF, tmpMapPar);
-            tmp = [p(:) q(:)]';
+            [p,q] = meshgrid(tmpMapPar, tmpNumRF);
+            tmp = [q(:) p(:)]';
 %             obj.rng = num2cell(tmp , 1);
-            obj.rng = tmp;
+            obj.rng = tmp;            
 
         end
         
@@ -238,7 +238,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             % Incremental Update Rule %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            if obj.currentParIdx == 1
+            if (isempty(obj.prevPar) && obj.currentParIdx == 1) || (~isempty(obj.prevPar) && obj.currentPar(1) < obj.prevPar(1))
                 
                 %%% Initialization (i = 1)
                 

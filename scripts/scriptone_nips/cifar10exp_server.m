@@ -58,7 +58,7 @@ for k = 1:numRep
    % ds = Adult(7000,16282,'plusMinusOne');
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
-    ds = Cifar10(50000,10000,'plusMinusOne',0:9);
+    ds = Cifar10(5000,1000,'plusMinusOne',0:9);
 %     ds = Covertype(522910,58102,'plusOneMinusBalanced');
 %     ds = YearPredictionMSD(463715,51630);
     
