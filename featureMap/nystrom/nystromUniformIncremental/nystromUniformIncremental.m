@@ -163,11 +163,26 @@ classdef nystromUniformIncremental < nystrom
                 %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
 
                 % WARNING: Alternative to datasample below
+%                 nRows = size(obj.X,1); % number of rows
+%                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
+%                 rndIDX = randperm(nRows); 
+%                 samp = obj.X(rndIDX(1:nSample), :);   
+                
                 nRows = size(obj.X,1); % number of rows
                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
-                rndIDX = randperm(nRows); 
-                samp = obj.X(rndIDX(1:nSample), :);   
-
+%                 rndIDX = randperm(nRows); 
+%                 rndIDX = randperm(nSample);
+%                 rndIDX = mod( randperm(nSample) , nRows ) + 1;
+%                 rndIDX = randperm(nRows , nSample);
+%                 rndIDX = randi(nRows,1,nSample);
+                
+                rndIDX = [];
+                while length(rndIDX) < nSample
+                    rndIDX = [rndIDX , randperm(nRows , min( [ nSample , nRows , nSample - length(rndIDX) ] ) ) ];
+                end
+                
+                samp = obj.X(rndIDX, :);   
+                
                 % Compute squared distances  vector (D)
                 numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
                 D = zeros(1 , numDistMeas);
