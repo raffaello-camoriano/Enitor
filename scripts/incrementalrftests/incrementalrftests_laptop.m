@@ -257,7 +257,7 @@ for k = 1:numRep
 %     % incrementalnkrls_plots
 
 
-%     %% Batch Random Features RLS
+     %% Batch Random Features RLS
 % 
 %     map = @randomFeaturesGaussian;
 %     fil = @tikhonov;
@@ -319,28 +319,28 @@ for k = 1:numRep
 
     %% Fastfood Gaussian Kernel approx RLS
 
-    map = @fastfoodGaussian;
-    fil = @tikhonov;
-
-    filterParGuesses = logspace(-5,0,6);
-%     filterParGuesses = expKRLS.algo.filterParStar;
-    
-    alg =  ffrls(map , fil , 500 , 'numMapParGuesses' , 1 ,  ...
-                            'numMapParRangeSamples' , 1000 ,  ...
-                            'filterParGuesses', filterParGuesses , ...
-                            'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-                            'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf);
-                        
-    expFFRLS = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
-    expFFRLS.run();
-    expFFRLS.result
-
-    FFRLS_cumulative_training_time(k) = expFFRLS.time.train;
-    FFRLS_cumulative_testing_time(k) = expFFRLS.time.test;
-    FFRLS_cumulative_test_perf(k) = expFFRLS.result.perf;
-    
+%     map = @fastfoodGaussian;
+%     fil = @tikhonov;
+% 
+%     filterParGuesses = logspace(-5,0,6);
+% %     filterParGuesses = expKRLS.algo.filterParStar;
+%     
+%     alg =  ffrls(map , fil , 500 , 'numMapParGuesses' , 1 ,  ...
+%                             'numMapParRangeSamples' , 1000 ,  ...
+%                             'filterParGuesses', filterParGuesses , ...
+%                             'verbose' , 0 , ...
+%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                             'storeFullValPerf' , storeFullValPerf , ...
+%                             'storeFullTestPerf' , storeFullTestPerf);
+%                         
+%     expFFRLS = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
+%     expFFRLS.run();
+%     expFFRLS.result
+% 
+%     FFRLS_cumulative_training_time(k) = expFFRLS.time.train;
+%     FFRLS_cumulative_testing_time(k) = expFFRLS.time.test;
+%     FFRLS_cumulative_test_perf(k) = expFFRLS.result.perf;
+%     
     
 end
 

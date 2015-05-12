@@ -219,9 +219,9 @@ classdef incrementalNkrls < algorithm
             if ~isempty(obj.mapParGuesses)
                 argin = [argin , 'mapParGuesses' , full(obj.mapParGuesses)];
             end      
-            if ~isempty(obj.filterParGuesses)
-                argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
-            end           
+%             if ~isempty(obj.filterParGuesses)
+%                 argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
+%             end           
             if ~isempty(obj.numMapParRangeSamples)
                 argin = [argin , 'numMapParRangeSamples' , obj.numMapParRangeSamples];
             end     
@@ -250,6 +250,7 @@ classdef incrementalNkrls < algorithm
                 if ~isempty(obj.stoppingRule)
                     obj.stoppingRule.reset();
                 end
+                obj.nyMapper.filterParGuesses = obj.filterParGuesses(i);
                 
                 while obj.nyMapper.next()
 
@@ -266,7 +267,7 @@ classdef incrementalNkrls < algorithm
                     kernelVal.compute();
 
                     % Compute predictions matrix
-                    YvalPred = kernelVal.K * obj.nyMapper.alpha{i};
+                    YvalPred = kernelVal.K * obj.nyMapper.alpha{1};
 
                     % Compute validation performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
@@ -299,7 +300,7 @@ classdef incrementalNkrls < algorithm
                         kernelTrain.compute();
 
                         % Compute training predictions matrix
-                        YtrainPred = kernelTrain.K * obj.nyMapper.alpha{i};
+                        YtrainPred = kernelTrain.K * obj.nyMapper.alpha{1};
 
                         % Compute training performance
                         trainPerf = performanceMeasure( Ytrain , YtrainPred , trainIdx );
@@ -324,7 +325,7 @@ classdef incrementalNkrls < algorithm
                         kernelTest.compute();
 
                         % Compute scores
-                        YtestPred = kernelTest.K * obj.nyMapper.alpha{i};
+                        YtestPred = kernelTest.K * obj.nyMapper.alpha{1};
 
                         % Compute training performance
                         testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );
