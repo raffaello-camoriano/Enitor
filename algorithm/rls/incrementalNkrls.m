@@ -351,7 +351,7 @@ classdef incrementalNkrls < algorithm
                         obj.Xmodel = obj.nyMapper.Xs;
 
                         % Update coefficients vector
-                        obj.c = obj.nyMapper.alpha{i};
+                        obj.c = obj.nyMapper.alpha{1};
                     end
                 end
             end
