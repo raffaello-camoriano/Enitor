@@ -1,6 +1,6 @@
 setenv('LC_ALL','C');
 % addpath(genpath('.'));
-addpath('/home/rcamoriano/repos/Enitor');
+addpath(genpath('/home/iit.local/rcamoriano/repos/Enitor'));
  
 clearAllButBP;
 close all;
