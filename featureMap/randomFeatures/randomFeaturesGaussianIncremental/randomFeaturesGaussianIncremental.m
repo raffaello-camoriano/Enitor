@@ -173,8 +173,17 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 % WARNING: Alternative to datasample below
                 nRows = size(obj.X,1); % number of rows
                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
-                rndIDX = randperm(nRows); 
-                samp = obj.X(rndIDX(1:nSample), :);   
+%                 rndIDX = randperm(nRows); 
+%                 rndIDX = randperm(nSample);
+%                 rndIDX = mod( randperm(nSample) , nRows ) + 1;
+%                 rndIDX = randperm(nRows , nSample);
+%                 rndIDX = randi(nRows,1,nSample);
+                
+                rndIDX = [];
+                while length(rndIDX) < nSample
+                    rndIDX = [rndIDX , randperm(nRows , min( [ nSample , nRows , nSample - length(rndIDX) ] ) ) ];
+                end
+                samp = obj.X(rndIDX, :);   
 
                 % Compute squared distances  vector (D)
                 numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
@@ -204,12 +213,12 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             else
                 tmpMapPar = obj.mapParGuesses;
             end
-
+            
             % Generate all possible parameters combinations
-            [p,q] = meshgrid(tmpNumRF, tmpMapPar);
-            tmp = [p(:) q(:)]';
+            [p,q] = meshgrid(tmpMapPar, tmpNumRF);
+            tmp = [q(:) p(:)]';
 %             obj.rng = num2cell(tmp , 1);
-            obj.rng = tmp;
+            obj.rng = tmp;            
 
         end
         
@@ -238,7 +247,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             % Incremental Update Rule %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            if obj.currentParIdx == 1
+            if (isempty(obj.prevPar) && obj.currentParIdx == 1) || (~isempty(obj.prevPar) && obj.currentPar(1) < obj.prevPar(1))
                 
                 %%% Initialization (i = 1)
                 

@@ -189,7 +189,7 @@ classdef rfrls < algorithm
             if ~isempty(obj.verbose)
                 argin = [argin , 'verbose' , obj.verbose];
             end
-            obj.rfMapper = obj.mapType(Xtrain, Ytrain , obj.ntr , argin{:} );
+            obj.rfMapper = obj.mapType(Xtr, Ytr , obj.ntr , argin{:} );
             
             % mapper instantiation
 %             obj.rfMapper = obj.mapType(Xtrain , Ytrain , numel(trainIdx) , obj.numMapParGuesses , obj.numKerParRangeSamples , obj.maxNumRF);
@@ -198,9 +198,16 @@ classdef rfrls < algorithm
             
             valM = inf;     % Keeps track of the lowest validation error
             
-            % Full matrices for performance storage
-%             trainPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
-%             valPerformance = zeros(obj.kerParGuesses, obj.filterParGuesses);
+            % Full matrices for performance storage initialization
+            if obj.storeFullTrainPerf == 1
+                obj.trainPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+            end
+            if obj.storeFullValPerf == 1
+                obj.valPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+            end
+            if obj.storeFullTestPerf == 1
+                obj.testPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+            end
 
             while obj.rfMapper.next()
                 
@@ -209,21 +216,21 @@ classdef rfrls < algorithm
                 
                 % Get mapped samples according to the new map parameters
                 % combination
-%                 Xtrain = obj.rfMapper.Xrf(trainIdx,:);
-%                 Xval = obj.rfMapper.Xrf(valIdx,:);
+                Xtrain = obj.rfMapper.Xrf(trainIdx,:);
+                Xval = obj.rfMapper.Xrf(valIdx,:);
 %                 obj.rfMapper.Xrf;
-                obj.XValTilda = obj.rfMapper.map(Xval);
+%                 obj.XValTilda = obj.rfMapper.map(Xval);
                     
                     
                 % Compute covariance matrix of the training samples
-                C = obj.rfMapper.Xrf' * obj.rfMapper.Xrf;
+                C = Xtrain' * Xtrain;
                 
                 % Normalization factors
-                numSamples = size(obj.rfMapper.Xrf , 1);
+%                 numSamples = size(obj.rfMapper.Xrf , 1);
+                numSamples = size(Xtrain , 1);
                 
-%                 obj.filter = obj.filterType( C  , obj.rfMapper.Xrf' * Ytrain , numSamples ,  obj.numFilterParGuesses);
+%                 obj.filter = obj.filterType( C  , Xtrain' * Ytrain , numSamples ,  'numFilterParGuesses' ,  obj.numFilterParGuesses);
                 
-
                 argin = {};
                 if ~isempty(obj.filterParGuesses)
                     argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
@@ -234,22 +241,10 @@ classdef rfrls < algorithm
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
-                filter = obj.filterType( C, obj.rfMapper.Xrf' * Ytrain , numSamples , argin{:});
+                filter = obj.filterType( C, Xtrain' * Ytrain , numSamples , argin{:});
                                 
                 
                 obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
-                
-
-                % Full matrices for performance storage initialization
-                if obj.storeFullTrainPerf == 1
-                    obj.trainPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
-                end
-                if obj.storeFullValPerf == 1
-                    obj.valPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
-                end
-                if obj.storeFullTestPerf == 1
-                    obj.testPerformance = zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
-                end
                 
                 while filter.next()
                     

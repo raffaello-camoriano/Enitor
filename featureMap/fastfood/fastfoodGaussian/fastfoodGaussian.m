@@ -24,7 +24,7 @@ classdef fastfoodGaussian < fastfood
         % Constructor
         function obj = fastfoodGaussian(  X , Y , ntr , varargin)
             
-            obj.init(  X , Y , ntr , varargin)
+            obj.init(  X , Y , ntr , varargin);
         end
         
         % Initialization function
@@ -135,7 +135,7 @@ classdef fastfoodGaussian < fastfood
         function obj = range(obj)
                         
             % Range of the number of Random Fourier Features
-            tmpNumRF = round(linspace(1, obj.maxRank , obj.numRFParGuesses));   
+            tmpNumRF = obj.maxRank;   
            
             if isempty(obj.mapParGuesses)
                 % Compute max and min sigma guesses
@@ -148,8 +148,13 @@ classdef fastfoodGaussian < fastfood
                 % WARNING: Alternative to datasample below
                 nRows = size(obj.X,1); % number of rows
                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
-                rndIDX = randperm(nRows); 
-                samp = obj.X(rndIDX(1:nSample), :);   
+
+                rndIDX = [];
+                while length(rndIDX) < nSample
+                    rndIDX = [rndIDX , randperm(nRows , min( [ nSample , nRows , nSample - length(rndIDX) ] ) ) ];
+                end
+                
+                samp = obj.X(rndIDX(1:nSample), :);
 
                 % Compute squared distances  vector (D)
                 numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
@@ -159,10 +164,15 @@ classdef fastfoodGaussian < fastfood
                 end
                 D = sort(D);
 
-                firstPercentile = round(0.01 * numel(D) + 0.5);
-                minGuess = sqrt( D(firstPercentile));
-                maxGuess = sqrt( max(D) );
+%                 firstPercentile = round(0.01 * numel(D) + 0.5);
+%                 minGuess = sqrt( D(firstPercentile));
+%                 maxGuess = sqrt( max(D) );
 
+                fifthPercentile = round(0.05 * numel(D) + 0.5);
+                ninetyfifthPercentile = round(0.95 * numel(D) - 0.5);
+                minGuess = sqrt( D(fifthPercentile));
+                maxGuess = sqrt( D(ninetyfifthPercentile) );
+                
                 if minGuess <= 0
                     minGuess = eps;
                 end

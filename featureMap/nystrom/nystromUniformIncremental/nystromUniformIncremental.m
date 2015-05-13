@@ -40,50 +40,10 @@ classdef nystromUniformIncremental < nystrom
     end
     
     methods
-        % Constructor
-%         function obj = nystromUniformIncremental( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
-%             
-%             obj.init( X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose);
-%             
-%             warning('Kernel type set by default to "gaussian"');
-%             obj.kernelType = @gaussianKernel;
-%         end
         
         function obj = nystromUniformIncremental( X1 , X2 , ntr , varargin)
             obj.init( X1 , X2 , ntr , varargin);
         end
-        
-        % Initialization function
-%         function obj = init(obj , X , Y , ntr , numNysParGuesses , numMapParGuesses , filterParGuesses , numKerParRangeSamples , maxRank , fixedMapPar , verbose)
-%             
-%             obj.X = X;
-%             obj.Y = Y;
-%             obj.ntr =  ntr;
-%             obj.numKerParRangeSamples = numKerParRangeSamples;
-%             obj.d = size(X , 2);     
-%             obj.maxRank = maxRank;
-%             obj.fixedMapPar = fixedMapPar;
-%             obj.filterParGuesses = filterParGuesses;
-%             
-%             if ~isempty(fixedMapPar)
-%                 obj.numMapParGuesses = 1;
-%             else
-%                 obj.numMapParGuesses = numMapParGuesses;
-%             end
-%             
-%             obj.numNysParGuesses = numNysParGuesses;
-%             
-%             obj.verbose = 0;
-%             if verbose == 1
-%                 obj.verbose = 1;
-%             end
-%             
-%             % Compute range
-%             obj.range();
-%             obj.currentParIdx = 0;
-%             obj.currentPar = [];
-%             obj.prevPar = [];
-%         end
 
         function obj = init(obj , X , Y , ntr , varargin)
             
@@ -203,11 +163,26 @@ classdef nystromUniformIncremental < nystrom
                 %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
 
                 % WARNING: Alternative to datasample below
+%                 nRows = size(obj.X,1); % number of rows
+%                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
+%                 rndIDX = randperm(nRows); 
+%                 samp = obj.X(rndIDX(1:nSample), :);   
+                
                 nRows = size(obj.X,1); % number of rows
                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
-                rndIDX = randperm(nRows); 
-                samp = obj.X(rndIDX(1:nSample), :);   
-
+%                 rndIDX = randperm(nRows); 
+%                 rndIDX = randperm(nSample);
+%                 rndIDX = mod( randperm(nSample) , nRows ) + 1;
+%                 rndIDX = randperm(nRows , nSample);
+%                 rndIDX = randi(nRows,1,nSample);
+                
+                rndIDX = [];
+                while length(rndIDX) < nSample
+                    rndIDX = [rndIDX , randperm(nRows , min( [ nSample , nRows , nSample - length(rndIDX) ] ) ) ];
+                end
+                
+                samp = obj.X(rndIDX, :);   
+                
                 % Compute squared distances  vector (D)
                 numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
                 D = zeros(1 , numDistMeas);
@@ -237,11 +212,18 @@ classdef nystromUniformIncremental < nystrom
                 tmpMapPar = obj.mapParGuesses;
             end
 
+%             % Generate all possible parameters combinations
+%             [p,q] = meshgrid(tmpm, tmpMapPar);
+%             tmp = [p(:) q(:)]';
+% %             obj.rng = num2cell(tmp , 1);
+%             obj.rng = tmp;
+
             % Generate all possible parameters combinations
-            [p,q] = meshgrid(tmpm, tmpMapPar);
-            tmp = [p(:) q(:)]';
+            [p,q] = meshgrid(tmpMapPar, tmpm);
+            tmp = [q(:) p(:)]';
 %             obj.rng = num2cell(tmp , 1);
             obj.rng = tmp;
+
         end
         
         % Computes the squared distance matrix SqDistMat based on X1, X2
@@ -292,11 +274,11 @@ classdef nystromUniformIncremental < nystrom
             % Incremental Update Rule %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            if obj.currentParIdx == 1
+            if (isempty(obj.prevPar) && obj.currentParIdx == 1) || (~isempty(obj.prevPar) && obj.currentPar(1) < obj.prevPar(1))
                 
                 %%% Initialization (i = 1)
                 
-                % Preallocate calls of matrices 
+                % Preallocate cells of matrices 
                 
                 obj.M = cell(size(obj.filterParGuesses));
                 [obj.M{:,:}] = deal(zeros(obj.maxRank));
@@ -384,7 +366,6 @@ classdef nystromUniformIncremental < nystrom
             
             obj.currentParIdx = 0;
             obj.currentPar = [];
-        
         end
         
         % returns true if the next parameter combination is available and
@@ -405,7 +386,7 @@ classdef nystromUniformIncremental < nystrom
 %                 obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
 %                 available = true;
 %             end
-            if length(obj.rng) > obj.currentParIdx
+            if size(obj.rng,2) > obj.currentParIdx
                 obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
                 obj.currentPar = obj.rng(:,obj.currentParIdx);
