@@ -241,13 +241,21 @@ for k = 1:numRep
                             'storeFullValPerf' , storeFullValPerf , ...
                             'storeFullTestPerf' , storeFullTestPerf);
 
-    expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expNysInc.run();
-    expNysInc.result
+    alg.mapParStar = [26757 , 7];
+    alg.filterParStar = 1e-8;
+    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
 
-    NysInc_cumulative_training_time(k) = expNysInc.time.train;
-    NysInc_cumulative_testing_time(k) = expNysInc.time.test;
-    NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
+    YtePred = obj.algo.test(Xte);   
+      
+    perf = abs(ds.performanceMeasure( Yte , YtePred , ds.testIdx));
+
+%     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expNysInc.run();
+%     expNysInc.result
+% 
+%     NysInc_cumulative_training_time(k) = expNysInc.time.train;
+%     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
+%     NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
 
     % incrementalnkrls_plots
 
