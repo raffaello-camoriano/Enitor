@@ -1,14 +1,13 @@
 setenv('LC_ALL','C');
 % addpath(genpath('.'));
-addpath(genpath('/home/iit.local/rcamoriano/repos/Enitor'));
+addpath('/home/rcamoriano/repos/Enitor');
  
 clearAllButBP;
 close all;
 
 % Set experimental results relative directory name
-%resdir = 'scripts/incrementalrftests/plots/';
-resdir = '';
-%mkdir(resdir);
+resdir = 'scripts/incrementalrftests/plots/';
+mkdir(resdir);
 
 %% Initialization
 
@@ -216,39 +215,47 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 75;
+    numNysParGuesses = 10;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(0,-9,10);
-    filterParGuesses = 1e-9;
+    filterParGuesses = 1e-10;
 %     mapParGuesses = linspace(0.1 , 1 , 10);
-     mapParGuesses = linspace(4 , 8 , 10);
+%     mapParGuesses = linspace(0.3 , 0.1 , 10);
 
-     alg = incrementalNkrls(map , 30000 , ...
-                             'numNysParGuesses' , numNysParGuesses ,...
-                             'mapParGuesses' , mapParGuesses ,  ...
-                            'filterParGuesses', filterParGuesses , ...
-                             'verbose' , 0 , ...
-                             'storeFullTrainPerf' , storeFullTrainPerf , ...
-                             'storeFullValPerf' , storeFullValPerf , ...
-                             'storeFullTestPerf' , storeFullTestPerf);
+%     alg = incrementalNkrls(map , 1000 , ...
+%                             'numNysParGuesses' , numNysParGuesses ,...
+%                             'mapParGuesses' , mapParGuesses ,  ...
+%                             'filterParGuesses', filterParGuesses , ...
+%                             'verbose' , 0 , ...
+%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                             'storeFullValPerf' , storeFullValPerf , ...
+%                             'storeFullTestPerf' , storeFullTestPerf);
                         
-%    alg = incrementalNkrls(map , 3000 , ...
-%                            'numNysParGuesses' , numNysParGuesses ,...
-%                            'numMapParGuesses' , 10 ,  ...
-%                            'numMapParRangeSamples' , 10000 ,  ...
-%                            'filterParGuesses', filterParGuesses , ...
-%                            'verbose' , 0 , ...
-%                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-%                            'storeFullValPerf' , storeFullValPerf , ...
-%                            'storeFullTestPerf' , storeFullTestPerf);
+    alg = incrementalNkrls(map , 1000 , ...
+                            'numNysParGuesses' , numNysParGuesses ,...
+                            'numMapParGuesses' , 10 ,  ...
+                            'numMapParRangeSamples' , 10000 ,  ...
+                            'filterParGuesses', filterParGuesses , ...
+                            'verbose' , 0 , ...
+                            'storeFullTrainPerf' , storeFullTrainPerf , ...
+                            'storeFullValPerf' , storeFullValPerf , ...
+                            'storeFullTestPerf' , storeFullTestPerf);
 
-    expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expNysInc.run();
-    expNysInc.result
+    alg.mapParStar = [26757 , 7];
+    alg.filterParStar = 1e-8;
+    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
 
-    NysInc_cumulative_training_time(k) = expNysInc.time.train;
-    NysInc_cumulative_testing_time(k) = expNysInc.time.test;
-    NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
+    YtePred = obj.algo.test(Xte);   
+      
+    perf = abs(ds.performanceMeasure( Yte , YtePred , ds.testIdx));
+
+%     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expNysInc.run();
+%     expNysInc.result
+% 
+%     NysInc_cumulative_training_time(k) = expNysInc.time.train;
+%     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
+%     NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
 
     % incrementalnkrls_plots
 
@@ -302,9 +309,6 @@ for k = 1:numRep
     
     
 end
-
-%save('wspace.mat' , 'expNysInc' , '-v7.3');
-save('wspace.mat' , '-v7.3');
 
 %% Plots
 % 
