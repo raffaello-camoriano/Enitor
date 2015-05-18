@@ -98,20 +98,27 @@ classdef Covertype < dataset
         % Compute performance measure on the given outputs according to the
         function perf = performanceMeasure(obj , Y , Ypred , varargin)
             Ypred = obj.scoresToClasses(Ypred);
-            % RMSE
-%             perf = sqrt(sum((Y - Ypred).^2)/size(Y,1));
+%             RMSE
+%             perf = sqrt(sum(Y - Ypred).^2)/size(Y,1));
+            
+            diff = Y - Ypred;
+            sqDiff = diff .* diff;
+            sqSumDiff = sum(sqDiff,2);
+            eucNrmDiff = sqrt(sqSumDiff);
+            
+            perf = sqrt(sum(eucNrmDiff.^2)/size(Y,1));
             
 %             Ypred = obj.scoresToClasses(Ypred);
+% % 
+%             % Compute error rate
+%             numCorrect = 0;
+%             for i = 1:size(Y,1)
+%                 if sum(Y(i,:) == Ypred(i,:)) == size(Y,2)
+%                     numCorrect = numCorrect +1;
+%                 end
+%             end
 % 
-            % Compute error rate
-            numCorrect = 0;
-            for i = 1:size(Y,1)
-                if sum(Y(i,:) == Ypred(i,:)) == size(Y,2)
-                    numCorrect = numCorrect +1;
-                end
-            end
-
-            perf = 1 - (numCorrect / size(Y,1));     
+%             perf = 1 - (numCorrect / size(Y,1));     
 
 %                 C = transpose(bsxfun(@eq, Y', Ypred'));
 %                 D = sum(C,2);

@@ -342,7 +342,7 @@ classdef incrementalNkrls < algorithm
                         obj.mapParStar = obj.nyMapper.currentPar;
 
                         %Update best filter parameter
-                        obj.filterParStar = obj.nyMapper.filterParGuesses(i);
+                        obj.filterParStar = obj.nyMapper.filterParGuesses;
 
                         %Update best validation performance measurement
                         valM = valPerf;
