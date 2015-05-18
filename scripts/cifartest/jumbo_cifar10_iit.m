@@ -1,12 +1,12 @@
 setenv('LC_ALL','C');
 % addpath(genpath('.'));
-addpath('/home/rcamoriano/repos/Enitor');
+addpath(genpath('/home/iit.local/rcamoriano/repos/Enitor'));
  
 clearAllButBP;
 close all;
 
 % Set experimental results relative directory name
-resdir = 'scripts/incrementalrftests/plots/';
+resdir = '';
 mkdir(resdir);
 
 %% Initialization
@@ -243,11 +243,17 @@ for k = 1:numRep
 
     alg.mapParStar = [26757 , 7];
     alg.filterParStar = 1e-8;
-    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx,:));
 
-    YtePred = obj.algo.test(Xte);   
-      
-    perf = abs(ds.performanceMeasure( Yte , YtePred , ds.testIdx));
+    
+    tic
+    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx,:));
+    trainTime = toc;
+    
+    tic
+    YtePred = alg.test(ds.X(ds.testIdx,:));   
+    testTime = toc;
+    
+    perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
 
 %     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
 %     expNysInc.run();
@@ -309,6 +315,8 @@ for k = 1:numRep
     
     
 end
+
+save('wspace.mat' , '-v7.3');
 
 %% Plots
 % 
