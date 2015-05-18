@@ -216,14 +216,14 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 50;
+    numNysParGuesses = 75;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(0,-9,10);
-    filterParGuesses = 1e-10;
+    filterParGuesses = 1e-9;
 %     mapParGuesses = linspace(0.1 , 1 , 10);
-     mapParGuesses = linspace(6 , 12 , 10);
+     mapParGuesses = linspace(4 , 8 , 10);
 
-     alg = incrementalNkrls(map , 20000 , ...
+     alg = incrementalNkrls(map , 30000 , ...
                              'numNysParGuesses' , numNysParGuesses ,...
                              'mapParGuesses' , mapParGuesses ,  ...
                             'filterParGuesses', filterParGuesses , ...
