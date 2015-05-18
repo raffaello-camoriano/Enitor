@@ -60,7 +60,7 @@ for k = 1:numRep
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
 %     ds = Cifar10(5000,1000,'plusMinusOne',0:9);
-    ds = Cifar10(100,1000,'plusMinusOne',0:9);
+    ds = Cifar10(5000,1000,'plusMinusOne',0:9);
 %     ds = Covertype(522910,58102,'plusOneMinusBalanced');
 %     ds = YearPredictionMSD(463715,51630);
     
@@ -224,7 +224,7 @@ for k = 1:numRep
 %     mapParGuesses = linspace(0.1 , 1 , 10);
 %     mapParGuesses = linspace(0.3 , 0.1 , 10);
 
-    alg = nrls(map , fil , 800 , ...
+    alg = nrls(map , fil , 30000 , ...
                     'numNysParGuesses' , numNysParGuesses ,...
                     'numMapParGuesses' , 1 ,  ...
                     'numMapParRangeSamples' , 1 ,  ...
