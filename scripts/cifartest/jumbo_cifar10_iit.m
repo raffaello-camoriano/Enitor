@@ -243,7 +243,7 @@ for k = 1:numRep
 
     alg.mapParStar = [26757 , 7];
     alg.filterParStar = 1e-8;
-    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
+    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx,:));
 
     YtePred = obj.algo.test(Xte);   
       

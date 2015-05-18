@@ -226,17 +226,18 @@ classdef nrls < algorithm
                 kernelVal = obj.nyMapper.kernelType(Xval,obj.nyMapper.Xs, argin{:});
                 kernelVal.next();
                 kernelVal.compute();                
-                
-%                 if ~isempty(obj.filterParGuesses)
-%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
-%                 else
-%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, numSamples , 'numGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'verbose' , obj.verbose);
-%                 end                
+                          
                 if ~isempty(obj.filterParGuesses)
-                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
+                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
                 else
-                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'verbose' , obj.verbose);
+                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'verbose' , obj.verbose);
                 end
+                     
+%                 if ~isempty(obj.filterParGuesses)
+%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
+%                 else
+%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'verbose' , obj.verbose);
+%                 end
                 
                 while filter.next()
                     
@@ -331,6 +332,70 @@ classdef nrls < algorithm
                 display('Best filter hyperparameter(s):')
                 obj.filterParStar
             end
+        end
+
+        function justTrain(obj , Xtr , Ytr)
+                        
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            addRequired(p,'Xtr');
+            addRequired(p,'Ytr');   
+
+            % Parse function inputs
+            parse(p, Xtr , Ytr)
+            
+            obj.ntr = size(Xtr,1);
+            
+            % Initialize Nystrom Mapper
+            argin = {};
+            if ~isempty(obj.numNysParGuesses)
+                argin = [argin , 'numNysParGuesses' , 1];
+            end      
+            if ~isempty(obj.maxRank)
+                argin = [argin , 'maxRank' , obj.mapParStar(1)];
+            end      
+            if ~isempty(obj.mapParStar)
+                argin = [argin , 'mapParGuesses' , full(obj.mapParStar(2))];
+            end      
+%             if ~isempty(obj.filterParGuesses)
+%                 argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
+%             end           
+            if ~isempty(obj.verbose)
+                argin = [argin , 'verbose' , obj.verbose];
+            end
+            obj.nyMapper = obj.mapType(Xtr, 1 , [] ,[] , obj.mapParStar(1) , full(obj.mapParStar(2)) , obj.verbose);
+            obj.nyMapper.next();
+            obj.nyMapper.compute();
+            
+            if ~isempty(obj.filterParGuesses)
+                filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytr, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
+            else
+                filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytr, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'verbose' , obj.verbose);
+            end
+
+%                 if ~isempty(obj.filterParGuesses)
+%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
+%                 else
+%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'verbose' , obj.verbose);
+%                 end
+
+            filter.next();
+            
+            % Compute filter according to current hyperparameters
+            filter.compute();
+            
+            %%%%%%%%%%%%%%%%%%%%%%%
+            % Store trained model %
+            %%%%%%%%%%%%%%%%%%%%%%%
+                        
+            % Update internal model samples matrix
+            obj.Xmodel = obj.nyMapper.Xs;
+
+            % Update coefficients vector
+            obj.c = filter.weights;
+            
         end
         
         function Ypred = test( obj , Xte )
