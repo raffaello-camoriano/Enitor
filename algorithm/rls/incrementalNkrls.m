@@ -336,7 +336,7 @@ classdef incrementalNkrls < algorithm
                     %%%%%%%%%%%%%%%%%%%%
                     % Store best model %
                     %%%%%%%%%%%%%%%%%%%%
-                    if valPerf < valM
+%                     if valPerf < valM
 
                         % Update best kernel parameter combination
                         obj.mapParStar = obj.nyMapper.currentPar;
@@ -352,13 +352,13 @@ classdef incrementalNkrls < algorithm
 
                         % Update coefficients vector
                         obj.c = obj.nyMapper.alpha{1};
-                    end
+%                     end
                 end
             end
             
             % Free memory
-            obj.nyMapper.M = [];
-            obj.nyMapper.alpha = [];
+%             obj.nyMapper.M = [];
+%             obj.nyMapper.alpha = [];
             obj.nyMapper.Xs = [];
             
             if obj.verbose == 1
