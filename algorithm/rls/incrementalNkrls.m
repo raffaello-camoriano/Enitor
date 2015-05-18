@@ -336,7 +336,7 @@ classdef incrementalNkrls < algorithm
                     %%%%%%%%%%%%%%%%%%%%
                     % Store best model %
                     %%%%%%%%%%%%%%%%%%%%
-                    if valPerf < valM
+%                     if valPerf < valM
 
                         % Update best kernel parameter combination
                         obj.mapParStar = obj.nyMapper.currentPar;
@@ -352,13 +352,13 @@ classdef incrementalNkrls < algorithm
 
                         % Update coefficients vector
                         obj.c = obj.nyMapper.alpha{1};
-                    end
+%                     end
                 end
             end
             
             % Free memory
-            obj.nyMapper.M = [];
-            obj.nyMapper.alpha = [];
+%             obj.nyMapper.M = [];
+%             obj.nyMapper.alpha = [];
             obj.nyMapper.Xs = [];
             
             if obj.verbose == 1
@@ -371,6 +371,62 @@ classdef incrementalNkrls < algorithm
                 display('Best filter hyperparameter(s):')
                 obj.filterParStar
             end
+        end
+        
+        function justTrain(obj , Xtr , Ytr)
+                        
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            addRequired(p,'Xtr');
+            addRequired(p,'Ytr');   
+
+            % Parse function inputs
+            parse(p, Xtr , Ytr)
+            
+            obj.ntr = size(Xtr,1);
+            
+            % Initialize Nystrom Mapper
+            argin = {};
+            if ~isempty(obj.numNysParGuesses)
+                argin = [argin , 'numNysParGuesses' , 2];
+            end      
+            if ~isempty(obj.maxRank)
+                argin = [argin , 'maxRank' , obj.mapParStar(1)];
+            end      
+            if ~isempty(obj.mapParStar)
+                argin = [argin , 'mapParGuesses' , full(obj.mapParStar(2))];
+            end      
+%             if ~isempty(obj.filterParGuesses)
+%                 argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
+%             end           
+            if ~isempty(obj.verbose)
+                argin = [argin , 'verbose' , obj.verbose];
+            end
+            obj.nyMapper = obj.mapType(Xtr, Ytr , obj.ntr , argin{:} );
+%             obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
+            
+            obj.nyMapper.filterParGuesses = obj.filterParStar;    
+            obj.nyMapper.next();
+            obj.nyMapper.compute();
+            obj.nyMapper.next();
+            obj.nyMapper.compute();
+
+            %%%%%%%%%%%%%%%%%%%%%%%
+            % Store trained model %
+            %%%%%%%%%%%%%%%%%%%%%%%
+
+            % Update internal model samples matrix
+            obj.Xmodel = obj.nyMapper.Xs;
+
+            % Update coefficients vector
+            obj.c = obj.nyMapper.alpha{1};
+            
+            % Free memory
+            obj.nyMapper.M = [];
+            obj.nyMapper.alpha = [];
+            obj.nyMapper.Xs = [];
         end
         
         function Ypred = test( obj , Xte )

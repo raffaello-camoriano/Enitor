@@ -216,45 +216,53 @@ for k = 1:numRep
 
 
     %% Incremental Nystrom KRLS
-% 
-%     map = @nystromUniformIncremental;
-% 
-%     numNysParGuesses = 10;
-% %     numNysParGuesses = 1;
-% %     filterParGuesses = expKRLS.algo.filterParStar;
-%     filterParGuesses = logspace(0,-6,7);
-% %     filterParGuesses = logspace(-5,-8,40);
-% %     filterParGuesses = 1e-6;
-% 
-% %     mapParGuesses = linspace(0.1 , 0.3 , 10);
-% %     mapParGuesses = linspace(0.3 , 0.1 , 10);
-% % 
-% %     alg = incrementalNkrls(map , 800 , 'numNysParGuesses' , numNysParGuesses ,...
-% %                             'mapParGuesses' , mapParGuesses ,  ... 
-% %                             'filterParGuesses', filterParGuesses , ...
-% %                             'verbose' , 0 , ...
-% %                             'storeFullTrainPerf' , storeFullTrainPerf , ...
-% %                             'storeFullValPerf' , storeFullValPerf , ...
-% %                             'storeFullTestPerf' , storeFullTestPerf);
+
+    map = @nystromUniformIncremental;
+
+    numNysParGuesses = 10;
+%     numNysParGuesses = 1;
+%     filterParGuesses = expKRLS.algo.filterParStar;
+    filterParGuesses = logspace(0,-6,7);
+%     filterParGuesses = logspace(-5,-8,40);
+%     filterParGuesses = 1e-6;
+
+%     mapParGuesses = linspace(0.1 , 0.3 , 10);
+%     mapParGuesses = linspace(0.3 , 0.1 , 10);
 % 
 %     alg = incrementalNkrls(map , 800 , 'numNysParGuesses' , numNysParGuesses ,...
-%                             'numMapParGuesses' , 10 ,  ...
-%                             'numMapParRangeSamples' , 1000 ,  ...
+%                             'mapParGuesses' , mapParGuesses ,  ... 
 %                             'filterParGuesses', filterParGuesses , ...
 %                             'verbose' , 0 , ...
 %                             'storeFullTrainPerf' , storeFullTrainPerf , ...
 %                             'storeFullValPerf' , storeFullValPerf , ...
 %                             'storeFullTestPerf' , storeFullTestPerf);
+
+    alg = incrementalNkrls(map , 800 , 'numNysParGuesses' , numNysParGuesses ,...
+                            'numMapParGuesses' , 10 ,  ...
+                            'numMapParRangeSamples' , 1000 ,  ...
+                            'filterParGuesses', filterParGuesses , ...
+                            'verbose' , 0 , ...
+                            'storeFullTrainPerf' , storeFullTrainPerf , ...
+                            'storeFullValPerf' , storeFullValPerf , ...
+                            'storeFullTestPerf' , storeFullTestPerf);
+
+%     alg.mapParStar = [400 , 5];
+%     alg.filterParStar = 1e-8;
+%     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
 % 
-%     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-%     expNysInc.run();
-%     expNysInc.result
-% 
-%     NysInc_cumulative_training_time(k) = expNysInc.time.train;
-%     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
-%     NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
-% 
-%     % incrementalnkrls_plots
+%     YtePred = alg.test(ds.X(ds.testIdx,:));   
+%       
+%     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+
+    expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+    expNysInc.run();
+    expNysInc.result
+
+    NysInc_cumulative_training_time(k) = expNysInc.time.train;
+    NysInc_cumulative_testing_time(k) = expNysInc.time.test;
+    NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
+
+    % incrementalnkrls_plots
 
 
      %% Batch Random Features RLS

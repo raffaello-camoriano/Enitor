@@ -1,11 +1,12 @@
 setenv('LC_ALL','C');
-addpath(genpath('.'));
+% addpath(genpath('.'));
+addpath('/home/rcamoriano/repos/Enitor');
  
 clearAllButBP;
 close all;
 
 % Set experimental results relative directory name
-resdir = 'scripts/scriptone_nips/plots/';
+resdir = 'scripts/incrementalrftests/plots/';
 mkdir(resdir);
 
 %% Initialization
@@ -214,58 +215,25 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 20;
+    numNysParGuesses = 10;
 %     filterParGuesses = expKRLS.algo.filterParStar;
-    filterParGuesses = logspace(0,-9,10);
-%     filterParGuesses = 1e-8;
+%     filterParGuesses = logspace(0,-9,10);
+    filterParGuesses = 1e-10;
+%     mapParGuesses = linspace(0.1 , 1 , 10);
+%     mapParGuesses = linspace(0.3 , 0.1 , 10);
 
-    mapParGuesses = linspace(70,30,20);
-
-
-%     alg = incrementalNkrls(map , 10000 , ...
-%                              'numNysParGuesses' , numNysParGuesses ,...
-%                              'numMapParGuesses' , 20 ,  ...
-%                             'numMapParRangeSamples' , 10000 ,  ...
+%     alg = incrementalNkrls(map , 1000 , ...
+%                             'numNysParGuesses' , numNysParGuesses ,...
+%                             'mapParGuesses' , mapParGuesses ,  ...
 %                             'filterParGuesses', filterParGuesses , ...
 %                             'verbose' , 0 , ...
 %                             'storeFullTrainPerf' , storeFullTrainPerf , ...
 %                             'storeFullValPerf' , storeFullValPerf , ...
 %                             'storeFullTestPerf' , storeFullTestPerf);
-
-
-
-    alg = incrementalNkrls(map , 15000 , ...
+                        
+    alg = incrementalNkrls(map , 1000 , ...
                             'numNysParGuesses' , numNysParGuesses ,...
-                            'mapParGuesses' , mapParGuesses ,  ...
-                            'filterParGuesses', filterParGuesses , ...
-                            'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-                            'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf);
-                        
-                        
-    expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expNysInc.run();
-    expNysInc.result
-
-    NysInc_cumulative_training_time(k) = expNysInc.time.train;
-    NysInc_cumulative_testing_time(k) = expNysInc.time.test;
-    NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
-
-    % incrementalnkrls_plots
-
-
-    %% Incremental Random Features RLS
-
-    map = @randomFeaturesGaussianIncremental;
-
-    numRFParGuesses = 10;
-%     filterParGuesses = expKRLS.algo.filterParStar;
-%     filterParGuesses = logspace(0,-8,9);
-    filterParGuesses = logspace(-7,-9,6);
-    
-    alg = incrementalrfrls(map , 10000 , 'numRFParGuesses' , numRFParGuesses ,...
-                            'numMapParGuesses' , 20 ,  ...
+                            'numMapParGuesses' , 10 ,  ...
                             'numMapParRangeSamples' , 10000 ,  ...
                             'filterParGuesses', filterParGuesses , ...
                             'verbose' , 0 , ...
@@ -273,14 +241,50 @@ for k = 1:numRep
                             'storeFullValPerf' , storeFullValPerf , ...
                             'storeFullTestPerf' , storeFullTestPerf);
 
-                                              
-    expRFInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expRFInc.run();
-    expRFInc.result
+    alg.mapParStar = [26757 , 7];
+    alg.filterParStar = 1e-8;
+    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
 
-    RFInc_cumulative_training_time(k) = expRFInc.time.train;
-    RFInc_cumulative_testing_time(k) = expRFInc.time.test;
-    RFInc_cumulative_test_perf(k) = expRFInc.result.perf;
+    YtePred = obj.algo.test(Xte);   
+      
+    perf = abs(ds.performanceMeasure( Yte , YtePred , ds.testIdx));
+
+%     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expNysInc.run();
+%     expNysInc.result
+% 
+%     NysInc_cumulative_training_time(k) = expNysInc.time.train;
+%     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
+%     NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
+
+    % incrementalnkrls_plots
+
+
+%     %% Incremental Random Features RLS
+% 
+%     map = @randomFeaturesGaussianIncremental;
+% 
+%     numRFParGuesses = 10;
+% %     filterParGuesses = expKRLS.algo.filterParStar;
+%     filterParGuesses = logspace(0,-9,10);
+% %     filterParGuesses = 1e-8;
+%     
+%     alg = incrementalrfrls(map , 15000 , 'numRFParGuesses' , numRFParGuesses ,...
+%                             'numMapParGuesses' , 40 ,  ...
+%                             'numMapParRangeSamples' , 10000 ,  ...
+%                             'filterParGuesses', filterParGuesses , ...
+%                             'verbose' , 0 , ...
+%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                             'storeFullValPerf' , storeFullValPerf , ...
+%                             'storeFullTestPerf' , storeFullTestPerf);
+% 
+%     expRFInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expRFInc.run();
+%     expRFInc.result
+% 
+%     RFInc_cumulative_training_time(k) = expRFInc.time.train;
+%     RFInc_cumulative_testing_time(k) = expRFInc.time.test;
+%     RFInc_cumulative_test_perf(k) = expRFInc.result.perf;
 
     % incrementalrfrls_plots
 
@@ -293,7 +297,7 @@ for k = 1:numRep
 % %     filterParGuesses = logspace(-5,0,10);
 % %     filterParGuesses = expKRLS.algo.filterParStar;
 %     
-%     alg =  ffrls(map , 200 , fil,  1 , 7, 500);
+%     alg =  ffrls(map , 200 , fil,  1CEST , 7, 500);
 %                         
 %     expFFRLS = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
 %     expFFRLS.run();
@@ -307,91 +311,91 @@ for k = 1:numRep
 end
 
 %% Plots
-
-if numRep == 1
-    % Plot timing
-    % figure
-    % trainingTimes = [ expKRLS.result.time.train , expDACKRLS.result.time.train , expNysInc.result.time.train , expRFInc.result.time.train , expLandweber.result.time.train , expNuMethod.result.time.train expgdesc_kernel_hinge_loss.result.time.train , expFFRLS.result.time.train];
-    % bar(trainingTimes)
-    % set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM' , 'Fastfood'})
-    % title('Training & Model Selection Times')
-    % ylabel('Time (s)')
-    % 
-    % figure
-    % trainingTimes = [ expKRLS.result.time.test , expDACKRLS.result.time.test , expNysInc.result.time.test , expRFInc.result.time.test , expLandweber.result.time.test , expNuMethod.result.time.test , expgdesc_kernel_hinge_loss.result.time.test , expFFRLS.result.time.test];
-    % bar(trainingTimes)
-    % set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM', 'Fastfood'})
-    % title('Testing Times')
-    % ylabel('Time (s)')
-
-    figure
-    trainingTimes = [ expNysInc.result.time.train , expRFInc.result.time.train ];
-    bar(trainingTimes)
-    set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
-    title('Training & Model Selection Times')
-    ylabel('Time (s)')
-
-    figure
-    trainingTimes = [  expNysInc.result.time.test , expRFInc.result.time.test];
-    bar(trainingTimes)
-    set(gca,'XTickLabel',{'incNKRLS', 'incRFRLS'})
-    title('Testing Times')
-    ylabel('Time (s)')
-
-    %% Plot best test performances
-
-    figure
-    testPerf = [  expNysInc.result.perf, expRFInc.result.perf   ];
-    bar(testPerf)
-    set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
-    title('Best test performance')
-    ylabel('Relative Error')
-
-end
-
-if numRep > 1
-    % Plot timing
-    figure
-    trainingTimesM = [ mean(expKRLS.result.time.train) , mean(expNysInc.result.time.train) , mean(expRFInc.result.time.train , expLandweber.result.time.train) , mean(expNuMethod.result.time.train) , mean(expgdesc_kernel_hinge_loss.result.time.train)];   
-    trainingTimesSD = [ std(expKRLS.result.time.train , 2) ,  std(expNysInc.result.time.train , 2) ,  std(expRFInc.result.time.train , 2) ,  std(expLandweber.result.time.train , 2) ,  std(expNuMethod.result.time.train , 2) ,  std(expgdesc_kernel_hinge_loss.result.time.train , 2)];   
-    x = 1:numel(trainingTimesM);
-    bar(trainingTimesM)
-    hold on
-    errorbar(x,trainingTimesM,trainingTimesSD,'rx')
-    set(gca,'XTickLabel',{'KRLS',  'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM'})
-    title('Training & Model Selection Times')
-    ylabel('Time (s)')
-
-    figure
-    testTimesM = [ mean(expKRLS.result.time.test) , mean(expNysInc.result.time.test) , mean(expRFInc.result.time.test) , mean(expLandweber.result.time.test) , mean(expNuMethod.result.time.test) , mean(expgdesc_kernel_hinge_loss.result.time.test)];
-    testTimesSD = [ std(expKRLS.result.time.test , 2)  , std(expNysInc.result.time.test , 2)  , std(expRFInc.result.time.test , 2)  , std(expLandweber.result.time.test , 2)  , std(expNuMethod.result.time.test , 2)  , std(expgdesc_kernel_hinge_loss.result.time.test , 2) ];
-    x = 1:numel(testTimesM);
-    bar(testTimesM)
-    hold on
-    errorbar(x,testTimesM,testTimesSD,'rx')
-    set(gca,'XTickLabel',{'KRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM'})
-    title('Testing Times')
-    ylabel('Time (s)')
-    % Plot best test performances
-
-    figure
-    testPerfM = [ mean(expKRLS.result.perf ),  mean(expNysInc.result.perf), mean(expRFInc.result.perf ), mean(expLandweber.result.perf ), mean(expNuMethod.result.perf) , mean(expgdesc_kernel_hinge_loss.result.perf) ];
-    testPerfSD = [ std(expKRLS.result.perf  , 2), std( expNysInc.result.perf , 2), std(expRFInc.result.perf  , 2), std(expLandweber.result.perf  , 2), std(expNuMethod.result.perf  , 2), std(expgdesc_kernel_hinge_loss.result.perf  , 2)];
-    x = 1:numel(testPerfM);
-    bar(testPerfM)
-    hold on
-    errorbar(x,testPerfSD,testPerfSD,'rx')
-    set(gca,'XTickLabel',{'KRLS', 'incNKRLS', 'incRFRLS' , 'Landweber' , '\nu method', 'Subgr. SVM'})
-    title('Best test performance')
-    ylabel('Relative Error')
-
-end
-
-%%
 % 
-% plots
+% if numRep == 1
+%     % Plot timing
+%     % figure
+%     % trainingTimes = [ expKRLS.result.time.train , expDACKRLS.result.time.train , expNysInc.result.time.train , expRFInc.result.time.train , expLandweber.result.time.train , expNuMethod.result.time.train expgdesc_kernel_hinge_loss.result.time.train , expFFRLS.result.time.train];
+%     % bar(trainingTimes)
+%     % set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM' , 'Fastfood'})
+%     % title('Training & Model Selection Times')
+%     % ylabel('Time (s)')
+%     % 
+%     % figure
+%     % trainingTimes = [ expKRLS.result.time.test , expDACKRLS.result.time.test , expNysInc.result.time.test , expRFInc.result.time.test , expLandweber.result.time.test , expNuMethod.result.time.test , expgdesc_kernel_hinge_loss.result.time.test , expFFRLS.result.time.test];
+%     % bar(trainingTimes)
+%     % set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM', 'Fastfood'})
+%     % title('Testing Times')
+%     % ylabel('Time (s)')
 % 
-% %% Save figures
-figsdir = resdir;
-% % mkdir(figsdir);
-saveAllFigs
+%     figure
+%     trainingTimes = [ expNysInc.result.time.train , expRFInc.result.time.train ];
+%     bar(trainingTimes)
+%     set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
+%     title('Training & Model Selection Times')
+%     ylabel('Time (s)')
+% 
+%     figure
+%     trainingTimes = [  expNysInc.result.time.test , expRFInc.result.time.test];
+%     bar(trainingTimes)
+%     set(gca,'XTickLabel',{'incNKRLS', 'incRFRLS'})
+%     title('Testing Times')
+%     ylabel('Time (s)')
+% 
+%     %% Plot best test performances
+% 
+%     figure
+%     testPerf = [  expNysInc.result.perf, expRFInc.result.perf   ];
+%     bar(testPerf)
+%     set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
+%     title('Best test performance')
+%     ylabel('Relative Error')
+% 
+% end
+% 
+% if numRep > 1
+%     % Plot timing
+%     figure
+%     trainingTimesM = [ mean(expKRLS.result.time.train) , mean(expNysInc.result.time.train) , mean(expRFInc.result.time.train , expLandweber.result.time.train) , mean(expNuMethod.result.time.train) , mean(expgdesc_kernel_hinge_loss.result.time.train)];   
+%     trainingTimesSD = [ std(expKRLS.result.time.train , 2) ,  std(expNysInc.result.time.train , 2) ,  std(expRFInc.result.time.train , 2) ,  std(expLandweber.result.time.train , 2) ,  std(expNuMethod.result.time.train , 2) ,  std(expgdesc_kernel_hinge_loss.result.time.train , 2)];   
+%     x = 1:numel(trainingTimesM);
+%     bar(trainingTimesM)
+%     hold on
+%     errorbar(x,trainingTimesM,trainingTimesSD,'rx')
+%     set(gca,'XTickLabel',{'KRLS',  'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM'})
+%     title('Training & Model Selection Times')
+%     ylabel('Time (s)')
+% 
+%     figure
+%     testTimesM = [ mean(expKRLS.result.time.test) , mean(expNysInc.result.time.test) , mean(expRFInc.result.time.test) , mean(expLandweber.result.time.test) , mean(expNuMethod.result.time.test) , mean(expgdesc_kernel_hinge_loss.result.time.test)];
+%     testTimesSD = [ std(expKRLS.result.time.test , 2)  , std(expNysInc.result.time.test , 2)  , std(expRFInc.result.time.test , 2)  , std(expLandweber.result.time.test , 2)  , std(expNuMethod.result.time.test , 2)  , std(expgdesc_kernel_hinge_loss.result.time.test , 2) ];
+%     x = 1:numel(testTimesM);
+%     bar(testTimesM)
+%     hold on
+%     errorbar(x,testTimesM,testTimesSD,'rx')
+%     set(gca,'XTickLabel',{'KRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM'})
+%     title('Testing Times')
+%     ylabel('Time (s)')
+%     % Plot best test performances
+% 
+%     figure
+%     testPerfM = [ mean(expKRLS.result.perf ),  mean(expNysInc.result.perf), mean(expRFInc.result.perf ), mean(expLandweber.result.perf ), mean(expNuMethod.result.perf) , mean(expgdesc_kernel_hinge_loss.result.perf) ];
+%     testPerfSD = [ std(expKRLS.result.perf  , 2), std( expNysInc.result.perf , 2), std(expRFInc.result.perf  , 2), std(expLandweber.result.perf  , 2), std(expNuMethod.result.perf  , 2), std(expgdesc_kernel_hinge_loss.result.perf  , 2)];
+%     x = 1:numel(testPerfM);
+%     bar(testPerfM)
+%     hold on
+%     errorbar(x,testPerfSD,testPerfSD,'rx')
+%     set(gca,'XTickLabel',{'KRLS', 'incNKRLS', 'incRFRLS' , 'Landweber' , '\nu method', 'Subgr. SVM'})
+%     title('Best test performance')
+%     ylabel('Relative Error')
+% 
+% end
+% 
+% %%
+% % 
+% % plots
+% % 
+% % %% Save figures
+% figsdir = resdir;
+% % % mkdir(figsdir);
+% saveAllFigs
