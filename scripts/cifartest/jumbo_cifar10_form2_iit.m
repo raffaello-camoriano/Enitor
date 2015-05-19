@@ -299,7 +299,7 @@ for k = 1:numRep
 % %     filterParGuesses = logspace(-5,0,10);
 % %     filterParGuesses = expKRLS.algo.filterParStar;
 %     
-%     alg =  ffrls(map , 200 , fil,  1CEST , 7, 500);
+%     alg =  ffrls(map , 200 , fil,  1 , 7, 500);
 %                         
 %     expFFRLS = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
 %     expFFRLS.run();
@@ -311,6 +311,8 @@ for k = 1:numRep
     
     
 end
+
+save('wspace','-v7.3');
 
 %% Plots
 % 
