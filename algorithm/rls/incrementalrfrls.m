@@ -11,6 +11,9 @@ classdef incrementalrfrls < algorithm
         valPerformance      % Validation performance matrix
         trainPerformance    % Training performance matrix
         testPerformance     % Test performance matrix
+        storeFullTrainTime  % Store full training time matrix 1/0
+        trainTime           % Training time matrix
+
         
         ntr   % Number of training samples
         
@@ -111,6 +114,11 @@ classdef incrementalrfrls < algorithm
             defaultStoreFullTestPerf = 0;
             checkStoreFullTestPerf = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf);            
+            
+            % storeFullTrainTime  % Store full training time matrix 1/0
+            defaultStoreFullTrainTime = 0;
+            checkStoreFullTrainTime = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullTrainTime',defaultStoreFullTrainTime,checkStoreFullTrainTime);            
             
             % verbose             % 1: verbose; 0: silent      
             defaultVerbose = 0;
@@ -259,6 +267,9 @@ classdef incrementalrfrls < algorithm
             if obj.storeFullTestPerf == 1
                 obj.testPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
+            if obj.storeFullTrainTime == 1
+                obj.trainTime = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+            end
             
             for i = 1:size(obj.filterParGuesses,2)
                 
@@ -269,8 +280,18 @@ classdef incrementalrfrls < algorithm
                 
                 while obj.rfMapper.next()
 
+                    if obj.storeFullTrainTime == 1
+                        tic
+                    end
+                    
                     obj.rfMapper.compute();
 
+                    if obj.storeFullTrainTime == 1 && ((isempty(obj.rfMapper.prevPar) && obj.rfMapper.currentParIdx == 1) || (~isempty(obj.rfMapper.prevPar) && obj.rfMapper.currentPar(1) < obj.rfMapper.prevPar(1)))
+                        obj.trainTime(obj.rfMapper.currentParIdx , i) = toc;
+                    elseif obj.storeFullTrainTime == 1
+                        obj.trainTime(obj.rfMapper.currentParIdx , i) = obj.trainTime(obj.rfMapper.currentParIdx - 1 , i) + toc;
+                    end
+                    
                     % Initialize TrainVal kernel
                     argin = {};
                     argin = [argin , 'mapParGuesses' , obj.rfMapper.currentPar(2)];
@@ -318,13 +339,13 @@ classdef incrementalrfrls < algorithm
 
                     if obj.storeFullTestPerf == 1                    
 
-                        obj.XTestTilda = obj.rfMapper.map(Xtest);
+                        obj.XTestTilda = obj.rfMapper.map(Xte);
 
                         % Compute predictions matrix
                         YtestPred = obj.XTestTilda * obj.rfMapper.alpha{i};
 
                         % Compute validation performance
-                        testPerf = performanceMeasure( Ytest , YtestPred , testIdx );                
+                        testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );                
 
                         obj.testPerformance(obj.rfMapper.currentParIdx , i) = testPerf;
                     end

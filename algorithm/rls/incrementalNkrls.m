@@ -11,6 +11,9 @@ classdef incrementalNkrls < algorithm
         valPerformance      % Validation performance matrix
         trainPerformance    % Training performance matrix
         testPerformance     % Test performance matrix
+        storeFullTrainTime  % Store full training time matrix 1/0
+        trainTime           % Training time matrix
+
         
         ntr   % Number of training samples
         
@@ -107,6 +110,11 @@ classdef incrementalNkrls < algorithm
             defaultStoreFullTestPerf = 0;
             checkStoreFullTestPerf = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf);            
+            
+            % storeFullTrainTime   % Store full training time matrix 1/0
+            defaultStoreFullTrainTime = 0;
+            checkStoreFullTrainTime = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullTrainTime',defaultStoreFullTrainTime,checkStoreFullTrainTime);            
             
             % verbose             % 1: verbose; 0: silent      
             defaultVerbose = 0;
@@ -255,6 +263,9 @@ classdef incrementalNkrls < algorithm
             if obj.storeFullTestPerf == 1
                 obj.testPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
+            if obj.storeFullTrainTime == 1
+                obj.trainTime = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+            end
             
             for i = 1:size(obj.filterParGuesses,2)
                 
@@ -266,8 +277,18 @@ classdef incrementalNkrls < algorithm
                 
                 while obj.nyMapper.next()
 
+                    if obj.storeFullTrainTime == 1
+                        tic
+                    end
+                    
                     obj.nyMapper.compute();
-
+                    
+                    if obj.storeFullTrainTime == 1 && ((isempty(obj.nyMapper.prevPar) && obj.nyMapper.currentParIdx == 1) || (~isempty(obj.nyMapper.prevPar) && obj.nyMapper.currentPar(1) < obj.nyMapper.prevPar(1)))
+                        obj.trainTime(obj.nyMapper.currentParIdx , i) = toc;
+                    elseif obj.storeFullTrainTime == 1
+                        obj.trainTime(obj.nyMapper.currentParIdx , i) = obj.trainTime(obj.nyMapper.currentParIdx - 1 , i) + toc;
+                    end
+                    
                     % Initialize TrainVal kernel
                     argin = {};
                     argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];

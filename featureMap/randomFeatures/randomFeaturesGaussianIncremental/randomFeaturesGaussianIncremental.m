@@ -12,6 +12,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         
         numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
+        minRank                 % Minimum rank of the kernel approximation
         
         filterParGuesses        % Filter parameter guesses
         numFilterParGuesses     % Number of filter parameter guesses
