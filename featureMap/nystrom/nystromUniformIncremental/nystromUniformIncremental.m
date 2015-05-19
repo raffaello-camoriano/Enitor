@@ -8,6 +8,7 @@ classdef nystromUniformIncremental < nystrom
     
     properties
         numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
+        minRank                 % Minimum rank of the kernel approximation
         maxRank                 % Maximum rank of the kernel approximation
         
         filterParGuesses        % Filter parameter guesses
@@ -47,7 +48,6 @@ classdef nystromUniformIncremental < nystrom
 
         function obj = init(obj , X , Y , ntr , varargin)
             
-
             p = inputParser;
             
             %%%% Required parameters
@@ -70,6 +70,11 @@ classdef nystromUniformIncremental < nystrom
             defaultNumNysParGuesses = [];
             checkNumNysParGuesses = @(x) x > 0 ;            
             addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
+            
+            % minRank        % Minimum rank of the Nystrom approximation
+            defaultMinRank = [];
+            checkMinRank = @(x) x > 0 ;            
+            addParameter(p,'minRank',defaultMinRank,checkMinRank);        
             
             % maxRank        % Maximum rank of the Nystrom approximation
             defaultMaxRank = [];
@@ -117,6 +122,10 @@ classdef nystromUniformIncremental < nystrom
             end
             
             % Joint parameters parsing
+            if obj.minRank > obj.maxRank
+                error('The specified minimum rank of the kernel approximation is larger than the maximum one.');
+            end 
+            
             if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
                 error('either mapParGuesses or numMapParGuesses must be specified');
             end    
@@ -140,8 +149,10 @@ classdef nystromUniformIncremental < nystrom
 
             % Conditional range computation
 %             if isempty(obj.mapParGuesses)
+            if obj.verbose == 1
                 display('Computing range');
-                obj.range();    % Compute range
+            end
+            obj.range();    % Compute range
 %             end
             obj.currentParIdx = 0;
             obj.currentPar = [];
@@ -150,7 +161,7 @@ classdef nystromUniformIncremental < nystrom
         function obj = range(obj)
             
             % Compute range of number of sampled columns (m)
-            tmpm = round(linspace(1, obj.maxRank , obj.numNysParGuesses));   
+            tmpm = round(linspace(obj.minRank, obj.maxRank , obj.numNysParGuesses));   
 
             % Approximated kernel parameter range
             

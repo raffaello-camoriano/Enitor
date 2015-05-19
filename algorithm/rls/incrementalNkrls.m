@@ -14,13 +14,14 @@ classdef incrementalNkrls < algorithm
         
         ntr   % Number of training samples
         
-        % Kernel props
+        % Kernel/mapper props
         nyMapper
         mapType
         numMapParRangeSamples
         mapParGuesses
         mapParStar
         numMapParGuesses
+        minRank
         maxRank
         
         numNysParGuesses
@@ -63,6 +64,10 @@ classdef incrementalNkrls < algorithm
             %%%% Optional parameters
             % Optional parameter names:
 
+            defaultMinRank = 1;            
+            checkMinRank = @(x) x > 0 ;
+            addParameter(p,'minRank',defaultMinRank,checkMinRank);                    
+            
             defaultNumNysParGuesses = 1;            
             checkNumNysParGuesses = @(x) x > 0 ;
             addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
@@ -130,6 +135,10 @@ classdef incrementalNkrls < algorithm
             end
             
             %%% Joint parameters validation
+            
+            if obj.minRank > obj.maxRank
+                error('The specified minimum rank of the kernel approximation is larger than the maximum one.');
+            end 
             
             if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
                 error('either mapParGuesses or numMapParGuesses must be specified');
@@ -212,6 +221,9 @@ classdef incrementalNkrls < algorithm
             end      
             if ~isempty(obj.maxRank)
                 argin = [argin , 'maxRank' , obj.maxRank];
+            end      
+            if ~isempty(obj.minRank)
+                argin = [argin , 'minRank' , obj.minRank];
             end      
             if ~isempty(obj.numMapParGuesses)
                 argin = [argin , 'numMapParGuesses' , obj.numMapParGuesses];

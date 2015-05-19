@@ -26,6 +26,7 @@ classdef incrementalrfrls < algorithm
         mapParGuesses
         mapParStar
         numMapParGuesses
+        minRank
         maxRank
         
         numRFParGuesses
@@ -67,6 +68,10 @@ classdef incrementalrfrls < algorithm
             %%%% Optional parameters
             % Optional parameter names:
 
+            defaultMinRank = 1;            
+            checkMinRank = @(x) x > 0 ;
+            addParameter(p,'minRank',defaultMinRank,checkMinRank);                    
+            
             defaultNumRFParGuesses = 1;            
             checkNumRFParGuesses = @(x) x > 0 ;
             addParameter(p,'numRFParGuesses',defaultNumRFParGuesses,checkNumRFParGuesses);                    
@@ -134,6 +139,10 @@ classdef incrementalrfrls < algorithm
             end
             
             %%% Joint parameters validation
+            
+            if obj.minRank > obj.maxRank
+                error('The specified minimum rank of the kernel approximation is larger than the maximum one.');
+            end 
             
             if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
                 error('either mapParGuesses or numMapParGuesses must be specified');
@@ -216,6 +225,9 @@ classdef incrementalrfrls < algorithm
             end      
             if ~isempty(obj.maxRank)
                 argin = [argin , 'maxRank' , obj.maxRank];
+            end      
+            if ~isempty(obj.minRank)
+                argin = [argin , 'minRank' , obj.minRank];
             end      
             if ~isempty(obj.numMapParGuesses)
                 argin = [argin , 'numMapParGuesses' , obj.numMapParGuesses];
