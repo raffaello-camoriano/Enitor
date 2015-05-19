@@ -154,6 +154,38 @@ classdef rfrls < algorithm
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin)
             
+            p = inputParser;
+            
+            %%%% Required parameters
+            
+            checkRecompute = @(x) x == 1 || x == 0 ;
+            checkValidationPart = @(x) x > 0 && x < 1;
+            
+            addRequired(p,'Xtr');
+            addRequired(p,'Ytr');
+            addRequired(p,'performanceMeasure');
+            addRequired(p,'recompute',checkRecompute);
+            addRequired(p,'validationPart',checkValidationPart);
+            
+            %%%% Optional parameters
+            % Optional parameter names:
+            % Xte, Yte
+            
+            defaultXte = [];
+            checkXte = @(x) size(x,2) == size(Xtr,2);
+            
+            defaultYte = [];
+            checkYte = @(x) size(x,2) == size(Ytr,2);
+            
+            addParameter(p,'Xte',defaultXte,checkXte)
+            addParameter(p,'Yte',defaultYte,checkYte)
+
+            % Parse function inputs
+            parse(p, Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin{:})
+            
+            Xte = p.Results.Xte;
+            Yte = p.Results.Yte;
+            
             % Training/validation sets splitting
 %             shuffledIdx = randperm(size(Xtr,1));
             tmp1 = floor(size(Xtr,1)*(1-validationPart));
@@ -163,7 +195,7 @@ classdef rfrls < algorithm
             valIdx = tmp1 + 1 : size(Xtr,1); 
                 
             Xtrain = Xtr(trainIdx,:);
-            Xval = Xtr(valIdx,:);    
+%             Xval = Xtr(valIdx,:);    
             Ytrain = Ytr(trainIdx,:);
             Yval = Ytr(valIdx,:);    
             
@@ -256,7 +288,7 @@ classdef rfrls < algorithm
                     %valPerformance(i,j) = perfm( kernelVal.K * obj.filter.coeffs, Yval);
                     
                     % Compute predictions matrix
-                    YvalPred = obj.XValTilda * filter.weights;
+                    YvalPred = Xval * filter.weights;
                     
                     % Compute performance
                     valPerf = performanceMeasure( Yval , YvalPred );
@@ -282,13 +314,13 @@ classdef rfrls < algorithm
 
                     if obj.storeFullTestPerf == 1                    
 
-                        obj.XTestTilda = obj.rfMapper.map(Xtest);
+                        XTestTilda = obj.rfMapper.map(Xte);
 
                         % Compute predictions matrix
-                        YtestPred = obj.XTestTilda * filter.weights;
+                        YtestPred = XTestTilda * filter.weights;
 
                         % Compute validation performance
-                        testPerf = performanceMeasure( Ytest , YtestPred , testIdx );                
+                        testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );                
 
                         obj.testPerformance(obj.rfMapper.currentParIdx , filter.currentParIdx) = testPerf;
                     end
