@@ -72,7 +72,7 @@ classdef nystromUniformIncremental < nystrom
             addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
             
             % minRank        % Minimum rank of the Nystrom approximation
-            defaultMinRank = [];
+            defaultMinRank = 1;
             checkMinRank = @(x) x > 0 ;            
             addParameter(p,'minRank',defaultMinRank,checkMinRank);        
             
