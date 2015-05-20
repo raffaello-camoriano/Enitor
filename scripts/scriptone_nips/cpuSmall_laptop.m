@@ -10,7 +10,7 @@ mkdir(resdir);
 
 %% Initialization
 
-numRep = 1;
+numRep = 10;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
 storeFullTestPerf = 1;
@@ -53,6 +53,11 @@ RFInc_cumulative_test_perf = zeros(numRep,1);
 RFBat_cumulative_test_perf = zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_test_perf= zeros(numRep,1);
 FFRLS_cumulative_test_perf = zeros(numRep,1);
+
+% incremental nystrom storage vars
+
+nysTrainTime = [];
+nysTestPerformance = [];
 
 for k = 1:numRep
 
@@ -264,7 +269,10 @@ for k = 1:numRep
 
     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
     expNysInc.run();
-    expNysInc.result
+%     expNysInc.result
+
+    nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
+    nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
 
     NysInc_cumulative_training_time(k) = expNysInc.time.train;
     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
@@ -335,43 +343,43 @@ for k = 1:numRep
 %     expRFInc.result
 
 
-    map = @randomFeaturesGaussianIncremental;
-
-    numRFParGuesses = 1;
-    
-    filterParGuesses = 1e-7;
-%     filterParGuesses = 100;
-%     filterParGuesses = 2^(-5);
-%     filterParGuesses = logspace(0,-8,9);
-
-%     mapParGuesses = linspace(0.1 , 10 , 10);
-%     mapParGuesses = 0.561;
-    mapParGuesses = 4;
-    
-    maxRankVec = 100:100:1000;
-    
-    rfTrainTime = [];
-    rfTestPerformance = [];
-    
-    for maxRank = maxRankVec
-    
-        alg = incrementalrfrls(map , maxRank , ...
-                                'numRFParGuesses' , numRFParGuesses ,...
-                                'mapParGuesses' , mapParGuesses ,  ...
-                                'filterParGuesses', filterParGuesses , ...
-                                'verbose' , 0 , ...
-                                'storeFullTrainPerf' , storeFullTrainPerf , ...
-                                'storeFullValPerf' , storeFullValPerf , ...
-                                'storeFullTestPerf' , storeFullTestPerf, ...
-                                'storeFullTrainTime' , storeFullTrainTime);
-
-        expRFInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-        expRFInc.run();
-
-        rfTrainTime = [rfTrainTime , expRFInc.algo.trainTime];
-        rfTestPerformance = [rfTestPerformance , expRFInc.algo.testPerformance];
-
-    end
+%     map = @randomFeaturesGaussianIncremental;
+% 
+%     numRFParGuesses = 1;
+%     
+%     filterParGuesses = 1e-7;
+% %     filterParGuesses = 100;
+% %     filterParGuesses = 2^(-5);
+% %     filterParGuesses = logspace(0,-8,9);
+% 
+% %     mapParGuesses = linspace(0.1 , 10 , 10);
+% %     mapParGuesses = 0.561;
+%     mapParGuesses = 4;
+%     
+%     maxRankVec = 100:100:1000;
+%     
+%     rfTrainTime = [];
+%     rfTestPerformance = [];
+%     
+%     for maxRank = maxRankVec
+%     
+%         alg = incrementalrfrls(map , maxRank , ...
+%                                 'numRFParGuesses' , numRFParGuesses ,...
+%                                 'mapParGuesses' , mapParGuesses ,  ...
+%                                 'filterParGuesses', filterParGuesses , ...
+%                                 'verbose' , 0 , ...
+%                                 'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                                 'storeFullValPerf' , storeFullValPerf , ...
+%                                 'storeFullTestPerf' , storeFullTestPerf, ...
+%                                 'storeFullTrainTime' , storeFullTrainTime);
+% 
+%         expRFInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%         expRFInc.run();
+% 
+%         rfTrainTime = [rfTrainTime , expRFInc.algo.trainTime];
+%         rfTestPerformance = [rfTestPerformance , expRFInc.algo.testPerformance];
+% 
+%     end
 % 
 %     RFInc_cumulative_training_time(k) = expRFInc.time.train;
 %     RFInc_cumulative_testing_time(k) = expRFInc.time.test;
@@ -416,8 +424,9 @@ if numRep == 1
     hold on
     plot(expNysInc.algo.trainTime , expNysInc.algo.testPerformance , 'Marker' , 'diamond')
 %     plot(expRFInc.algo.trainTime , expRFInc.algo.testPerformance , 'Marker' , 'square')
-    plot(rfTrainTime , rfTestPerformance , 'Marker' , 'square')
-    ylabel('Test RMSE')
+%     plot(rfTrainTime , rfTestPerformance , 'Marker' , 'square')
+%     boxplot(nysTestPerformance ,median(nysTrainTime) ,  'plotstyle','compact')
+    ylabeboxplotl('Test RMSE')
     xlabel('Training time (s)')
     legend('Inc Nys','RKS')
     
@@ -425,6 +434,17 @@ end
 
 if numRep > 1
     
+    % Plot timing + perf
+
+    figure
+    hold on
+%     plot(expNysInc.algo.trainTime , expNysInc.algo.testPerformance , 'Marker' , 'diamond')
+%     plot(expRFInc.algo.trainTime , expRFInc.algo.testPerformance , 'Marker' , 'square')
+%     plot(rfTrainTime , rfTestPerformance , 'Marker' , 'square')
+    boxplot(nysTestPerformance , median(nysTrainTime) ,  'plotstyle' , 'compact' , 'positions' , median(nysTrainTime))
+    ylabel('Test RMSE')
+    xlabel('Training time (s)')
+    legend('Inc Nys','RKS')
     
     
 end

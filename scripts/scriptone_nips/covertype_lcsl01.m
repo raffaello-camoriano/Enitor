@@ -10,7 +10,7 @@ resdir = '';
 
 %% Initialization
 
-numRep = 1;
+numRep = 10;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
 storeFullTestPerf = 1;
@@ -53,6 +53,11 @@ RFInc_cumulative_test_perf = zeros(numRep,1);
 RFBat_cumulative_test_perf = zeros(numRep,1);
 gdesc_kernel_hinge_loss_cumulative_test_perf= zeros(numRep,1);
 FFRLS_cumulative_test_perf = zeros(numRep,1);
+
+% incremental nystrom storage vars
+
+nysTrainTime = [];
+nysTestPerformance = [];
 
 for k = 1:numRep
 
@@ -246,7 +251,10 @@ for k = 1:numRep
 
     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
     expNysInc.run();
-    expNysInc.result
+%     expNysInc.result
+
+    nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
+    nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
 
     NysInc_cumulative_training_time(k) = expNysInc.time.train;
     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
@@ -349,6 +357,7 @@ for k = 1:numRep
     
 end
 
+
 %% Plots
 
 if numRep == 1
@@ -359,16 +368,32 @@ if numRep == 1
     hold on
     plot(expNysInc.algo.trainTime , expNysInc.algo.testPerformance , 'Marker' , 'diamond')
 %     plot(expRFInc.algo.trainTime , expRFInc.algo.testPerformance , 'Marker' , 'square')
-    ylabel('Test RMSE')
+%     plot(rfTrainTime , rfTestPerformance , 'Marker' , 'square')
+%     boxplot(nysTestPerformance ,median(nysTrainTime) ,  'plotstyle','compact')
+    ylabeboxplotl('Test RMSE')
     xlabel('Training time (s)')
+    legend('Inc Nys','RKS')
     
 end
 
 if numRep > 1
     
+    % Plot timing + perf
+
+    figure
+    hold on
+%     plot(expNysInc.algo.trainTime , expNysInc.algo.testPerformance , 'Marker' , 'diamond')
+%     plot(expRFInc.algo.trainTime , expRFInc.algo.testPerformance , 'Marker' , 'square')
+%     plot(rfTrainTime , rfTestPerformance , 'Marker' , 'square')
+    boxplot(nysTestPerformance , median(nysTrainTime) ,  'plotstyle' , 'compact' , 'positions' , median(nysTrainTime))
+    ylabel('Test RMSE')
+    xlabel('Training time (s)')
+    legend('Inc Nys','RKS')
     
     
 end
+
+
 
 %%
 % % 
