@@ -45,7 +45,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         function obj = randomFeaturesGaussianIncremental( X , Y , ntr , varargin)
             obj.init( X , Y , ntr , varargin);
         end
-        
+
         function obj = init(obj , X , Y , ntr , varargin)
             
             p = inputParser;
@@ -149,8 +149,10 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
 
             % Conditional range computation
 %             if isempty(obj.mapParGuesses)
+            if obj.verbose == 1
                 display('Computing range');
-                obj.range();    % Compute range
+            end
+            obj.range();    % Compute range
 %             end
             obj.currentParIdx = 0;
             obj.currentPar = [];
@@ -193,8 +195,9 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 while length(rndIDX) < nSample
                     rndIDX = [rndIDX , randperm(nRows , min( [ nSample , nRows , nSample - length(rndIDX) ] ) ) ];
                 end
+                
                 samp = obj.X(rndIDX, :);   
-
+                
                 % Compute squared distances  vector (D)
                 numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
                 D = zeros(1 , numDistMeas);
@@ -206,12 +209,12 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
 %                 firstPercentile = round(0.01 * numel(D) + 0.5);
 %                 minGuess = sqrt( D(firstPercentile));
 %                 maxGuess = sqrt( max(D) );
-                
+
                 fifthPercentile = round(0.05 * numel(D) + 0.5);
                 ninetyfifthPercentile = round(0.95 * numel(D) - 0.5);
                 minGuess = sqrt( D(fifthPercentile));
-                maxGuess = sqrt( D(ninetyfifthPercentile) );                
-
+                maxGuess = sqrt( D(ninetyfifthPercentile) );
+                
                 if minGuess <= 0
                     minGuess = eps;
                 end
@@ -228,7 +231,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             [p,q] = meshgrid(tmpMapPar, tmpNumRF);
             tmp = [q(:) p(:)]';
 %             obj.rng = num2cell(tmp , 1);
-            obj.rng = tmp;            
+            obj.rng = tmp;
 
         end
         
@@ -261,7 +264,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 
                 %%% Initialization (i = 1)
                 
-                % Preallocate calls of matrices 
+                % Preallocate cells of matrices
                 
                 obj.M = cell(size(obj.filterParGuesses));
                 [obj.M{:,:}] = deal(zeros(obj.maxRank));
@@ -274,17 +277,29 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
 
                 % cos(wx+b) mapping
                 V =  obj.X * obj.omega + repmat(obj.b , size(obj.X,1) , 1);
-                A = sqrt( 2 / chosenPar(1) ) * cos(V);
-%                 A = A/sqrt(obj.ntr);
+                A = sqrt( 2 / chosenPar(1) ) * cos(V) /sqrt(obj.ntr);
+
 
                 % Set Xrf_2
                 obj.Xrf = A;
 
+                Aty = A' * obj.Y/sqrt(obj.ntr);
+
                 for i = 1:size(obj.filterParGuesses,2)
+                    
                     % D_1
-                    D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
+                    tA = full(A' * A );
+                    [U, S] = eig((tA + tA')/2);
+                    ds = diag(S);
+                    ids = double(ds>0);
+                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+                    
+%                     D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
+                    
                     % alpha_2
-                    obj.alpha{i} = 	D * (A' * obj.Y / sqrt(obj.ntr));
+                    obj.alpha{i} = 	D * Aty;
+
+                    
                     % M_2
                     obj.M{i}(1:chosenPar(1), 1:chosenPar(1)) = D;
                 end
@@ -302,7 +317,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 
                 % cos(wx+b) mapping
                 V =  obj.X * newOmega + repmat(newB , size(obj.X,1) , 1);
-                A = sqrt( 2 / chosenPar(1) ) * cos(V);
+                A = sqrt( 2 / chosenPar(1) ) * cos(V) /sqrt(obj.ntr);
                 
                 % Update B_(t)
                 B = obj.Xrf' * A;
@@ -317,27 +332,17 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 for i = 1:size(obj.filterParGuesses,2)
 
                     MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
-                    
                     tA = full(A' * A - B' * MB);
-                    [U, S] = eig((tA + tA')/2);                    
-                    
-                    
-%                     [U, S] = eig(full(A' * A - B' * MB));
+                    [U, S] = eig((tA + tA')/2);
                     ds = diag(S);
                     ids = double(ds>0);
                     D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
-                    
-%                     ds = (ds>0).*ds;    % Set eigenvalues < 0 for numerical reasons to 0
-%                     ds = real((ds>0).*ds);    % Set eigenvalues < 0 for numerical reasons to 0
-%                     U = real(U);
-%                     D = U * diag(1./(ds + obj.filterParGuesses(i))) * U';
-
                     MBD = MB * D;
-
                     df = B' * obj.alpha{i} - Aty;
                     obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
                     obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
                   
+                    %%%%%%%
                     obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
                     obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
@@ -355,10 +360,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         
         function [omega , b] = generateProj(obj , mapPar)
 
-%             obj.omega =  randn(obj.d, mapPar(1)) / mapPar(2) ;
-%             obj.b =  rand(1,mapPar(1))* 2 * pi;
-
-            omega =  randn(obj.d, mapPar(1)) / mapPar(2) ;
+            omega =  randn(obj.d, mapPar(1)) / mapPar(2);
             b =  rand(1,mapPar(1))* 2 * pi;
         end
 

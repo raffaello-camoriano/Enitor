@@ -111,7 +111,7 @@ classdef incrementalNkrls < algorithm
             checkStoreFullTestPerf = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf);            
             
-            % storeFullTrainTime   % Store full training time matrix 1/0
+            % storeFullTrainTime  % Store full training time matrix 1/0
             defaultStoreFullTrainTime = 0;
             checkStoreFullTrainTime = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTrainTime',defaultStoreFullTrainTime,checkStoreFullTrainTime);            

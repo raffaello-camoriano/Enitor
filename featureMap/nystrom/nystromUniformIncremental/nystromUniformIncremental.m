@@ -42,8 +42,8 @@ classdef nystromUniformIncremental < nystrom
     
     methods
         
-        function obj = nystromUniformIncremental( X1 , X2 , ntr , varargin)
-            obj.init( X1 , X2 , ntr , varargin);
+        function obj = nystromUniformIncremental( X , Y , ntr , varargin)
+            obj.init( X , Y , ntr , varargin);
         end
 
         function obj = init(obj , X , Y , ntr , varargin)
@@ -289,7 +289,7 @@ classdef nystromUniformIncremental < nystrom
                 
                 %%% Initialization (i = 1)
                 
-                % Preallocate cells of matrices 
+                % Preallocate cells of matrices
                 
                 obj.M = cell(size(obj.filterParGuesses));
                 [obj.M{:,:}] = deal(zeros(obj.maxRank));
@@ -303,7 +303,7 @@ classdef nystromUniformIncremental < nystrom
                 obj.computeSqDistMat(obj.X , obj.Xs);
                 
                 A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2))/sqrt(obj.ntr);
-%                 A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2))/sqrt(obj.s);
+
                 
                 % Set C_2
                 obj.C = A;
@@ -323,7 +323,7 @@ classdef nystromUniformIncremental < nystrom
                     
                     % alpha_2
                     obj.alpha{i} = 	D * Aty;
-%                     obj.alpha{i} = 	D * (A' * obj.Y / sqrt(obj.s));
+
                     
                     % M_2
                     obj.M{i}(1:chosenPar(1), 1:chosenPar(1)) = D;
@@ -346,8 +346,7 @@ classdef nystromUniformIncremental < nystrom
                 end
                 
                 A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2))/sqrt(obj.ntr);
-%                 A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2))/sqrt(obj.s);
-                
+
                 % Update B_(t)
                 B = obj.C' * A;
                 
@@ -355,7 +354,6 @@ classdef nystromUniformIncremental < nystrom
                 obj.C = [obj.C A];
                 
                 Aty = A' * obj.Y/sqrt(obj.ntr);
-%                 Aty = A' * obj.Y/sqrt(obj.s);
                 
                 % for cycle implementation
                 
@@ -372,10 +370,6 @@ classdef nystromUniformIncremental < nystrom
                     obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
                     obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
                   
-                    % debug
-                    
-%                     MBprev = MB;
-                    
                     %%%%%%%
                     obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
                     obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
@@ -389,6 +383,7 @@ classdef nystromUniformIncremental < nystrom
             
             obj.currentParIdx = 0;
             obj.currentPar = [];
+        
         end
         
         % returns true if the next parameter combination is available and
