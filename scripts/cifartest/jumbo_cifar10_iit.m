@@ -242,7 +242,7 @@ for k = 1:numRep
                             'storeFullValPerf' , storeFullValPerf , ...
                             'storeFullTestPerf' , storeFullTestPerf);
 
-    alg.mapParStar = [26757 , 7];
+    alg.mapParStar = [30000 , 7];
     alg.filterParStar = 1e-8;
 
     
