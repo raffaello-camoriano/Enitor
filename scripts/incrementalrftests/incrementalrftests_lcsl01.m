@@ -229,7 +229,7 @@ for k = 1:numRep
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
                             'storeFullTestPerf' , storeFullTestPerf);
-                        
+                         
     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
     expNysInc.run();
     expNysInc.result

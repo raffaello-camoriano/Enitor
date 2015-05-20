@@ -37,7 +37,7 @@ for i = 1:numRep
     
     for k = 1:numel(numNysParGuessesVec)
 
-        display([ 'Steps: ', num2str(k)])
+        display([ 'Steps: ', num2str(numNysParGuessesVec(k))])
     
         % Incremental Nystrom KRLS
 
@@ -66,7 +66,7 @@ for i = 1:numRep
 end
 
 
-if numRep == 1
+if numRep > 1
 
     figure
     hold on
