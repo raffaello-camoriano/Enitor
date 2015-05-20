@@ -5,7 +5,7 @@ clearAllButBP;
 close all;
 
 % Set experimental results relative directory name
-resdir = 'scripts/incrementalrftests/plots/';
+resdir = '';
 mkdir(resdir);
 
 %% Initialization
@@ -221,8 +221,8 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-%     numNysParGuesses = 10;
-    numNysParGuesses = 1;
+    numNysParGuesses = 10;
+%     numNysParGuesses = 1;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(0,-8,9);
 %     filterParGuesses = logspace(-5,-8,40);
@@ -230,8 +230,8 @@ for k = 1:numRep
 %     filterParGuesses = 2^(-5);
 
 %     mapParGuesses = linspace(0.1 , 0.3 , 10);
-    mapParGuesses = 0.561;
-%     mapParGuesses = 4;
+%     mapParGuesses = 0.561;
+    mapParGuesses = 0.9;
     
 
     alg = incrementalNkrls(map , 1000 , ...
@@ -275,40 +275,69 @@ for k = 1:numRep
 
      %% Batch Random Features RLS
 
-    map = @randomFeaturesGaussian;
-    fil = @tikhonov;
-
-    
-        filterParGuesses = 1e-7;
-%         filterParGuesses = 2^(-5);
-
-    %     mapParGuesses = linspace(0.1 , 10 , 10);
-%         mapParGuesses = 0.561;
-        mapParGuesses = 4;
-
-    alg = rfrls(map , fil , 1000 , ...
-                                'mapParGuesses' , mapParGuesses ,  ...
-                                'filterParGuesses', filterParGuesses , ...
-                                'verbose' , 0 , ...
-                                'storeFullTrainPerf' , storeFullTrainPerf , ...
-                                'storeFullValPerf' , storeFullValPerf , ...
-                                'storeFullTestPerf' , storeFullTestPerf);
-
-    expRFBat = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expRFBat.run();
-    expRFBat.result
-
-    RFBat_cumulative_training_time(k) = expRFBat.time.train;
-    RFBat_cumulative_testing_time(k) = expRFBat.time.test;
-    RFBat_cumulative_test_perf(k) = expRFBat.result.perf;
+%     map = @randomFeaturesGaussian;
+%     fil = @tikhonov;
+% 
+%     
+%         filterParGuesses = 1e-7;
+% %         filterParGuesses = 2^(-5);
+% 
+%     %     mapParGuesses = linspace(0.1 , 10 , 10);
+% %         mapParGuesses = 0.561;
+%         mapParGuesses = 4;
+% 
+%     alg = rfrls(map , fil , 1000 , ...
+%                                 'mapParGuesses' , mapParGuesses ,  ...
+%                                 'filterParGuesses', filterParGuesses , ...
+%                                 'verbose' , 0 , ...
+%                                 'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                                 'storeFullValPerf' , storeFullValPerf , ...
+%                                 'storeFullTestPerf' , storeFullTestPerf);
+% 
+%     expRFBat = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expRFBat.run();
+%     expRFBat.result
+% 
+%     RFBat_cumulative_training_time(k) = expRFBat.time.train;
+%     RFBat_cumulative_testing_time(k) = expRFBat.time.test;
+%     RFBat_cumulative_test_perf(k) = expRFBat.result.perf;
 
     % incrementalrfrls_plots
 
     %% Incremental Random Features RLS
 
+%     map = @randomFeaturesGaussianIncremental;
+% 
+%     numRFParGuesses = 10;
+%     
+%     filterParGuesses = 1e-7;
+% %     filterParGuesses = 100;
+% %     filterParGuesses = 2^(-5);
+% %     filterParGuesses = logspace(0,-8,9);
+% 
+% %     mapParGuesses = linspace(0.1 , 10 , 10);
+% %     mapParGuesses = 0.561;
+%     mapParGuesses = 4;
+%     
+%     alg = incrementalrfrls(map , 1000 , ...
+%                             'minRank' , 100 , ...
+%                             'numRFParGuesses' , numRFParGuesses ,...
+%                             'mapParGuesses' , mapParGuesses ,  ...
+%                             'filterParGuesses', filterParGuesses , ...
+%                             'verbose' , 0 , ...
+%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                             'storeFullValPerf' , storeFullValPerf , ...
+%                             'storeFullTestPerf' , storeFullTestPerf, ...
+%                             'storeFullTrainTime' , storeFullTrainTime);
+% 
+%     expRFInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expRFInc.run();
+%     expRFInc.result
+
+
     map = @randomFeaturesGaussianIncremental;
 
-    numRFParGuesses = 10;
+    numRFParGuesses = 1;
     
     filterParGuesses = 1e-7;
 %     filterParGuesses = 100;
@@ -319,24 +348,34 @@ for k = 1:numRep
 %     mapParGuesses = 0.561;
     mapParGuesses = 4;
     
-    alg = incrementalrfrls(map , 1000 , ...
-                            'minRank' , 100 , ...
-                            'numRFParGuesses' , numRFParGuesses ,...
-                            'mapParGuesses' , mapParGuesses ,  ...
-                            'filterParGuesses', filterParGuesses , ...
-                            'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-                            'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf, ...
-                            'storeFullTrainTime' , storeFullTrainTime);
+    maxRankVec = 100:100:1000;
+    
+    rfTrainTime = [];
+    rfTestPerformance = [];
+    
+    for maxRank = maxRankVec
+    
+        alg = incrementalrfrls(map , maxRank , ...
+                                'numRFParGuesses' , numRFParGuesses ,...
+                                'mapParGuesses' , mapParGuesses ,  ...
+                                'filterParGuesses', filterParGuesses , ...
+                                'verbose' , 0 , ...
+                                'storeFullTrainPerf' , storeFullTrainPerf , ...
+                                'storeFullValPerf' , storeFullValPerf , ...
+                                'storeFullTestPerf' , storeFullTestPerf, ...
+                                'storeFullTrainTime' , storeFullTrainTime);
 
-    expRFInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expRFInc.run();
-    expRFInc.result
+        expRFInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+        expRFInc.run();
 
-    RFInc_cumulative_training_time(k) = expRFInc.time.train;
-    RFInc_cumulative_testing_time(k) = expRFInc.time.test;
-    RFInc_cumulative_test_perf(k) = expRFInc.result.perf;
+        rfTrainTime = [rfTrainTime , expRFInc.algo.trainTime];
+        rfTestPerformance = [rfTestPerformance , expRFInc.algo.testPerformance];
+
+    end
+% 
+%     RFInc_cumulative_training_time(k) = expRFInc.time.train;
+%     RFInc_cumulative_testing_time(k) = expRFInc.time.test;
+%     RFInc_cumulative_test_perf(k) = expRFInc.result.perf;
 
 %     % incrementalrfrls_plots
 
@@ -376,9 +415,11 @@ if numRep == 1
     figure
     hold on
     plot(expNysInc.algo.trainTime , expNysInc.algo.testPerformance , 'Marker' , 'diamond')
-    plot(expRFInc.algo.trainTime , expRFInc.algo.testPerformance , 'Marker' , 'square')
+%     plot(expRFInc.algo.trainTime , expRFInc.algo.testPerformance , 'Marker' , 'square')
+    plot(rfTrainTime , rfTestPerformance , 'Marker' , 'square')
     ylabel('Test RMSE')
     xlabel('Training time (s)')
+    legend('Inc Nys','RKS')
     
 end
 
