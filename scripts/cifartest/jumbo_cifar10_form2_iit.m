@@ -59,6 +59,7 @@ for k = 1:numRep
    % ds = Adult(7000,16282,'plusMinusOne');
 %     ds = Adult(2000,16282,'plusMinusOne');
 %     ds = Adult(2500,16282,'plusMinusOne');
+%     ds = Cifar10(5000,1000,'plusMinusOne',0:9);
     ds = Cifar10(5000,1000,'plusMinusOne',0:9);
 %     ds = Covertype(522910,58102,'plusOneMinusBalanced');
 %     ds = YearPredictionMSD(463715,51630);
@@ -213,38 +214,32 @@ for k = 1:numRep
 
     %% Incremental Nystrom KRLS
 
-    map = @nystromUniformIncremental;
+    map = @nystromUniform;
+    fil = @tikhonov;
 
-    numNysParGuesses = 10;
+    numNysParGuesses = 1;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(0,-9,10);
     filterParGuesses = 1e-10;
 %     mapParGuesses = linspace(0.1 , 1 , 10);
 %     mapParGuesses = linspace(0.3 , 0.1 , 10);
 
-%     alg = incrementalNkrls(map , 1000 , ...
-%                             'numNysParGuesses' , numNysParGuesses ,...
-%                             'mapParGuesses' , mapParGuesses ,  ...
-%                             'filterParGuesses', filterParGuesses , ...
-%                             'verbose' , 0 , ...
-%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
-%                             'storeFullValPerf' , storeFullValPerf , ...
-%                             'storeFullTestPerf' , storeFullTestPerf);
-                        
-    alg = incrementalNkrls(map , 1000 , ...
-                            'numNysParGuesses' , numNysParGuesses ,...
-                            'numMapParGuesses' , 10 ,  ...
-                            'numMapParRangeSamples' , 10000 ,  ...
-                            'filterParGuesses', filterParGuesses , ...
-                            'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-                            'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf);
+    alg = nrls(map , fil , 30000 , ...
+                    'numNysParGuesses' , numNysParGuesses ,...
+                    'numMapParGuesses' , 1 ,  ...
+                    'numMapParRangeSamples' , 1 ,  ...
+                    'filterParGuesses', filterParGuesses , ...
+                    'verbose' , 0 , ...
+                    'storeFullTrainPerf' , storeFullTrainPerf , ...
+                    'storeFullValPerf' , storeFullValPerf , ...
+                    'storeFullTestPerf' , storeFullTestPerf);
 
-    alg.mapParStar = [26757 , 7];
-    alg.filterParStar = 1e-8;
+%     alg.mapParStar = [800 , 7];
+%     alg.filterParStar = 1e-8;    
 
-    
+    alg.mapParStar = [30000 , 7];
+    alg.filterParStar = 1e-10;
+
     tic
     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx,:));
     trainTime = toc;
@@ -254,6 +249,7 @@ for k = 1:numRep
     testTime = toc;
     
     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+
 
 %     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
 %     expNysInc.run();
@@ -303,7 +299,7 @@ for k = 1:numRep
 % %     filterParGuesses = logspace(-5,0,10);
 % %     filterParGuesses = expKRLS.algo.filterParStar;
 %     
-%     alg =  ffrls(map , 200 , fil,  1CEST , 7, 500);
+%     alg =  ffrls(map , 200 , fil,  1 , 7, 500);
 %                         
 %     expFFRLS = experiment(alg , ds , 1 , true , saveResult , 'nm' , resdir , 0);
 %     expFFRLS.run();
@@ -316,7 +312,7 @@ for k = 1:numRep
     
 end
 
-save('wspace.mat' , '-v7.3');
+save('wspace','-v7.3');
 
 %% Plots
 % 

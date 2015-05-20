@@ -12,6 +12,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         
         numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         maxRank                 % Maximum rank of the kernel approximation
+        minRank                 % Minimum rank of the kernel approximation
         
         filterParGuesses        % Filter parameter guesses
         numFilterParGuesses     % Number of filter parameter guesses
@@ -70,7 +71,12 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             checkNumRFParGuesses = @(x) x > 0 ;            
             addParameter(p,'numRFParGuesses',defaultNumRFParGuesses,checkNumRFParGuesses);                    
             
-            % maxRank        % Maximum rank of the Nystrom approximation
+            % minRank        % Minimum rank of the RF approximation
+            defaultMinRank = [];
+            checkMinRank = @(x) x > 0 ;            
+            addParameter(p,'minRank',defaultMinRank,checkMinRank);        
+            
+            % maxRank        % Maximum rank of the RF approximation
             defaultMaxRank = [];
             checkMaxRank = @(x) x > 0 ;            
             addParameter(p,'maxRank',defaultMaxRank,checkMaxRank);        
@@ -116,6 +122,10 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             end
             
             % Joint parameters parsing
+            if obj.minRank > obj.maxRank
+                error('The specified minimum rank of the kernel approximation is larger than the maximum one.');
+            end 
+            
             if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
                 error('either mapParGuesses or numMapParGuesses must be specified');
             end    
@@ -160,7 +170,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         function obj = range(obj)
                         
             % Range of the number of Random Fourier Features
-            tmpNumRF = round(linspace(1, obj.maxRank , obj.numRFParGuesses));   
+            tmpNumRF = round(linspace(obj.minRank, obj.maxRank , obj.numRFParGuesses));   
            
             if isempty(obj.mapParGuesses)
                 % Compute max and min sigma guesses
