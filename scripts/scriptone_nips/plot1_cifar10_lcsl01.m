@@ -10,8 +10,7 @@ resdir = '';
 mkdir(resdir);
 
 %% Initialization
-
-numRep = 1;
+numRep = 5;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
 storeFullTestPerf = 0;
@@ -55,6 +54,7 @@ FFRLS_cumulative_test_perf = zeros(numRep,1);
 
 nysTrainTime = [];
 nysTestPerformance = [];
+nysValPerformance = [];
 
 for k = 1:numRep
 
@@ -349,7 +349,7 @@ if numRep == 1
         figure
         hold on
         plot( expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM), expNysInc.algo.valPerformance(startIdxM:endIdxM) , 'Marker' , 'diamond')
-        title('Validation Error for \sigma = ' , num2str(sigma))
+        title(['Validation Error for \sigma = ' , num2str(sigma)])
         ylabel('Validation error')
         xlabel('m')
     end
@@ -367,7 +367,7 @@ if numRep > 1
         figure
         hold on
         boxplot(nysValPerformance(:,startIdxM:endIdxM) , expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM) ,  'plotstyle' , 'compact')
-        title('Validation Error for \sigma = ' , num2str(sigma))
+        title(['Validation Error for \sigma = ' , num2str(sigma)])
         ylabel('Validation error')
         xlabel('m')
     end
