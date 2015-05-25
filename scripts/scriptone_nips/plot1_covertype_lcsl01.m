@@ -11,7 +11,7 @@ mkdir(resdir);
 
 %% Initialization
 
-numRep = 1;
+numRep = 5;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
 storeFullTestPerf = 0;
@@ -226,7 +226,7 @@ for k = 1:numRep
 %     filterParGuesses = logspace(0,-9,10);
     filterParGuesses = 1e-9;
 %     mapParGuesses = linspace(0.1 , 1 , 10);
-    mapParGuesses = [1.4 2.5 4];
+    mapParGuesses = [1 1.4 2 2.5 4];
 
     alg = incrementalNkrls(map , 5000 , ...
                             'minRank' , 100 , ...
@@ -349,7 +349,7 @@ if numRep == 1
         figure
         hold on
         plot( expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM), expNysInc.algo.valPerformance(startIdxM:endIdxM) , 'Marker' , 'diamond')
-        title('Validation Error for \sigma = ' , num2str(sigma))
+        title(['Validation Error for \sigma = ' , num2str(sigma)])
         ylabel('Validation error')
         xlabel('m')
     end
