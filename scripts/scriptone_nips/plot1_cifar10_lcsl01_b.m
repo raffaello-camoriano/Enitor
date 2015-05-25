@@ -343,124 +343,33 @@ if numRep == 1
    
     % Plot perf
 
-    for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
+    for i = 1:size(expNysInc.algo.filterParGuesses,2)
         
-        endIdxM = startIdxM + numNysParGuesses - 1;
-        sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
+        lambda = expNysInc.algo.filterParGuesses(i);
         
         figure
         hold on
-        plot( expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM), expNysInc.algo.valPerformance(startIdxM:endIdxM) , 'Marker' , 'diamond')
-        title(['Validation Error for \sigma = ' , num2str(sigma)])
+        plot( expNysInc.algo.mapParGuesses(1,1:numNysParGuesses), expNysInc.algo.valPerformance(i,1:numNysParGuesses) , 'Marker' , 'diamond')
+        title(['Validation Error for \lambda = ' , num2str(lambda)])
         ylabel('Validation error')
         xlabel('m')
     end
 end
 
-if numRep > 1
-    
-    % Plot perf
-
-    for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
-        
-        endIdxM = startIdxM + numNysParGuesses - 1;
-        sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
-        
-        figure
-        hold on
-        boxplot(nysValPerformance(:,startIdxM:endIdxM) , expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM) ,  'plotstyle' , 'compact')
-        title(['Validation Error for \sigma = ' , num2str(sigma)])
-        ylabel('Validation error')
-        xlabel('m')
-    end
-end
-
-
-%
-% if numRep == 1
-%     % Plot timing
-%     % figure
-%     % trainingTimes = [ expKRLS.result.time.train , expDACKRLS.result.time.train , expNysInc.result.time.train , expRFInc.result.time.train , expLandweber.result.time.train , expNuMethod.result.time.train expgdesc_kernel_hinge_loss.result.time.train , expFFRLS.result.time.train];
-%     % bar(trainingTimes)
-%     % set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM' , 'Fastfood'})
-%     % title('Training & Model Selection Times')
-%     % ylabel('Time (s)')
-%     % 
-%     % figure
-%     % trainingTimes = [ expKRLS.result.time.test , expDACKRLS.result.time.test , expNysInc.result.time.test , expRFInc.result.time.test , expLandweber.result.time.test , expNuMethod.result.time.test , expgdesc_kernel_hinge_loss.result.time.test , expFFRLS.result.time.test];
-%     % bar(trainingTimes)
-%     % set(gca,'XTickLabel',{'KRLS', 'DACKRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM', 'Fastfood'})
-%     % title('Testing Times')
-%     % ylabel('Time (s)')
-% 
-%     figure
-%     trainingTimes = [ expNysInc.result.time.train , expRFInc.result.time.train ];
-%     bar(trainingTimes)
-%     set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
-%     title('Training & Model Selection Times')
-%     ylabel('Time (s)')
-% 
-%     figure
-%     trainingTimes = [  expNysInc.result.time.test , expRFInc.result.time.test];
-%     bar(trainingTimes)
-%     set(gca,'XTickLabel',{'incNKRLS', 'incRFRLS'})
-%     title('Testing Times')
-%     ylabel('Time (s)')
-% 
-%     %% Plot best test performances
-% 
-%     figure
-%     testPerf = [  expNysInc.result.perf, expRFInc.result.perf   ];
-%     bar(testPerf)
-%     set(gca,'XTickLabel',{ 'incNKRLS', 'incRFRLS' })
-%     title('Best test performance')
-%     ylabel('Relative Error')
-% 
-% end
-% 
 % if numRep > 1
-%     % Plot timing
-%     figure
-%     trainingTimesM = [ mean(expKRLS.result.time.train) , mean(expNysInc.result.time.train) , mean(expRFInc.result.time.train , expLandweber.result.time.train) , mean(expNuMethod.result.time.train) , mean(expgdesc_kernel_hinge_loss.result.time.train)];   
-%     trainingTimesSD = [ std(expKRLS.result.time.train , 2) ,  std(expNysInc.result.time.train , 2) ,  std(expRFInc.result.time.train , 2) ,  std(expLandweber.result.time.train , 2) ,  std(expNuMethod.result.time.train , 2) ,  std(expgdesc_kernel_hinge_loss.result.time.train , 2)];   
-%     x = 1:numel(trainingTimesM);
-%     bar(trainingTimesM)
-%     hold on
-%     errorbar(x,trainingTimesM,trainingTimesSD,'rx')
-%     set(gca,'XTickLabel',{'KRLS',  'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method' , 'Subgr. SVM'})
-%     title('Training & Model Selection Times')
-%     ylabel('Time (s)')
+%     
+%     % Plot perf
 % 
-%     figure
-%     testTimesM = [ mean(expKRLS.result.time.test) , mean(expNysInc.result.time.test) , mean(expRFInc.result.time.test) , mean(expLandweber.result.time.test) , mean(expNuMethod.result.time.test) , mean(expgdesc_kernel_hinge_loss.result.time.test)];
-%     testTimesSD = [ std(expKRLS.result.time.test , 2)  , std(expNysInc.result.time.test , 2)  , std(expRFInc.result.time.test , 2)  , std(expLandweber.result.time.test , 2)  , std(expNuMethod.result.time.test , 2)  , std(expgdesc_kernel_hinge_loss.result.time.test , 2) ];
-%     x = 1:numel(testTimesM);
-%     bar(testTimesM)
-%     hold on
-%     errorbar(x,testTimesM,testTimesSD,'rx')
-%     set(gca,'XTickLabel',{'KRLS', 'incNKRLS', 'incRFRLS', 'Landweber' , '\nu method', 'Subgr. SVM'})
-%     title('Testing Times')
-%     ylabel('Time (s)')
-%     % Plot best test performances
-% 
-%     figure
-%     testPerfM = [ mean(expKRLS.result.perf ),  mean(expNysInc.result.perf), mean(expRFInc.result.perf ), mean(expLandweber.result.perf ), mean(expNuMethod.result.perf) , mean(expgdesc_kernel_hinge_loss.result.perf) ];
-%     testPerfSD = [ std(expKRLS.result.perf  , 2), std( expNysInc.result.perf , 2), std(expRFInc.result.perf  , 2), std(expLandweber.result.perf  , 2), std(expNuMethod.result.perf  , 2), std(expgdesc_kernel_hinge_loss.result.perf  , 2)];
-%     x = 1:numel(testPerfM);
-%     bar(testPerfM)
-%     hold on
-%     errorbar(x,testPerfSD,testPerfSD,'rx')
-%     set(gca,'XTickLabel',{'KRLS', 'incNKRLS', 'incRFRLS' , 'Landweber' , '\nu method', 'Subgr. SVM'})
-%     title('Best test performance')
-%     ylabel('Relative Error')
-% 
+%     for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
+%         
+%         endIdxM = startIdxM + numNysParGuesses - 1;
+%         sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
+%         
+%         figure
+%         hold on
+%         boxplot(nysValPerformance(:,startIdxM:endIdxM) , expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM) ,  'plotstyle' , 'compact')
+%         title(['Validation Error for \sigma = ' , num2str(sigma)])
+%         ylabel('Validation error')
+%         xlabel('m')
+%     end
 % end
-% 
-% %%
-% % 
-% % plots
-% % 
-% % %% Save figures
-% figsdir = resdir;
-% % % mkdir(figsdir);
-% saveAllFigs
