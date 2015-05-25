@@ -55,6 +55,7 @@ FFRLS_cumulative_test_perf = zeros(numRep,1);
 
 nysTrainTime = [];
 nysTestPerformance = [];
+nysValPerformance = [];
 
 for k = 1:numRep
 
