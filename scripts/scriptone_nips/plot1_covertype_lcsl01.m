@@ -366,11 +366,16 @@ if numRep > 1
         sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
         
         figure
-        hold on
+%         hold on
         boxplot(nysValPerformance(:,startIdxM:endIdxM) , expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM) ,  'plotstyle' , 'compact')
-        title('Validation Error for \sigma = ' , num2str(sigma))
+        title(['Validation Error for \sigma = ' num2str(sigma)])
         ylabel('Validation error')
         xlabel('m')
+        
+        pause(1)
+%         prompt = 'ciao';
+%         x = input(prompt);        
+%         hold off
     end
 end
 
