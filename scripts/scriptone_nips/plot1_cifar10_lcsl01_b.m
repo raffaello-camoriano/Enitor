@@ -1,7 +1,7 @@
 setenv('LC_ALL','C');
 addpath(genpath('.'));
 % addpath(genpath('/home/iit.local/rcamoriano/repos/Enitor'));
- 
+
 clearAllButBP;
 close all;
 
@@ -349,7 +349,7 @@ if numRep == 1
         
         figure
         hold on
-        plot( expNysInc.algo.mapParGuesses(1,1:numNysParGuesses), expNysInc.algo.valPerformance(i,1:numNysParGuesses) , 'Marker' , 'diamond')
+        plot( expNysInc.algo.mapParGuesses(1,1:numNysParGuesses), expNysInc.algo.valPerformance(1:numNysParGuesses,i) , 'Marker' , 'diamond')
         title(['Validation Error for \lambda = ' , num2str(lambda)])
         ylabel('Validation error')
         xlabel('m')
