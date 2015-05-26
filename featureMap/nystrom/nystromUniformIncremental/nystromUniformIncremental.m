@@ -317,12 +317,13 @@ classdef nystromUniformIncremental < nystrom
                     [U, S] = eig((tA + tA')/2);
                     ds = diag(S);
                     ids = double(ds>0);
-                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+                    iS = spdiags(ids./(abs(ds) + obj.filterParGuesses(i)), 0, numel(ds), numel(ds));
+                    D = U * iS * U';
                     
 %                     D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
                     
                     % alpha_2
-                    obj.alpha{i} = 	D * Aty;
+                    obj.alpha{i} = 	U * (iS * (U' * Aty));
 
                     
                     % M_2
@@ -350,7 +351,7 @@ classdef nystromUniformIncremental < nystrom
                 % Update B_(t)
                 B = obj.C' * A;
                 
-                % Update C_(t+1)
+                % Update C_(t+1)abs
                 obj.C = [obj.C A];
                 
                 Aty = A' * obj.Y/sqrt(obj.ntr);
@@ -364,11 +365,12 @@ classdef nystromUniformIncremental < nystrom
                     [U, S] = eig((tA + tA')/2);
                     ds = diag(S);
                     ids = double(ds>0);
-                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
-                    MBD = MB * D;
-                    df = B' * obj.alpha{i} - Aty;
-                    obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
-                    obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
+                    iS = spdiags(ids./(abs(ds) + obj.filterParGuesses(i)), 0, numel(ds), numel(ds));
+                    D = U * iS * U';
+                    MBD = ((MB * U) * iS) * U';
+                    Ddf = U * (iS * (U'*(B' * obj.alpha{i} - Aty)));
+                    obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MB*Ddf; 
+                    obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -Ddf;
                   
                     %%%%%%%
                     obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
