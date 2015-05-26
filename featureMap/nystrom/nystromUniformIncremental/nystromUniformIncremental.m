@@ -368,15 +368,14 @@ classdef nystromUniformIncremental < nystrom
                     iS = spdiags(ids./(abs(ds) + obj.filterParGuesses(i)), 0, numel(ds), numel(ds));
                     D = U * iS * U';
                     MBD = ((MB * U) * iS) * U';
-                    Ddf = U * (iS * (U'*(B' * obj.alpha{i} - Aty)));
-                    obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MB*Ddf; 
-                    obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -Ddf;
-                  
+                           
                     %%%%%%%
                     obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
                     obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), (obj.prevPar(1)+1):chosenPar(1)) = D;
+                    
+                    obj.alpha{i} = obj.M{i}(1:chosenPar(1), 1:chosenPar(1))*(obj.C'*obj.Y);
                 end
             end
         end
