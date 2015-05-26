@@ -221,8 +221,8 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-%     numNysParGuesses = 75;
-    numNysParGuesses = 1;
+    numNysParGuesses = 75;
+%     numNysParGuesses = 1;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(0,-9,10);
     filterParGuesses = 1e-10;
