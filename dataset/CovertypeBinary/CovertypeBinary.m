@@ -1,4 +1,4 @@
-classdef Covertype < dataset  
+classdef CovertypeBinary < dataset  
 
    
    % Define an event
@@ -8,7 +8,7 @@ classdef Covertype < dataset
    end
    
    methods
-        function obj = Covertype(nTr , nTe, outputFormat)
+        function obj = CovertypeBinary(nTr , nTe, outputFormat)
 
             if nTr > 522910 || nTe > 58102
                 error('Too many samples required')
