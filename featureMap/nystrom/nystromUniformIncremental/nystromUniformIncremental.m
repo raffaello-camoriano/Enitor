@@ -317,13 +317,12 @@ classdef nystromUniformIncremental < nystrom
                     [U, S] = eig((tA + tA')/2);
                     ds = diag(S);
                     ids = double(ds>0);
-                    iS = spdiags(ids./(abs(ds) + obj.filterParGuesses(i)), 0, numel(ds), numel(ds));
-                    D = U * iS * U';
+                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
                     
 %                     D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
                     
                     % alpha_2
-                    obj.alpha{i} = 	U * (iS * (U' * Aty));
+                    obj.alpha{i} = 	D * Aty;
 
                     
                     % M_2
@@ -351,7 +350,7 @@ classdef nystromUniformIncremental < nystrom
                 % Update B_(t)
                 B = obj.C' * A;
                 
-                % Update C_(t+1)abs
+                % Update C_(t+1)
                 obj.C = [obj.C A];
                 
                 Aty = A' * obj.Y/sqrt(obj.ntr);
@@ -365,17 +364,17 @@ classdef nystromUniformIncremental < nystrom
                     [U, S] = eig((tA + tA')/2);
                     ds = diag(S);
                     ids = double(ds>0);
-                    iS = spdiags(ids./(abs(ds) + obj.filterParGuesses(i)), 0, numel(ds), numel(ds));
-                    D = U * iS * U';
-                    MBD = ((MB * U) * iS) * U';
-                           
+                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+                    MBD = MB * D;
+                    df = B' * obj.alpha{i} - Aty;
+                    obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
+                    obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
+                  
                     %%%%%%%
                     obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
                     obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), (obj.prevPar(1)+1):chosenPar(1)) = D;
-                    
-                    obj.alpha{i} = obj.M{i}(1:chosenPar(1), 1:chosenPar(1))*(obj.C'*obj.Y);
                 end
             end
         end
