@@ -71,14 +71,15 @@ for k = 1:numRep
     numNysParGuesses = 20;
 %     numNysParGuesses = 1;
 %     filterParGuesses = expKRLS.algo.filterParStar;
-    filterParGuesses = logspace(0,-7,8);
-%     filterParGuesses = 1e-10;
-    mapParGuesses = linspace(1 , 2, 10);
+%     filterParGuesses = logspace(-3,-7,5);
+    filterParGuesses = 1e-7;
+%     filterParGuesses = [1e-8 ,  1e-7];
+%     mapParGuesses = linspace(1 , 2, 10);
 %     mapParGuesses = [4 6 7 8 10];
-%     mapParGuesses = 8 ;
+    mapParGuesses = 1.8889 ;
 
     alg = incrementalNkrls(map , 20000 , ...
-                            'minRank' , 100 , ...
+                            'minRank' , 1000 , ...
                             'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ...
                             'filterParGuesses', filterParGuesses , ...
@@ -179,7 +180,7 @@ for k = 1:numRep
     
 end
 
-save('wspace.mat' , '-v7.3');
+% save('wspace.mat' , '-v7.3');
 
 
 
@@ -190,17 +191,20 @@ if numRep == 1
    
     % Plot perf
 
-    for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
-        
-        endIdxM = startIdxM + numNysParGuesses - 1;
-        sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
-        
-        figure
-        hold on
-        plot( expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM), expNysInc.algo.valPerformance(startIdxM:endIdxM) , 'Marker' , 'diamond')
-        title(['Validation Error for \sigma = ' , num2str(sigma)])
-        ylabel('Validation error')
-        xlabel('m')
+    for lambdaIdx = 1:expNysInc.algo.numFilterParGuesses
+        for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
+
+            endIdxM = startIdxM + numNysParGuesses - 1;
+            sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
+            lambda = expNysInc.algo.filterParGuesses(lambdaIdx);
+
+            figure
+            hold on
+            plot( expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM), expNysInc.algo.valPerformance(startIdxM:endIdxM,lambdaIdx) , 'Marker' , 'diamond')
+            title(['Validation Error for \lambda = ',num2str(lambda),'\sigma = ' , num2str(sigma)])
+            ylabel('Validation error')
+            xlabel('m')
+        end
     end
 end
 
@@ -307,7 +311,7 @@ end
 % % 
 % % plots
 % % 
-% % %% Save figures
-% figsdir = resdir;
+% %% Save figures
+% figsdir = '/data/Raffaello/figs';
 % % % mkdir(figsdir);
 % saveAllFigs
