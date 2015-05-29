@@ -269,6 +269,10 @@ classdef incrementalNkrls < algorithm
             
             for i = 1:size(obj.filterParGuesses,2)
                 
+                if(obj.verbose)
+                    display(['Filter guess ' , num2str(i) , ' of ' , num2str(size(obj.filterParGuesses,2))]);
+                end
+                
                 obj.nyMapper.resetPar();
                 if ~isempty(obj.stoppingRule)
                     obj.stoppingRule.reset();
@@ -277,6 +281,10 @@ classdef incrementalNkrls < algorithm
                 
                 while obj.nyMapper.next()
 
+                    if(obj.verbose)
+                        display(['nyMapper guess ' , num2str(obj.nyMapper.currentParIdx) , ' of ' , num2str(size(obj.nyMapper.rng,2))]);
+                    end
+                    
                     if obj.storeFullTrainTime == 1
                         tic
                     end

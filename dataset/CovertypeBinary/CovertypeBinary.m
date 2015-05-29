@@ -31,6 +31,8 @@ classdef CovertypeBinary < dataset
             % Load data
             folderName = fullfile('dataset','CovertypeBinary');
             [gnd, obj.X] = libsvmread([folderName , '/covtype.libsvm.binary.scale']);
+%             [gnd, obj.X] = libsvmread([folderName , '/covtype.libsvm.binary']);
+            obj.X = full(obj.X);
             
 %             display('Information on the Forest Covertype dataset')
 %             tabulate(obj.Y)
@@ -44,7 +46,7 @@ classdef CovertypeBinary < dataset
 
             
             obj.X = double(obj.X);
-
+            obj.X = obj.X * 2 - 1;
             % Scale attributes
 %             obj.X = obj.scale(obj.X);
 %             obj.X = obj.normalize(obj.X);
@@ -101,8 +103,14 @@ classdef CovertypeBinary < dataset
 %             if obj.hasRealValues(Ypred)
                 Ypred = obj.scoresToClasses(Ypred);
 %             end
+
+            diff = Y - Ypred;
+            sqDiff = diff .* diff;
+            sqSumDiff = sum(sqDiff,2);
+            eucNrmDiff = sqrt(sqSumDiff);
             
-            % Compute error rate
+            perf = sqrt(sum(eucNrmDiff.^2)/size(Y,1));
+                        % Compute error rate
 %             numCorrect = 0;
             
 %             for i = 1:size(Y,1)
@@ -111,10 +119,10 @@ classdef CovertypeBinary < dataset
 %                 end
 %             end
             
-            correctIdx = Y == Ypred;
-            numCorrect = sum(correctIdx);
-            
-            perf = 1 - (numCorrect / size(Y,1));
+%             correctIdx = Y == Ypred;
+%             numCorrect = sum(correctIdx);
+%             
+%             perf = 1 - (numCorrect / size(Y,1));
         end
         
         % Scales matrix M between 0 and 1
