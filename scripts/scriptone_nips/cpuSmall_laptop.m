@@ -231,15 +231,15 @@ for k = 1:numRep
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(0,-8,9);
 %     filterParGuesses = logspace(-5,-8,40);
-    filterParGuesses = 1e-8;
-%     filterParGuesses = 2^(-5);
+%     filterParGuesses = 1e-8;
+    filterParGuesses = 2^(-4);
 
 %     mapParGuesses = linspace(0.1 , 0.3 , 10);
 %     mapParGuesses = 0.561;
-    mapParGuesses = 0.9;
-    
+%     mapParGuesses = 0.9;
+    mapParGuesses = 0.5;
 
-    alg = incrementalNkrls(map , 100 , ...
+    alg = incrementalNkrls(map , 512 , ...
                             'minRank' , 10 , ...
                             'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ... 
@@ -269,7 +269,7 @@ for k = 1:numRep
 
     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
     expNysInc.run();
-%     expNysInc.result
+    expNysInc.result
 
     nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
     nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
