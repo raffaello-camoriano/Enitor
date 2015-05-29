@@ -223,19 +223,22 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 75;
+    numNysParGuesses = 10;
 %     filterParGuesses = expKRLS.algo.filterParStar;
-    filterParGuesses = logspace(-3,-7,5);
-%     filterParGuesses = 1e-9;
+%     filterParGuesses = logspace(-3,-7,5);
+    filterParGuesses = 1e-8;
+%     filterParGuesses = 2^(-2);
 %     mapParGuesses = linspace(0.1 , 1 , 10);
-    mapParGuesses = [1 1.4 2 2.5 4];
+%     mapParGuesses = [1.4 2 2.5 ];
+%     mapParGuesses = 0.5;
+    mapParGuesses = 1.1222;
 
-    alg = incrementalNkrls(map , 5000 , ...
+    alg = incrementalNkrls(map , 2048 , ...
                             'minRank' , 100 , ...
                             'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ...
                             'filterParGuesses', filterParGuesses , ...
-                            'verbose' , 0 , ...
+                            'verbose' , 1 , ...
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
                             'storeFullTestPerf' , storeFullTestPerf);
@@ -251,26 +254,25 @@ for k = 1:numRep
 %                             'storeFullValPerf' , storeFullValPerf , ...
 %                             'storeFullTestPerf' , storeFullTestPerf);
 
-%     alg.mapParStar = [30000 , 7];
-%     alg.filterParStar = 1e-8;
-% 
-%     
-%     tic
-%     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx,:));
-%     trainTime = toc;
-%     
-%     tic
-%     YtePred = alg.test(ds.X(ds.testIdx,:));   
-%     testTime = toc;
-%     
-%     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
-
-    expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expNysInc.run();
+    alg.mapParStar = [ 0 , mapParGuesses];
+    alg.filterParStar = filterParGuesses;
     
-    if numRep > 1
-        nysValPerformance = [nysValPerformance ; expNysInc.algo.valPerformance'];
-    end
+    tic
+    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
+    trTime = toc;
+    
+    YtePred = alg.test(ds.X(ds.testIdx,:));   
+      
+    perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+%     nysTrainTime = [nysTrainTime ; trTime];
+%     nysTestPerformance = [nysTestPerformance ; perf'];
+
+%     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expNysInc.run();
+%     
+%     if numRep > 1
+%         nysValPerformance = [nysValPerformance ; expNysInc.algo.valPerformance'];
+%     end
     
     
 %     expNysInc.result
@@ -332,7 +334,7 @@ for k = 1:numRep
     
 end
 
-save('wspace.mat' , '-v7.3');
+% save('wspace.mat' , '-v7.3');
 
 
 
@@ -466,6 +468,6 @@ end
 % % plots
 % % 
 % % %% Save figures
-% figsdir = resdir;
-% % % mkdir(figsdir);
-% saveAllFigs
+figsdir = '';
+% % mkdir(figsdir);
+saveAllFigs
