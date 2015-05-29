@@ -423,10 +423,13 @@ classdef incrementalNkrls < algorithm
             % Initialize Nystrom Mapper
             argin = {};
             if ~isempty(obj.numNysParGuesses)
-                argin = [argin , 'numNysParGuesses' , 2];
+                argin = [argin , 'numNysParGuesses' , obj.numNysParGuesses];
+            end      
+            if ~isempty(obj.minRank)
+                argin = [argin , 'minRank' , obj.minRank];
             end      
             if ~isempty(obj.maxRank)
-                argin = [argin , 'maxRank' , obj.mapParStar(1)];
+                argin = [argin , 'maxRank' , obj.maxRank];
             end      
             if ~isempty(obj.mapParStar)
                 argin = [argin , 'mapParGuesses' , full(obj.mapParStar(2))];
@@ -441,10 +444,12 @@ classdef incrementalNkrls < algorithm
 %             obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
             
             obj.nyMapper.filterParGuesses = obj.filterParStar;    
-            obj.nyMapper.next();
-            obj.nyMapper.compute();
-            obj.nyMapper.next();
-            obj.nyMapper.compute();
+
+            while obj.nyMapper.next()
+            
+                obj.nyMapper.compute();
+           
+            end
 
             %%%%%%%%%%%%%%%%%%%%%%%
             % Store trained model %
