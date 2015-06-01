@@ -47,12 +47,13 @@ classdef gdesc_square_loss < filter
             % Optional parameter names:
 
 %             defaultGamma = 2/numSamples;
-%             eigmax = eigs(K,[],1);
+            eigmax = eigs(K,[],1);
 %             sv = svd(K);
 %             svmax = sv(1);
 %             defaultGamma = 2/eigmax^2;
 %             defaultGamma = 1/(2*numSamples);
-            defaultGamma = 1/numSamples;
+            defaultGamma = numSamples/(2*eigmax);
+%             defaultGamma = 1/numSamples;
 %             defaultGamma = 2/numSamples;
             checkGamma = @(x) x > 0;
 

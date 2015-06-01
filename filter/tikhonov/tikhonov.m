@@ -114,7 +114,7 @@ classdef tikhonov < filter
                 obj.M = speye(obj.sz);
             end
             
-            warning('obj.sparseFlag forced to 0 to avoid Hessenberger decomposition');
+%             warning('obj.sparseFlag forced to 0 to avoid Hessenberger decomposition');
             obj.sparseFlag = 0;
             
             if obj.sparseFlag == 1

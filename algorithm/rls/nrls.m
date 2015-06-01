@@ -227,17 +227,17 @@ classdef nrls < algorithm
                 kernelVal.next();
                 kernelVal.compute();                
                           
-                if ~isempty(obj.filterParGuesses)
-                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
-                else
-                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'verbose' , obj.verbose);
-                end
-                     
 %                 if ~isempty(obj.filterParGuesses)
-%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
+%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
 %                 else
-%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'verbose' , obj.verbose);
+%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'verbose' , obj.verbose);
 %                 end
+                     
+                if ~isempty(obj.filterParGuesses)
+                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
+                else
+                    filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'verbose' , obj.verbose);
+                end
                 
                 while filter.next()
                     
