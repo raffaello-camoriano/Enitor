@@ -6,12 +6,15 @@ classdef nrls < algorithm
         
         ntr
         
-        storeFullTrainPerf
-        storeFullValPerf
-        valPerformance
-        trainPerformance
-        storeFullTestPerf
-        testPerformance
+        % I/O options
+        storeFullTrainPerf  % Store full training performance matrix 1/0
+        storeFullValPerf    % Store full validation performance matrix 1/0
+        storeFullTestPerf   % Store full test performance matrix 1/0
+        valPerformance      % Validation performance matrix
+        trainPerformance    % Training performance matrix
+        testPerformance     % Test performance matrix
+        storeFullTrainTime  % Store full training time matrix 1/0
+        trainTime           % Training time matrix
         
         % Kernel props
         nyMapper
@@ -97,6 +100,11 @@ classdef nrls < algorithm
             defaultStoreFullTestPerf = 0;
             checkStoreFullTestPerf = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf);            
+            
+            % storeFullTrainTime  % Store full training time matrix 1/0
+            defaultStoreFullTrainTime = 0;
+            checkStoreFullTrainTime = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullTrainTime',defaultStoreFullTrainTime,checkStoreFullTrainTime);            
             
             % verbose             % 1: verbose; 0: silent      
             defaultVerbose = 0;
@@ -203,20 +211,31 @@ classdef nrls < algorithm
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
-                obj.trainPerformance = zeros(size(obj.mapParGuesses,2), obj.numFilterParGuesses);
+                obj.trainPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
             if obj.storeFullValPerf == 1
-                obj.valPerformance = zeros(size(obj.mapParGuesses,2), obj.numFilterParGuesses);
+                obj.valPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
             if obj.storeFullTestPerf == 1
-                obj.testPerformance = zeros(size(obj.mapParGuesses,2), obj.numFilterParGuesses);
+                obj.testPerformance = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
+            end
+            if obj.storeFullTrainTime == 1
+                obj.trainTime = NaN*zeros(size(obj.mapParGuesses,2), size(obj.filterParGuesses,2));
             end
 
             while obj.nyMapper.next()
                 
+                if(obj.verbose)
+                    display(['nyMapper guess ' , num2str(obj.nyMapper.currentParIdx) , ' of ' , num2str(size(obj.nyMapper.rng,2))]);
+                end
+
+                if obj.storeFullTrainTime == 1
+                    tic
+                end
+
                 % Compute kernel according to current hyperparameters
                 obj.nyMapper.compute();
-                                        
+
                 % Initialize TrainVal kernel
                 argin = {};
                 argin = [argin , 'mapParGuesses' , obj.nyMapper.currentPar(2)];
@@ -243,6 +262,12 @@ classdef nrls < algorithm
                     
                     % Compute filter according to current hyperparameters
                     filter.compute();
+
+                    if obj.storeFullTrainTime == 1 && ((isempty(obj.nyMapper.prevPar) && obj.nyMapper.currentParIdx == 1) || (~isempty(obj.nyMapper.prevPar) && obj.nyMapper.currentPar(1) < obj.nyMapper.prevPar(1)))
+                        obj.trainTime(obj.nyMapper.currentParIdx , filter.currentParIdx) = toc;
+                    elseif obj.storeFullTrainTime == 1
+                        obj.trainTime(obj.nyMapper.currentParIdx , filter.currentParIdx) = obj.trainTime(obj.nyMapper.currentParIdx - 1 , filter.currentParIdx) + toc;
+                    end
 
                     % Compute predictions matrix
                     YvalPred = kernelVal.K * filter.weights;
