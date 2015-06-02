@@ -36,7 +36,7 @@ for i = 1:numRep
         filter = @tikhonov;
         numNysParGuesses = 20;
         mapParGuesses = sigma;
-        filterParGuesses = 1e-12;
+        filterParGuesses = 1e-5;
 
         alg = nrls(map , filter , 5000 , ...
                                 'numNysParGuesses', numNysParGuesses , ...

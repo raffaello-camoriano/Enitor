@@ -10,7 +10,7 @@ mkdir(resdir);
 
 %% Initialization
 
-numRep = 10;
+numRep = 1;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
 storeFullTestPerf = 0;
@@ -64,20 +64,21 @@ for k = 1:numRep
     display([ 'Repetition #', num2str(k)])
      
     % Load dataset
-    ds = InsuranceCompanyBenchmark([],[],'plusMinusOne');
+%     ds = InsuranceCompanyBenchmark([],[],'plusMinusOne');
+    ds = InsuranceCompanyBenchmark([],[],'zeroOne');
     
     %% Incremental Nystrom KRLS
 
     map = @nystromUniformIncremental;
 
     numNysParGuesses = 10;
-    filterParGuesses = logspace(0,-7,8);
-%     filterParGuesses = 1e-9;
-    mapParGuesses = 1.2;
+%     filterParGuesses = logspace(0,-7,8);
+    filterParGuesses = 1e-8;
+    mapParGuesses =5.7552;
 %     mapParGuesses = linspace(1,10,10);
     
     alg = incrementalNkrls(map , 2048 , ...
-                            'minRank' , 10 , ...
+                            'minRank' , 1 , ...
                             'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ... 
                             'filterParGuesses', filterParGuesses , ...
@@ -131,11 +132,11 @@ for k = 1:numRep
     map = @nystromUniform;
     filter = @tikhonov;
     
-    mapParGuesses = 1.2;
+    mapParGuesses =5.7552;
 %     mapParGuesses = linspace(1,1.5,10);
-    filterParGuesses = 1e-7;
+    filterParGuesses = 3.16*1e-9;
 
-    alg = nrls(map , filter , 2048 , ...
+    alg = nrls(map , filter , 4500 , ...
                             'mapParGuesses' , mapParGuesses ,  ... 
                             'filterParGuesses', filterParGuesses , ...
                             'verbose' , 0 , ...

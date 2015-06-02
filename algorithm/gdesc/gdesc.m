@@ -43,20 +43,16 @@ classdef gdesc < algorithm
     
     methods
         
-        function obj = gdesc(map, filter, varargin)
-            init( obj , map, filter, varargin)
+        function obj = gdesc(filter, varargin)
+            init( obj , filter, varargin)
         end
         
-        function init( obj , map, filter , varargin)
+        function init( obj , filter , varargin)
 
             p = inputParser;
             
             %%%% Required parameters
             
-            % map
-            checkMap = @(x) isa(x,'function_handle');
-            addRequired(p,'map',checkMap);
-
             % filter
             checkFilter = @(x) isa(x,'function_handle');
             addRequired(p,'filter', checkFilter);
@@ -109,7 +105,7 @@ classdef gdesc < algorithm
             addParameter(p,'stoppingRule', defaultStoppingRule , checkStoppingRule);            
             
             % Parse function inputs
-            parse(p, map, filter, varargin{:}{:})
+            parse(p, filter, varargin{:}{:})
             
             % Assign parsed parameters to object properties
             fields = fieldnames(p.Results);

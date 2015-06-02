@@ -204,7 +204,7 @@ classdef nrls < algorithm
 
             % Train kernel
             obj.nyMapper = obj.mapType(Xtrain, obj.numNysParGuesses , obj.numMapParGuesses , obj.numMapParRangeSamples , obj.maxRank , obj.mapParGuesses , obj.verbose);
-%             obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
+            obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
 %             obj.filterParGuesses = [];
             
             valM = inf;     % Keeps track of the lowest validation error
