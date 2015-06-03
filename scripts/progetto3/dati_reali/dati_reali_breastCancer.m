@@ -13,9 +13,10 @@ mkdir(resdir);
 numRep =  1;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
-storeFullTestPerf = 0;
+storeFullTestPerf = 1;
 verbose = 0;
 saveResult = 0;
+numEpochs = 10000;
 
 %% Storage vars init
 
@@ -49,7 +50,6 @@ for k = 1:numRep
     dsRF.X = rfMapper.Xrf;
     dsRF.d = maxRank;
     
-    numEpochs = 1000;
 
     %% KRLS baseline Experiment setup
 
