@@ -223,7 +223,7 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 10;
+    numNysParGuesses = 2;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(-3,-7,5);
     filterParGuesses = 1e-8;
@@ -263,7 +263,8 @@ for k = 1:numRep
     
     YtePred = alg.test(ds.X(ds.testIdx,:));   
       
-    perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+    perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx))
+    
 %     nysTrainTime = [nysTrainTime ; trTime];
 %     nysTestPerformance = [nysTestPerformance ; perf'];
 
