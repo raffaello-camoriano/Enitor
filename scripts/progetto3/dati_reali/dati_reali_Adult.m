@@ -17,13 +17,15 @@ storeFullTestPerf = 0;
 verbose = 0;
 saveResult = 0;
 
+numEpochs = 1000;
+
 %% Storage vars init
 
 for k = 1:numRep
 
     % Load dataset
 
-    ntrval  =32000;
+    ntrval  =2000;
     nte = 16282;
     ds = Adult(ntrval,nte,'plusMinusOne');
     dsRF = Adult(ntrval,nte,'plusMinusOne');
@@ -49,7 +51,6 @@ for k = 1:numRep
     dsRF.X = rfMapper.Xrf;
     dsRF.d = maxRank;
     
-    numEpochs = 1000;
 
     %% KRLS baseline Experiment setup
 

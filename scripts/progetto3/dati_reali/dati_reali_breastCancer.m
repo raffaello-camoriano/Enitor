@@ -11,12 +11,13 @@ mkdir(resdir);
 %% Initialization
 
 numRep =  1;
-storeFullTrainPerf = 0;
+storeFullTrainPerf = 1;
 storeFullValPerf = 1;
 storeFullTestPerf = 1;
 verbose = 0;
 saveResult = 0;
 numEpochs = 10000;
+% numEpochs = 10;
 
 %% Storage vars init
 
@@ -130,11 +131,23 @@ end
 fig=figure;
 hax=axes;
 semilogx(1./filterParGuesses,expKRLS.algo.valPerformance) 
+hold on
+% semilogx(1./filterParGuesses,expKRLS.algo.valPerformance) 
 title('KRLS validation error')
 xlabel('1/\lambda')
-ylabel('Validation error')
+ylabel('Error')
 % plot(expIIR.algo.valPerformance) 
 % semilogy(expIIR.algo.valPerformance) 
+semilogx(1./filterParGuesses,expKRLS.algo.trainPerformance)
+legend('Validation Error','Training Error')
+
+
+% fig=figure;
+% hax=axes;
+% semilogx(1./filterParGuesses,expKRLS.algo.testPerformance) 
+% title('KRLS test error')
+% xlabel('1/\lambda')
+% ylabel('Test error')
 
 %% IIR graph
 fig=figure;
@@ -142,15 +155,25 @@ hax=axes;
 hold on
 title('IIR validation error')
 xlabel('Iterations')
-ylabel('Validation error')
+ylabel('Error')
 % plot(expIIR.algo.valPerformance) 
 % semilogy(expIIR.algo.valPerformance) 
 loglog(1:maxiterIIR,expIIR.algo.valPerformance) 
+loglog(1:maxiterIIR,expIIR.algo.trainPerformance)
+legend('Validation Error','Training Error')
 % SP = 0;
 % while (SP < maxiterIIR)
 %     line([SP SP],get(hax,'YLim'),'Color',[1 0 0])
 %     SP=SP+round(ntr*0.8); %your point goes here
 % end
+
+
+% fig=figure;
+% hax=axes;
+% plot(1:maxiterIIR,expIIR.algo.testPerformance) 
+% title('IIR test error')
+% xlabel('Iterations')
+% ylabel('Test error')
 
 %% Kernelized batch Landweber graph
 fig=figure;
@@ -158,10 +181,19 @@ hax=axes;
 hold on
 title('Landweber validation error')
 xlabel('Epochs')
-ylabel('Validation error')
+ylabel('Error')
 % plot(expIIR.algo.valPerformance) 
 % semilogy(expIIR.algo.valPerformance) 
 loglog(1:maxiterLandw,expLandweber.algo.valPerformance) 
+loglog(1:maxiterLandw,expLandweber.algo.trainPerformance)
+legend('Validation Error','Training Error')
+
+% fig=figure;
+% hax=axes;
+% plot(1:maxiterLandw,expLandweber.algo.testPerformance) 
+% title('Landweber test error')
+% xlabel('Epochs')
+% ylabel('Test error')
 
 %%
 % 

@@ -101,7 +101,7 @@ classdef CovertypeBinary < dataset
             
             % Check if Ypred is real-valued. If yes, convert it.
 %             if obj.hasRealValues(Ypred)
-                Ypred = obj.scoresToClasses(Ypred);
+%                 Ypred = obj.scoresToClasses(Ypred);
 %             end
 
             diff = Y - Ypred;
