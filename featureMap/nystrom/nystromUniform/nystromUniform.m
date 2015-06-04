@@ -14,6 +14,7 @@ classdef nystromUniform < nystrom
         prevPar
         
         numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
+        minRank                 % Minimum rank of the kernel approximation
         maxRank                 % Maximum rank of the kernel approximation
         
         numMapParGuesses
@@ -29,24 +30,29 @@ classdef nystromUniform < nystrom
     
     methods
         % Constructor
-        function obj = nystromUniform( X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , maxRank , mapParGuesses , verbose)
+        function obj = nystromUniform( X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , minRank, maxRank , mapParGuesses , verbose)
             
-            obj.init( X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , maxRank , mapParGuesses , verbose);
+            obj.init( X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , minRank, maxRank , mapParGuesses , verbose);
             
             warning('Kernel type set by default to "gaussian"');
             obj.kernelType = @gaussianKernel;
         end
         
         % Initialization function
-        function obj = init(obj , X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , maxRank , mapParGuesses , verbose)
+        function obj = init(obj , X , numNysParGuesses , numMapParGuesses , numMapParRangeSamples , minRank, maxRank , mapParGuesses , verbose)
             
             obj.X = X;
             obj.numMapParRangeSamples = numMapParRangeSamples;
             obj.d = size(X , 2);     
             obj.maxRank = maxRank;
+            if isempty(minRank)
+                obj.minRank = 1;
+            else
+                obj.minRank = minRank;            
+            end
             obj.mapParGuesses = mapParGuesses;
             
-%             if ~isempty(mapParGuesses)
+            %             if ~isempty(mapParGuesses)
 %                 obj.numMapParGuesses = size(mapParGuesses;
 %             else
                 obj.numMapParGuesses = numMapParGuesses;
@@ -69,7 +75,10 @@ classdef nystromUniform < nystrom
         function obj = range(obj)
             %% Range of the number of sampled columns
             
-            tmpl = round(linspace(1, obj.maxRank , obj.numNysParGuesses));   
+            % Compute range of number of sampled columns (m)
+            tmpm = round(linspace(obj.minRank, obj.maxRank , obj.numNysParGuesses));   
+
+%             tmpl = round(linspace(1, obj.maxRank , obj.numNysParGuesses));   
             %warning('The rank of the approximated matrix is fixed to maxRank');
 %             tmpl = obj.maxRank;
             
@@ -121,7 +130,7 @@ classdef nystromUniform < nystrom
 
             %% Generate all possible parameters combinations            
             
-            [p,q] = meshgrid(tmpl, tmpKerPar);
+            [p,q] = meshgrid(tmpm, tmpKerPar);
             tmp = [p(:) q(:)]';
             
             obj.rng = num2cell(tmp , 1);

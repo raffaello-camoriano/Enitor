@@ -152,14 +152,17 @@ legend('Validation Error','Training Error')
 %% IIR graph
 fig=figure;
 hax=axes;
+% loglog(1:maxiterIIR,expIIR.algo.testPerformance) 
+% loglog(1:maxiterIIR,expIIR.algo.valPerformance) 
+plot(1:maxiterIIR,expIIR.algo.valPerformance) 
 hold on
 title('IIR validation error')
 xlabel('Iterations')
 ylabel('Error')
 % plot(expIIR.algo.valPerformance) 
 % semilogy(expIIR.algo.valPerformance) 
-loglog(1:maxiterIIR,expIIR.algo.valPerformance) 
-loglog(1:maxiterIIR,expIIR.algo.trainPerformance)
+plot(1:maxiterIIR,expIIR.algo.trainPerformance)
+axis([0 Inf 0 0.1])
 legend('Validation Error','Training Error')
 % SP = 0;
 % while (SP < maxiterIIR)

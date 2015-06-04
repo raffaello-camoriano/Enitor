@@ -25,6 +25,7 @@ classdef nrls < algorithm
         mapParStar
         
         % Nystrom props
+        minRank
         maxRank
         numNysParGuesses
 
@@ -61,6 +62,10 @@ classdef nrls < algorithm
             %%%% Optional parameters
             % Optional parameter names:
 
+            defaultMinRank = 1;            
+            checkMinRank = @(x) x > 0 ;
+            addParameter(p,'minRank',defaultMinRank,checkMinRank);                    
+            
             defaultNumNysParGuesses = 1;            
             checkNumNysParGuesses = @(x) x > 0 ;
             addParameter(p,'numNysParGuesses',defaultNumNysParGuesses,checkNumNysParGuesses);                    
@@ -127,6 +132,10 @@ classdef nrls < algorithm
             end
             
             %%% Joint parameters validation
+            
+            if obj.minRank > obj.maxRank
+                error('The specified minimum rank of the kernel approximation is larger than the maximum one.');
+            end
             
             if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
                 error('either mapParGuesses or numMapParGuesses must be specified');
@@ -203,7 +212,7 @@ classdef nrls < algorithm
             obj.ntr = size(Xtrain,1);
 
             % Train kernel
-            obj.nyMapper = obj.mapType(Xtrain, obj.numNysParGuesses , obj.numMapParGuesses , obj.numMapParRangeSamples , obj.maxRank , obj.mapParGuesses , obj.verbose);
+            obj.nyMapper = obj.mapType(Xtrain, obj.numNysParGuesses , obj.numMapParGuesses , obj.numMapParRangeSamples , obj.minRank, obj.maxRank , obj.mapParGuesses , obj.verbose);
             obj.mapParGuesses = obj.nyMapper.rng;   % Warning: rename to mapParGuesses
 %             obj.filterParGuesses = [];
             
@@ -380,7 +389,10 @@ classdef nrls < algorithm
             end      
             if ~isempty(obj.maxRank)
                 argin = [argin , 'maxRank' , obj.mapParStar(1)];
-            end      
+            end    
+            if ~isempty(obj.minRank)
+                argin = [argin , 'minRank' , obj.minRank];
+            end        
             if ~isempty(obj.mapParStar)
                 argin = [argin , 'mapParGuesses' , full(obj.mapParStar(2))];
             end      

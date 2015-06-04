@@ -11,7 +11,7 @@ mkdir(resdir);
 
 %% Initialization
 
-numRep = 1;
+numRep = 10;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
 storeFullTestPerf = 0;
@@ -179,27 +179,57 @@ end
 
 %% Incremental Nystrom performance (only val)
 
-figure
-% imagesc()
-pcolor(expNysInc.algo.filterParGuesses,expNysInc.algo.nyMapper.rng(1,:),expNysInc.algo.valPerformance)
-title({'Incremental Nystrom performance';'Validation Set'})
-ylabel('m')
-xlabel('\lambda')
-set(gca,'XScale','log')
-h = colorbar;
-h.Label.String = 'RMSE';
+%%%% OLD
+% figure
+% % imagesc()
+% pcolor(expNysInc.algo.filterParGuesses,expNysInc.algo.nyMapper.rng(1,:),expNysInc.algo.valPerformance)
+% title({'Incremental Nystrom performance';'Validation Set'})
+% ylabel('m')
+% xlabel('\lambda')
+% set(gca,'XScale','log')
+% h = colorbar;
+% h.Label.String = 'RMSE';
 
 %%
+% figure
+% pcolor(expNysInc.algo.nyMapper.rng(1,:),expNysInc.algo.filterParGuesses,expNysInc.algo.valPerformance')
+% % title({'Incremental Nystrom performance';'Validation Set'})
+% xlabel('m')
+% ylabel('\lambda')
+% set(gca,'YScale','log')
+% h = colorbar;
+% h.Label.String = 'RMSE';
+
+
+%%
+
 figure
-hold on
-title({'Incremental Nystrom performance';'Validation Set'})
-colormap jet
-cc=jet(size(expNysInc.algo.nyMapper.rng(1,:),2));    
-for i = 1:size(expNysInc.algo.nyMapper.rng(1,:),2)
-    plot(expNysInc.algo.filterParGuesses,expNysInc.algo.valPerformance(i,:),'color',cc(i,:))
-end
-ylabel('RMSE')
-xlabel('\lambda')
-set(gca,'XScale','log')
-h = colorbar('Ticks' , 0:1/(numel(expNysInc.algo.nyMapper.rng(1,:))-1):1 , 'TickLabels', expNysInc.algo.nyMapper.rng(1,:) );
-h.Label.String = 'm';
+m = cell2mat(expNysBat.algo.nyMapper.rng(1,:));
+l = expNysBat.algo.filterParGuesses;
+pcolor(m(1,:),l,mean(valPerf,3))
+% Create ylabel
+ylabel('\lambda','FontSize',36,'Rotation',0);
+% Create xlabel
+xlabel('m','FontSize',36);
+set(gca,'FontSize',14);
+set(gca,'YScale','log')
+h = colorbar('FontSize',14);
+h.Label.String = 'RMSE';
+h.Label.FontSize = 20;
+
+
+
+%%
+% figure
+% hold on
+% title({'Incremental Nystrom performance';'Validation Set'})
+% colormap jet
+% cc=jet(size(expNysInc.algo.nyMapper.rng(1,:),2));    
+% for i = 1:size(expNysInc.algo.nyMapper.rng(1,:),2)
+%     plot(expNysInc.algo.filterParGuesses,expNysInc.algo.valPerformance(i,:),'color',cc(i,:))
+% end
+% ylabel('RMSE')
+% xlabel('\lambda')
+% set(gca,'XScale','log')
+% h = colorbar('Ticks' , 0:1/(numel(expNysInc.algo.nyMapper.rng(1,:))-1):1 , 'TickLabels', expNysInc.algo.nyMapper.rng(1,:) );
+% h.Label.String = 'm';

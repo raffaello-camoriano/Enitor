@@ -13,20 +13,20 @@ mkdir(resdir);
 
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
-storeFullTestPerf = 0;
+storeFullTestPerf = 1;
 verbose = 0;
 saveResult = 0;
 
 % Load dataset
 
-perfVec  = [];
-numRep = 10;
+numRep = 3;
+trainPerf =  zeros(20,20,numRep );
+testPerf =  zeros(20,20,numRep );
+valPerf =  zeros(20,20,numRep );
 
 for i = 1:numRep
-    
+
     ds = cpuSmall(6554,1638);    
-%     ds = breastCancer(400,169,'zeroOne');    
-%     ds = Adult(32000,16282,'zeroOne');    
 
     for sigma = 0.1
 
@@ -36,9 +36,12 @@ for i = 1:numRep
         filter = @tikhonov;
         numNysParGuesses = 20;
         mapParGuesses = sigma;
-        filterParGuesses = 1e-5;
+%         filterParGuesses = 1e-5;
+        filterParGuesses = logspace(-12,-15,20);
+
 
         alg = nrls(map , filter , 5000 , ...
+                                'minRank' , 100 , ...
                                 'numNysParGuesses', numNysParGuesses , ...
                                 'mapParGuesses' , mapParGuesses ,  ... 
                                 'filterParGuesses', filterParGuesses , ...
@@ -62,15 +65,55 @@ for i = 1:numRep
 
         expNysBat = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
         expNysBat.run();
-    %     expNysBat.result
+        expNysBat.result
 
 
     end
-    perfVec = [perfVec ; expNysBat.algo.valPerformance'];
+    
 
+    if storeFullTrainPerf == 1
+        trainPerf(:,:,i) = expNysBat.algo.trainPerformance';
+    end
+    if storeFullValPerf == 1
+        valPerf(:,:,i) = expNysBat.algo.valPerformance';
+    end
+    if storeFullTestPerf == 1
+        testPerf(:,:,i) = expNysBat.algo.testPerformance';
+    end
 end
 
+mtrainperf = mean(trainPerf,3);
+mvalperf = mean(valPerf,3);
+mtestperf = mean(testPerf,3);
+
 %%
+
 figure
-% area(perfVec)
-boxplot(perfVec , 'plotstyle' , 'compact')
+m = cell2mat(expNysBat.algo.nyMapper.rng(1,:));
+l = expNysBat.algo.filterParGuesses;
+pcolor(m(1,:),l,mean(valPerf,3))
+% Create ylabel
+ylabel('\lambda','FontSize',36,'Rotation',0,'HorizontalAlignment','right');
+% Create xlabel
+xlabel('m','FontSize',36);
+set(gca,'FontSize',14);
+set(gca,'YScale','log')
+h = colorbar('southoutside','FontSize',14);
+h.Label.String = 'RMSE';
+h.Label.FontSize = 20;
+
+%%
+% 
+% figure
+% m = cell2mat(expNysBat.algo.nyMapper.rng(1,:));
+% pcolor(m(1,:),expNysBat.algo.filterParGuesses,mean(valPerf,3))
+% xlabel('m')
+% ylabel('\lambda')
+% % set(gca,'YScale','log')
+% h = colorbar;
+% h.Label.String = 'RMSE';
+
+%%
+% figure
+% % area(perfVec)
+% boxplot(perfVec , 'plotstyle' , 'compact')
