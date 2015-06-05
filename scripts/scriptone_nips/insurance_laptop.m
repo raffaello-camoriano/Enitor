@@ -10,11 +10,11 @@ mkdir(resdir);
 
 %% Initialization
 
-numRep = 1;
+numRep = 10;
 storeFullTrainPerf = 0;
-storeFullValPerf = 1;
+storeFullValPerf = 0;
 storeFullTestPerf = 0;
-storeFullTrainTime = 1;
+storeFullTrainTime = 0;
 verbose = 0;
 saveResult = 0;
 
@@ -71,11 +71,12 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 10;
+    numNysParGuesses = 2;
 %     filterParGuesses = logspace(0,-7,8);
     filterParGuesses = 1e-8;
-    mapParGuesses =5.7552;
-%     mapParGuesses = linspace(1,10,10);
+%     mapParGuesses =5.7552;
+%     mapParGuesses = linspace(5.5,6,10);
+    mapParGuesses =6;
     
     alg = incrementalNkrls(map , 2048 , ...
                             'minRank' , 1 , ...
@@ -100,73 +101,73 @@ for k = 1:numRep
 %                             'storeFullTestPerf' , storeFullTestPerf , ...
 %                             'storeFullTrainTime' , storeFullTrainTime);
 
-%     alg.mapParStar = [ 0 , 5.7552];
-%     alg.filterParStar = 1e-9;
+    alg.mapParStar = [ 0 , 100];
+    alg.filterParStar = 1e-9;
+    alg.filterParStar = 1e-8;
     
-%     tic
-%     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
-%     trTime = toc;
-%     
-%     YtePred = alg.test(ds.X(ds.testIdx,:));   
-%       
-%     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
-%     nysTrainTime = [nysTrainTime ; trTime];
-%     nysTestPerformance = [nysTestPerformance ; perf'];
-
-    expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expNysInc.run();
-    expNysInc.result
-
-    nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
-    nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
-
-    NysInc_cumulative_training_time(k) = expNysInc.time.train;
-    NysInc_cumulative_testing_time(k) = expNysInc.time.test;
-    NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
+    tic
+    alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
+    trTime = toc;
+    
+    YtePred = alg.test(ds.X(ds.testIdx,:));   
+      
+    perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+    nysTrainTime = [nysTrainTime ; trTime];
+    nysTestPerformance = [nysTestPerformance ; perf'];
+    perf
+%     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expNysInc.run();
+%     expNysInc.result
+% 
+%     nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
+%     nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
+% 
+%     NysInc_cumulative_training_time(k) = expNysInc.time.train;
+%     NysInc_cumulative_testing_time(k) = expNysInc.time.test;
+%     NysInc_cumulative_test_perf(k) = expNysInc.result.perf;
 
     % incrementalnkrls_plots
 
-    
-    %% Batch Nystrom KRLS
-
-    map = @nystromUniform;
-    filter = @tikhonov;
-    
-    mapParGuesses =5.7552;
-%     mapParGuesses = linspace(1,1.5,10);
-    filterParGuesses = 3.16*1e-9;
-
-    alg = nrls(map , filter , 4500 , ...
-                            'mapParGuesses' , mapParGuesses ,  ... 
-                            'filterParGuesses', filterParGuesses , ...
-                            'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-                            'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf );
-
-%     alg.mapParStar = [ 0 , 5.7552];
-%     alg.filterParStar = 1e-9;
-    
-%     tic
-%     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
-%     trTime = toc;
+     %% Batch Nystrom KRLS
+% 
+%     map = @nystromUniform;
+%     filter = @tikhonov;
 %     
-%     YtePred = alg.test(ds.X(ds.testIdx,:));   
-%       
-%     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
-%     nysTrainTime = [nysTrainTime ; trTime];
-%     nysTestPerformance = [nysTestPerformance ; perf'];
-
-    expNysBat = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expNysBat.run();
-    expNysBat.result
-
-%     nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
-    nysTestPerformance = [nysTestPerformance ; expNysBat.algo.testPerformance'];
-
-    NysBat_cumulative_training_time(k) = expNysBat.time.train;
-    NysBat_cumulative_testing_time(k) = expNysBat.time.test;
-    NysBat_cumulative_test_perf(k) = expNysBat.result.perf;
+%     mapParGuesses =5.7552;
+% %     mapParGuesses = linspace(1,1.5,10);
+%     filterParGuesses = 3.16*1e-9;
+% 
+%     alg = nrls(map , filter , 2048 , ...
+%                             'mapParGuesses' , mapParGuesses ,  ... 
+%                             'filterParGuesses', filterParGuesses , ...
+%                             'verbose' , 0 , ...
+%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                             'storeFullValPerf' , storeFullValPerf , ...
+%                             'storeFullTestPerf' , storeFullTestPerf );
+% 
+% %     alg.mapParStar = [ 0 , 5.7552];
+% %     alg.filterParStar = 1e-9;
+%     
+% %     tic
+% %     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
+% %     trTime = toc;
+% %     
+% %     YtePred = alg.test(ds.X(ds.testIdx,:));   
+% %       
+% %     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+% %     nysTrainTime = [nysTrainTime ; trTime];
+% %     nysTestPerformance = [nysTestPerformance ; perf'];
+% 
+%     expNysBat = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expNysBat.run();
+%     expNysBat.result
+% 
+% %     nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
+%     nysTestPerformance = [nysTestPerformance ; expNysBat.algo.testPerformance'];
+% 
+%     NysBat_cumulative_training_time(k) = expNysBat.time.train;
+%     NysBat_cumulative_testing_time(k) = expNysBat.time.test;
+%     NysBat_cumulative_test_perf(k) = expNysBat.result.perf;
     
 end
 

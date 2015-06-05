@@ -10,7 +10,7 @@ resdir = '';
 mkdir(resdir);
 
 %% Initialization
-numRep = 1;
+numRep = 10;
 storeFullTrainPerf = 0;
 storeFullValPerf = 1;
 storeFullTestPerf = 0;
@@ -68,7 +68,7 @@ for k = 1:numRep
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 10;
+    numNysParGuesses = 2;
 %     numNysParGuesses = 1;
 %     filterParGuesses = expKRLS.algo.filterParStar;
 %     filterParGuesses = logspace(0,-7,8);
