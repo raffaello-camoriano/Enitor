@@ -1,5 +1,5 @@
 classdef incrementalNkrls < algorithm
-    %UNTITLED2 Summary of this class goes here
+    % Incremental Nystrom KRLS with Tikhonov regularization filtering
     %   Detailed explanation goes here
     
     properties
