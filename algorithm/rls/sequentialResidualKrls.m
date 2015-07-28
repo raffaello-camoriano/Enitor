@@ -89,7 +89,12 @@ classdef sequentialResidualKrls < algorithm
             % mapParGuesses       % Map parameter guesses cell array
             defaultMapParGuesses = [];
             checkMapParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
-            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);                    
+            addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);                 
+            
+            % mapParStar       % Fixed kernel parameters array
+            defaultMapParStar = [];
+            checkMapParStar = @(x) ismatrix(x) && size(x,2) > 0 ;            
+            addParameter(p,'mapParStar',defaultMapParStar,checkMapParStar);                    
             
             % numMapParGuesses        % Number of map parameter guesses
             defaultNumMapParGuesses = [];
@@ -100,6 +105,11 @@ classdef sequentialResidualKrls < algorithm
             defaultFilterParGuesses = [];
             checkFilterParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
             addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                
+            
+            % filterParStar       % Fixed filter parameters array
+            defaultFilterParStar = [];
+            checkFilterParStar = @(x) ismatrix(x) && size(x,2) > 0 ;            
+            addParameter(p,'filterParStar',defaultFilterParStar,checkFilterParStar);                    
             
             % numFilterParGuesses    % Number of filter parameter guesses vector
             defaultNumFilterParGuesses = [];
@@ -117,24 +127,39 @@ classdef sequentialResidualKrls < algorithm
             
             %%% Joint parameters validation
             
-            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
-                error('either mapParGuesses or numMapParGuesses must be specified');
+            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses) && isempty(obj.mapParStar)
+                error('either mapParGuesses or numMapParGuesses or mapParStar must be specified');
             end    
             
-            if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses)
-                error('mapParGuesses and numMapParGuesses cannot be specified together');
+            if ~isempty(obj.mapParGuesses) && ~isempty(obj.numMapParGuesses) || ...
+               ~isempty(obj.mapParGuesses) && ~isempty(obj.mapParStar) || ...
+               ~isempty(obj.mapParStar) && ~isempty(obj.numMapParGuesses)
+
+                error('mapParGuesses, mapParStar and numMapParGuesses cannot be specified together');
             end    
+            
+            if size(obj.mapParStar,2) ~= obj.iterations
+                error('The fixed kernel parameters must be specified for each iteration');
+            end
             
             if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
                 obj.numMapParGuesses = size(obj.mapParGuesses,2);
             end
             
-            if isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
-                error('either filterParGuesses or numFilterParGuesses must be specified');
+            if isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses) && isempty(obj.filterParStar)
+                error('either filterParGuesses or numFilterParGuesses or filterParStar must be specified');
             end         
             
-            if ~isempty(obj.filterParGuesses) && ~isempty(obj.numFilterParGuesses)
-                error('filterParGuesses and numFilterParGuesses cannot be specified together');
+
+            if ~isempty(obj.filterParGuesses) && ~isempty(obj.numFilterParGuesses) || ...
+               ~isempty(obj.filterParGuesses) && ~isempty(obj.filterParStar) || ...
+               ~isempty(obj.filterParStar) && ~isempty(obj.numFilterParGuesses)
+
+                error('filterParGuesses, filterParStar and numFilterParGuesses cannot be specified together');
+            end    
+            
+            if ~isempty(obj.filterParStar) && (size(obj.filterParStar,2) ~= obj.iterations)
+                error('The fixed filter parameters must be specified for each iteration');
             end
             
             if ~isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
@@ -202,6 +227,9 @@ classdef sequentialResidualKrls < algorithm
                 if ~isempty(obj.mapParGuesses)
                     argin = [argin , 'mapParGuesses' , obj.mapParGuesses];
                 end
+                if ~isempty(obj.mapParStar)
+                    argin = [argin , 'mapParGuesses' , obj.mapParStar(iter)];
+                end
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
@@ -247,6 +275,9 @@ classdef sequentialResidualKrls < algorithm
                     end
                     if ~isempty(obj.numFilterParGuesses)
                         argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
+                    end
+                    if isempty(obj.filterParGuesses) && ~isempty(obj.filterParStar)
+                        argin = [argin , 'filterParGuesses' , obj.filterParStar(iter)];
                     end
                     if ~isempty(obj.verbose)
                         argin = [argin , 'verbose' , obj.verbose];
