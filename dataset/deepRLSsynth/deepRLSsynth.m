@@ -30,7 +30,7 @@ classdef deepRLSsynth < dataset
         function obj = deepRLSsynth(nTr , nTe)
             
             
-            sigmanoise = 0.2;
+            sigmanoise = 0.1;
             
             obj.nTr = nTr;
             obj.nTe = nTe;

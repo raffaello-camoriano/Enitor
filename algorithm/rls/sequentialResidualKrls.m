@@ -29,6 +29,7 @@ classdef sequentialResidualKrls < algorithm
         
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
+        Ktrain
         
         batchRank
         iterations
@@ -138,7 +139,7 @@ classdef sequentialResidualKrls < algorithm
                 error('mapParGuesses, mapParStar and numMapParGuesses cannot be specified together');
             end    
             
-            if size(obj.mapParStar,2) ~= obj.iterations
+            if ~isempty(obj.mapParStar) && (size(obj.mapParStar,2) ~= obj.iterations)
                 error('The fixed kernel parameters must be specified for each iteration');
             end
             
@@ -227,7 +228,7 @@ classdef sequentialResidualKrls < algorithm
                 if ~isempty(obj.mapParGuesses)
                     argin = [argin , 'mapParGuesses' , obj.mapParGuesses];
                 end
-                if ~isempty(obj.mapParStar)
+                if isempty(obj.mapParGuesses) && ~isempty(obj.mapParStar)
                     argin = [argin , 'mapParGuesses' , obj.mapParStar(iter)];
                 end
                 if ~isempty(obj.verbose)
@@ -235,8 +236,8 @@ classdef sequentialResidualKrls < algorithm
                 end
                 kernelTrain = obj.map( Xtrain , Xtrain , argin{:});
 
-                obj.mapParGuesses = kernelTrain.mapParGuesses;
-                obj.filterParGuessesStorage = [];
+%                 obj.mapParGuesses = kernelTrain.mapParGuesses;
+%                 obj.filterParGuessesStorage = [];
 
                 valM = inf;     % Keeps track of the lowest validation error
 
@@ -347,10 +348,14 @@ classdef sequentialResidualKrls < algorithm
                         if valPerf < valM
 
                             % Update best kernel parameter combination
-                            obj.mapParStar{iter} = kernelTrain.currentPar;
-
+                            if ~isempty(obj.mapParGuesses)
+                                obj.mapParStar(iter) = kernelTrain.currentPar;
+                            end
+                            
                             %Update best filter parameter
-                            obj.filterParStar{iter} = filter.currentPar;
+                            if ~isempty(obj.filterParGuesses)
+                                obj.filterParStar(iter) = filter.currentPar;
+                            end
 
                             %Update best validation performance measurement
                             valM = valPerf;
@@ -362,6 +367,9 @@ classdef sequentialResidualKrls < algorithm
 
                                 % Update coefficients vector
                                 obj.c{iter} = filter.weights;
+                                
+                                % save kernel mat
+                                obj.Ktrain{iter} = kernelTrain.K;
                             end
                         end
                     end
@@ -369,8 +377,8 @@ classdef sequentialResidualKrls < algorithm
 
                 % Print best filter  and kernel hyperparameter(s)
                 display(['Iteration #' , num2str(iter)])
-                display(['Best kernel hyperparameter(s): ' , num2str(obj.mapParStar{iter})])
-                display(['Best filter hyperparameter(s): ' , num2str(obj.filterParStar{iter})])
+                display(['Best kernel hyperparameter(s): ' , num2str(obj.mapParStar(iter))])
+                display(['Best filter hyperparameter(s): ' , num2str(obj.filterParStar(iter))])
     
                 % Compute residuals
                 Ytrain = Ytrain - kernelTrain.K * obj.c{iter};
@@ -378,14 +386,18 @@ classdef sequentialResidualKrls < algorithm
             end
         end
         
-        function Ypred = test( obj , Xte )
+        function [Ypred,YpredSteps] = test( obj , Xte )
             
+            YpredSteps  =cell(1,obj.iterations);
             Ypred = zeros(size(Xte,1),size(obj.c{1,1},2));
+            
             for iter = 1:obj.iterations
-
+                
+                YpredSteps{iter} = zeros(size(Xte,1),size(obj.c{1,1},2));
+                
                 % Get kernel type and instantiate train-test kernel
                 argin = {};
-                argin = [argin , 'mapParGuesses' , full(obj.mapParStar{iter})];
+                argin = [argin , 'mapParGuesses' , full(obj.mapParStar(iter))];
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
@@ -393,8 +405,9 @@ classdef sequentialResidualKrls < algorithm
                 kernelTest.next();
                 kernelTest.compute();
 
+                YpredSteps{iter} = kernelTest.K * obj.c{iter};
                 % Compute residuals
-                Ypred = Ypred + kernelTest.K * obj.c{iter};
+                Ypred = Ypred + YpredSteps{iter};
             end            
         end
     end
