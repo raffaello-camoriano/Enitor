@@ -29,8 +29,10 @@ classdef CovertypeBinary < dataset
             obj.t = 1;
             
             % Load data
-            folderName = fullfile('dataset','CovertypeBinary');
-            [gnd, obj.X] = libsvmread([folderName , '/covtype.libsvm.binary.scale']);
+            fullfilepath = which('CovertypeBinary.m');
+            [pathstr,~,~] = fileparts(fullfilepath);
+%             folderName = fullfile('CovertypeBinary');
+            [gnd, obj.X] = libsvmread([pathstr , '/covtype.libsvm.binary.scale']);
 %             [gnd, obj.X] = libsvmread([folderName , '/covtype.libsvm.binary']);
             obj.X = full(obj.X);
             
