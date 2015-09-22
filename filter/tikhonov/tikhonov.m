@@ -91,8 +91,12 @@ classdef tikhonov < filter
             addParameter(p,'preMultiplier',defaultPreMultiplier,checkPreMultiplier)
             
             % Parse function inputs
-            parse(p, K , Y , numSamples , varargin{:}{:})
-                        
+            if isempty(varargin)
+                parse(p, K , Y , numSamples)
+            else
+                parse(p, K , Y , numSamples , varargin{:}{:})
+            end
+            
             % Get size of kernel/covariance matrix
             obj.sz = size(p.Results.K,1);
             

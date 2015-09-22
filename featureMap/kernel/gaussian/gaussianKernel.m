@@ -53,7 +53,7 @@ classdef gaussianKernel < kernel
             addParameter(p,'verbose',defaultVerbose,checkVerbose);
             
             % Parse function inputs
-            if isempty(varargin{:})
+            if isempty(varargin)
                 parse(p, X1 , X2)
             else
                 parse(p, X1 , X2 , varargin{:}{:})

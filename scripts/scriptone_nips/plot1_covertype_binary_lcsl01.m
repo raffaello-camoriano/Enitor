@@ -11,9 +11,9 @@ mkdir(resdir);
 
 %% Initialization
 
-numRep = 1;
+numRep = 10;
 storeFullTrainPerf = 0;
-storeFullValPerf = 1;
+storeFullValPerf = 0;
 storeFullTestPerf = 0;
 verbose = 0;
 saveResult = 0;
@@ -265,8 +265,8 @@ for k = 1:numRep
       
     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx))
     
-%     nysTrainTime = [nysTrainTime ; trTime];
-%     nysTestPerformance = [nysTestPerformance ; perf'];
+    nysTrainTime = [nysTrainTime ; trTime];
+    nysTestPerformance = [nysTestPerformance ; perf'];
 
 %     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
 %     expNysInc.run();
@@ -334,6 +334,11 @@ for k = 1:numRep
     
     
 end
+
+meanPerf = mean(nysTestPerformance)
+stdPerf = std(nysTestPerformance,1)
+
+save('YpmsdResults','meanPerf','stdPerf');
 
 % save('wspace.mat' , '-v7.3');
 

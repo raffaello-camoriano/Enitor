@@ -12,7 +12,7 @@ mkdir(resdir);
 %% Initialization
 numRep = 10;
 storeFullTrainPerf = 0;
-storeFullValPerf = 1;
+storeFullValPerf = 0;
 storeFullTestPerf = 0;
 verbose = 0;
 saveResult = 0;
@@ -191,48 +191,53 @@ for k = 1:numRep
     
 end
 
-save('wspace.mat' , '-v7.3');
+meanPerf = mean(nysTestPerformance)
+stdPerf = std(nysTestPerformance,1)
+
+save('YpmsdResults','meanPerf','stdPerf');
+
+% save('wspace.mat' , '-v7.3');
 
 
 
 
 %% Plot 1 nips15
-
-if numRep == 1
-   
-    % Plot perf
-
-    for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
-        
-        endIdxM = startIdxM + numNysParGuesses - 1;
-        sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
-        
-        figure
-        hold on
-        plot( expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM), expNysInc.algo.valPerformance(startIdxM:endIdxM) , 'Marker' , 'diamond')
-        title(['Validation Error for \sigma = ' , num2str(sigma)])
-        ylabel('Validation error')
-        xlabel('m')
-    end
-end
-
-if numRep > 1
-    
-    % Plot perf
-
-    for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
-        
-        endIdxM = startIdxM + numNysParGuesses - 1;
-        sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
-        
-        figure
-        hold on
-        boxplot(nysValPerformance(:,startIdxM:endIdxM) , expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM) ,  'plotstyle' , 'compact')
-        title(['Validation Error for \sigma = ' , num2str(sigma)])
-        ylabel('Validation error')
-        xlabel('m')
-    end
-end
+% 
+% if numRep == 1
+%    
+%     % Plot perf
+% 
+%     for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
+%         
+%         endIdxM = startIdxM + numNysParGuesses - 1;
+%         sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
+%         
+%         figure
+%         hold on
+%         plot( expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM), expNysInc.algo.valPerformance(startIdxM:endIdxM) , 'Marker' , 'diamond')
+%         title(['Validation Error for \sigma = ' , num2str(sigma)])
+%         ylabel('Validation error')
+%         xlabel('m')
+%     end
+% end
+% 
+% if numRep > 1
+%     
+%     % Plot perf
+% 
+%     for startIdxM = 1:numNysParGuesses:size(expNysInc.algo.mapParGuesses,2)
+%         
+%         endIdxM = startIdxM + numNysParGuesses - 1;
+%         sigma = expNysInc.algo.mapParGuesses(2,startIdxM);
+%         
+%         figure
+%         hold on
+%         boxplot(nysValPerformance(:,startIdxM:endIdxM) , expNysInc.algo.mapParGuesses(1,startIdxM:endIdxM) ,  'plotstyle' , 'compact')
+%         title(['Validation Error for \sigma = ' , num2str(sigma)])
+%         ylabel('Validation error')
+%         xlabel('m')
+%     end
+% end
 
 
 %
