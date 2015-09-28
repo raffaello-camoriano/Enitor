@@ -336,7 +336,10 @@ classdef krls < algorithm
                 
                 % Recompute kernel on the whole training set with the best
                 % kernel parameter
-                kernelTrain.init(Xtr, Xtr);
+%                 kernelTrain.init(Xtr, Xtr);
+                kernelTrain.n = size(Xtr , 1);
+                kernelTrain.m = size(Xtr , 1);
+                kernelTrain.computeSqDistMat(Xtr,Xtr);
                 kernelTrain.compute(obj.mapParStar);
                 
                 % Recompute filter on the whole training set with the best

@@ -11,8 +11,8 @@ mkdir(resdir);
 %% Initialization
 
 numRep =  1;
-storeFullTrainPerf = 1;
-storeFullValPerf = 1;
+storeFullTrainPerf = 0;
+storeFullValPerf = 0;
 storeFullTestPerf = 0;
 verbose = 0;
 saveResult = 0;

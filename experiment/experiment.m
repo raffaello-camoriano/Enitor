@@ -15,6 +15,7 @@ classdef experiment < handle
         resdir          % Results saving directory
         memoryProfiler  % Flag for memory profiling
         verbose         % Verbosity flag
+        recompute
         
         %name
         customStr
@@ -24,7 +25,7 @@ classdef experiment < handle
     
     methods
         
-        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir , verbose)
+        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir , verbose , recompute)
             
             assert(isa(algo,'algorithm') , '1st argument is not of class algorithm');
             assert(isa(ds,'dataset') , '2nd argument is not of class dataset');
@@ -65,6 +66,10 @@ classdef experiment < handle
                    obj.verbose = verbose;
                 end
             end
+            
+            if nargin > 8
+                obj.recompute = recompute;
+            end            
 
             if obj.memoryProfiler && obj.measureTime
                 warning('Both time and memory profiling have been activated. Time measurements may not be reliable!')
@@ -104,7 +109,7 @@ classdef experiment < handle
                 profile -memory on
             end
 
-                obj.algo.train( Xtr , Ytr, obj.performanceMeasure , false , 0.2, 'Xte' , Xte, 'Yte' , Yte);
+                obj.algo.train( Xtr , Ytr, obj.performanceMeasure , obj.recompute , 0.2, 'Xte' , Xte, 'Yte' , Yte);
                 
             if obj.measureTime
                 obj.time.train = toc;
