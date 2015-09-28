@@ -272,7 +272,8 @@ classdef kgdesc < algorithm
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
-                filter = obj.filter( kernelTrain.K, Ytrain , numSamples , argin{:});
+                filter = obj.filter( kernelTrain.K, Ytrain , ...
+                    numSamples , argin{:});
                                 
                 obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
                 

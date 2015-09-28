@@ -149,7 +149,7 @@ classdef gaussianKernel < kernel
 %             obj.mapParGuesses = num2cell(tmp);
             obj.mapParGuesses = tmp;
         end
-        Xtrain 
+         
         % Computes the kernel matrix K based on SqDistMat and
         % kernel parameters
         function compute(obj , kerPar)

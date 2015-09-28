@@ -57,15 +57,17 @@ classdef Adult < dataset
                 obj.nTr = nTr;
                 obj.nTe = nTe;
                 
-                tmp = randperm( obj.nTrTot);                            
-                obj.trainIdx = tmp(1:obj.nTr);          
+%                 tmp = randperm( obj.nTrTot);                            
+%                 obj.trainIdx = tmp(1:obj.nTr);          
+                obj.trainIdx = 1:obj.nTr;          
                 
-                tmp = obj.nTrTot + randperm( obj.nTeTot );
-                obj.testIdx = tmp(1:obj.nTe);
+%                 tmp = obj.nTrTot + randperm( obj.nTeTot );
+%                 obj.testIdx = tmp(1:obj.nTe);
+                obj.testIdx = obj.nTrTot + 1:obj.nTe + obj.nTrTot;
             end
             
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+%             obj.shuffleTrainIdx();
+%             obj.shuffleTestIdx();
             
             % Reformat output columns
             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))

@@ -1,5 +1,5 @@
 classdef krls < algorithm
-    %UNTITLED2 Summary of this class goes here
+    %KRLS Kernelized Regularized Least Squares
     %   Detailed explanation goes here
     
     properties
