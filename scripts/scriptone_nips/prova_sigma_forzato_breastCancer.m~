@@ -19,8 +19,8 @@ saveResult = 0;
 
 % Load dataset
 
-numRep = 10;
-numNysParGuesses = 296;
+numRep = 2;
+numNysParGuesses = 294;
 numFilterParGuesses = 20;
 
 trainPerf =  zeros(numFilterParGuesses,numNysParGuesses,numRep );

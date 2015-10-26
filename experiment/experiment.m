@@ -69,6 +69,8 @@ classdef experiment < handle
             
             if nargin > 8
                 obj.recompute = recompute;
+            else
+                obj.recompute = 0;
             end            
 
             if obj.memoryProfiler && obj.measureTime

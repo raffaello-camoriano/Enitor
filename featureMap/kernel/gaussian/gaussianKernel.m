@@ -108,10 +108,17 @@ classdef gaussianKernel < kernel
         function computeSqDistMat(obj , X1 , X2)
             
             Sx1 = sum( X1.*X1 , 2);
-            Sx2 = sum( X2.*X2 , 2)';
-            Sx1x2 = X1 * X2';
+            obj.SqDistMat = repmat(Sx1 , 1 , obj.m);
+            clear Sx1;
             
-            obj.SqDistMat = repmat(Sx1 , 1 , obj.m) -2*Sx1x2 + repmat(Sx2 , obj.n , 1);
+            Sx2 = sum( X2.*X2 , 2)';
+            obj.SqDistMat = obj.SqDistMat + repmat(Sx2 , obj.n , 1);
+            clear Sx2;
+
+%             Sx1x2 = X1 * X2';
+            obj.SqDistMat = obj.SqDistMat -2* X1 * X2';
+
+%             obj.SqDistMat = repmat(Sx1 , 1 , obj.m) -2*Sx1x2 + repmat(Sx2 , obj.n , 1);
         
         end
                 
