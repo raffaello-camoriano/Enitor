@@ -88,7 +88,8 @@ for i = 1:numRep
         %% Incremental Nystrom KRLS
 
 %         map = @nystromUniformIncremental;
-        map = @nystromUniformIncremental2;
+%         map = @nystromUniformIncremental2;
+        map = @nystromUniformIncremental3;
         filter = @tikhonov;
         mapParGuesses = sigma;
         filterParGuesses = logspace(-3,-12,numFilterParGuesses);
