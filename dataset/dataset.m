@@ -20,7 +20,8 @@ classdef dataset < handle
 
         trainIdx
         testIdx
-        %shuffledTrainIdx
+
+        lossFunction
    end
    
    methods

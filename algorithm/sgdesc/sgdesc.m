@@ -1,5 +1,5 @@
-classdef gdesc < algorithm
-    %
+classdef sgdesc < algorithm
+    % sgdesc: Stochastic (sub)gradient descent. 1 pass over data
     
     properties
                 
@@ -30,12 +30,11 @@ classdef gdesc < algorithm
         filterParGuessesStorage
         isFilterParGuessesFixed
         
-        initialWeights      % initial weights of the filter
+        eta     % Step size
+        theta   % exponent of the decreasing step size factor (iteration^theta)
         
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
-        
-        eta     % filter step size
         
         trainIdx % Actual training indexes
         valIdx   % Actual validation indexes
@@ -47,7 +46,7 @@ classdef gdesc < algorithm
     
     methods
         
-        function obj = gdesc(filter, varargin)
+        function obj = sgdesc(filter, varargin)
             init( obj , filter, varargin)
         end
         
@@ -93,23 +92,20 @@ classdef gdesc < algorithm
             checkStoreFullTestPred = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTestPred',defaultStoreFullTestPred,checkStoreFullTestPred);            
             
-            % filterParGuesses       % filter parameter guesses vector
-            defaultFilterParGuesses = [];
-            checkFilterParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
-            addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                
-            
             % numFilterParGuesses    % Number of filter parameter guesses vector
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x)  x > 0 ;            
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses);         
             
-            % initialWeights    % initial weights of the filter
-            defaultInitialWeights = [];
-            addParameter(p,'initialWeights',defaultInitialWeights);      
-            
             % eta    % step size
             defaultEta = [];
-            addParameter(p,'eta',defaultEta);      
+            checkEta = @(x)  x > 0 ;            
+            addParameter(p,'eta',defaultEta,checkEta);         
+            
+            % theta    % Exponent of step size decreasing sequence
+            defaultTheta = [];
+            checkTheta = @(x)  (x <= 0 && x >= -1);            
+            addParameter(p,'theta',defaultTheta,checkTheta);         
             
             % stoppingRule
             defaultStoppingRule = [];
@@ -123,25 +119,7 @@ classdef gdesc < algorithm
             fields = fieldnames(p.Results);
             for idx = 1:numel(fields)
                 obj.(fields{idx}) = p.Results.(fields{idx});
-            end
-            
-            %%% Joint parameters validation
-            
-            
-            if isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
-                error('either filterParGuesses or numFilterParGuesses must be specified');
-            end         
-            
-            if ~isempty(obj.filterParGuesses) && ~isempty(obj.numFilterParGuesses)
-                error('filterParGuesses and numFilterParGuesses cannot be specified together');
-            end
-            
-            if ~isempty(obj.filterParGuesses) && isempty(obj.numFilterParGuesses)
-                obj.numFilterParGuesses = size(obj.filterParGuesses,2);
-                obj.isFilterParGuessesFixed = 1;
-            else
-                obj.isFilterParGuessesFixed = 0;
-            end
+            end            
         end
         
         function train(obj , Xtr , Ytr , performanceMeasure , recompute, validationPart , varargin)
@@ -179,10 +157,7 @@ classdef gdesc < algorithm
             Yte = p.Results.Yte;
             
             % Training/validation sets splitting
-%             shuffledIdx = randperm(size(Xtr,1));
             ntr = floor(size(Xtr,1)*(1-validationPart));
-%             trainIdx = shuffledIdx(1 : tmp1);
-%             valIdx = shuffledIdx(tmp1 + 1 : end);
             obj.trainIdx = 1 : ntr;
             obj.valIdx = ntr + 1 : size(Xtr,1);
             
@@ -212,29 +187,24 @@ classdef gdesc < algorithm
                 obj.testPred = zeros(obj.numFilterParGuesses,size(Xte,1));
             end
             
-
             % Normalization factors
             numSamples = size(Xtrain , 1);
 
+            if isempty(obj.numFilterParGuesses)
+    			obj.numFilterParGuesses = size(Xtrain,1);
+            end
             argin = {};
-            if ~isempty(obj.filterParGuesses)
-                argin = [argin , 'filterParGuesses' , obj.filterParGuesses];
-            end
-            if ~isempty(obj.numFilterParGuesses)
-                argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
-            end
-            if ~isempty(obj.initialWeights)
-                argin = [argin , 'initialWeights' , obj.initialWeights];
-            end
+            argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
             if ~isempty(obj.eta)
                 argin = [argin , 'eta' , obj.eta];
+            end
+            if ~isempty(obj.theta)
+                argin = [argin , 'theta' , obj.theta];
             end
             if ~isempty(obj.verbose)
                 argin = [argin , 'verbose' , obj.verbose];
             end
             filter = obj.filter( Xtrain, Ytrain , numSamples , argin{:});
-
-%             obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
 
             while filter.next()
 
@@ -346,4 +316,3 @@ classdef gdesc < algorithm
         end
     end
 end
-

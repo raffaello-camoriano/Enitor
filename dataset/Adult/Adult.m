@@ -128,26 +128,13 @@ classdef Adult < dataset
             
         % Compute performance measure on the given outputs according to the
         % USPS dataset-specific ranking standard measure
-        function perf = performanceMeasure(obj , Y , Ypred , varargin)
+        function perf = performanceMeasure(obj , Y , Yscores , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.
-%             if obj.hasRealValues(Ypred)
-                Ypred = obj.scoresToClasses(Ypred);
-%             end
+            Ypred = obj.scoresToClasses(Yscores);
+
+            perf = obj.lossFunction(Y, Yscores, Ypred);
             
-            % Compute error rate
-%             numCorrect = 0;
-            
-%             for i = 1:size(Y,1)
-%                 if Y(i) == Ypred(i)
-%                     numCorrect = numCorrect +1;
-%                 end
-%             end
-            
-            correctIdx = Y == Ypred;
-            numCorrect = sum(correctIdx);
-            
-            perf = 1 - (numCorrect / size(Y,1));
         end
         
         % Scales matrix M between -1 and 1

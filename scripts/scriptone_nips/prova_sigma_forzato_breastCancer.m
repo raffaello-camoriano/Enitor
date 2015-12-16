@@ -19,7 +19,7 @@ saveResult = 0;
 
 % Load dataset
 
-numRep = 10;
+numRep = 5;
 numNysParGuesses = 296;
 numFilterParGuesses = 20;
 
@@ -31,6 +31,11 @@ valPerf =  zeros(numFilterParGuesses,numNysParGuesses,numRep );
 trainPerfLIM =  zeros(numFilterParGuesses,numNysParGuesses,numRep );
 testPerfLIM =  zeros(numFilterParGuesses,numNysParGuesses,numRep );
 valPerfLIM =  zeros(numFilterParGuesses,numNysParGuesses,numRep );
+
+
+trainPerfLIM_OLD =  zeros(numFilterParGuesses,numNysParGuesses,numRep );
+testPerfLIM_OLD =  zeros(numFilterParGuesses,numNysParGuesses,numRep );
+valPerfLIM_OLD =  zeros(numFilterParGuesses,numNysParGuesses,numRep );
 
 for i = 1:numRep
     
@@ -84,6 +89,55 @@ for i = 1:numRep
         if storeFullTestPerf == 1
             testPerf(:,:,i) = expNysBat.algo.testPerformance';
         end
+    
+
+        %% UNSTABLE Incremental Nystrom KRLS
+
+        map = @nystromUniformIncremental;
+%         map = @nystromUniformIncremental2;
+%         map = @nystromUniformIncremental3;
+        filter = @tikhonov;
+        mapParGuesses = sigma;
+        filterParGuesses = logspace(-3,-12,numFilterParGuesses);
+        maxRank = 300;
+
+        alg = incrementalNkrls( map , maxRank , ...
+                                'minRank' , 5 , ...
+                                'numNysParGuesses', numNysParGuesses , ...
+                                ...'numNysParGuesses', 20 , ...
+                                'mapParGuesses' , mapParGuesses ,  ... 
+                                'filterParGuesses', filterParGuesses , ...
+                                'verbose' , 0 , ...
+                                'storeFullTrainPerf' , storeFullTrainPerf , ...
+                                'storeFullValPerf' , storeFullValPerf , ...
+                                'storeFullTestPerf' , storeFullTestPerf );
+
+    %     alg.mapParStar = [ 0 , 5.7552];
+    %     alg.filterParStar = 1e-9;
+
+    %     tic
+    %     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
+    %     trTime = toc;
+    %     
+    %     YtePred = alg.test(ds.X(ds.testIdx,:));   
+    %       
+    %     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+    %     nysTrainTime = [nysTrainTime ; trTime];
+    %     nysTestPerformance = [nysTestPerformance ; perf'];
+
+        expNysInc_OLD = experiment(alg , ds , 1 , 1 , saveResult , '' , resdir , 0 , 0);
+        expNysInc_OLD.run();
+        expNysInc_OLD.result
+        
+        if storeFullTrainPerf == 1
+            trainPerfLIM_OLD(:,:,i) = expNysInc_OLD.algo.trainPerformance';
+        end
+        if storeFullValPerf == 1
+            valPerfLIM_OLD(:,:,i) = expNysInc_OLD.algo.valPerformance';
+        end
+        if storeFullTestPerf == 1
+            testPerfLIM_OLD(:,:,i) = expNysInc_OLD.algo.testPerformance';
+        end        
         
         %% Incremental Nystrom KRLS
 
@@ -162,6 +216,24 @@ h = colorbar('southoutside','FontSize',14);
 h.Label.String = 'Classification Error';
 h.Label.FontSize = 20;
 
+
+%%  Incremental plot - OLD
+
+figure
+% m = cell2mat(expNysInc.algo.nyMapper.rng(1,:));
+m = expNysInc_OLD.algo.nyMapper.rng(1,:);
+l = expNysInc_OLD.algo.filterParGuesses;
+pcolor(m(1,:),l,mean(valPerfLIM_OLD,3))
+title('Incremental Nystrom (Old)')
+% Create ylabel
+ylabel('\lambda','FontSize',36,'Rotation',0);
+% Create xlabel
+xlabel('m','FontSize',36);
+set(gca,'FontSize',14);
+set(gca,'YScale','log')
+h = colorbar('southoutside','FontSize',14);
+h.Label.String = 'Classification Error';
+h.Label.FontSize = 20;
 
 %%  Incremental plot
 
