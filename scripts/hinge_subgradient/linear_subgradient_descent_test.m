@@ -7,6 +7,7 @@ close all;
 resdir = 'scripts/hinge_subgradient/plots/';
 mkdir(resdir);
 
+
 %% Initialization
 
 numRep =  1;
@@ -15,7 +16,6 @@ storeFullValPerf = 1;
 storeFullTestPerf = 1;
 verbose = 0;
 saveResult = 0;
-
 maxiter = 5000;
 
 
@@ -35,6 +35,27 @@ SGD_trainErr = [];
 SGD_valErr = [];
 SGD_testErr = [];
 
+SGD2_trainTime = zeros(numRep,1);
+SGD2_testTime = zeros(numRep,1);
+SGD2_perf = zeros(numRep,1);
+SGD2_trainErr = [];
+SGD2_valErr = [];
+SGD2_testErr = [];
+
+SGD3_trainTime = zeros(numRep,1);
+SGD3_testTime = zeros(numRep,1);
+SGD3_perf = zeros(numRep,1);
+SGD3_trainErr = [];
+SGD3_valErr = [];
+SGD3_testErr = [];
+
+SGD4_trainTime = zeros(numRep,1);
+SGD4_testTime = zeros(numRep,1);
+SGD4_perf = zeros(numRep,1);
+SGD4_trainErr = [];
+SGD4_valErr = [];
+SGD4_testErr = [];
+
 SGD_IGD_trainTime = zeros(numRep,1);
 SGD_IGD_testTime = zeros(numRep,1);
 SGD_IGD_perf = zeros(numRep,1);
@@ -50,10 +71,11 @@ for k = 1:numRep
     ds.lossFunction = @hingeLoss;
 %     ds.lossFunction = @classificationError;
     
+
     %% IGD, hinge loss
 
     fil = @IsubGD_primal_hinge_loss;
-    maxiter = 7400;
+    maxiter = 7200;
     alg = gdesc( fil , ...
         'filterParGuesses' , 1:maxiter   , ...
         'verbose' , 0 , ...
@@ -72,27 +94,108 @@ for k = 1:numRep
     IGD_trainErr = [IGD_trainErr ; expIGD_linear_hinge_loss.algo.trainPerformance'];
     IGD_valErr = [IGD_valErr ; expIGD_linear_hinge_loss.algo.valPerformance'];
     IGD_testErr = [IGD_testErr ; expIGD_linear_hinge_loss.algo.testPerformance'];
-%     
-%     
-%     %% SGD, hinge loss
-%     fil = @SsubGD_primal_hinge_loss;
-%     alg = sgdesc( fil , ...
-%         'verbose' , 0 , ...
-%         'storeFullTrainPerf' , storeFullTrainPerf , ...
-%         'storeFullValPerf' , storeFullValPerf , ...
-%         'storeFullTestPerf' , storeFullTestPerf);
-% 
-%     expSGD_linear_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
-%     
-%     expSGD_linear_hinge_loss.run();
-%     expSGD_linear_hinge_loss.result
-%     
-%     SGD_trainTime(k) = expSGD_linear_hinge_loss.time.train;
-%     SGD_testTime(k) = expSGD_linear_hinge_loss.time.test;
-%     SGD_perf(k) = expSGD_linear_hinge_loss.result.perf;
-%     SGD_trainErr = [trainErr ; expSGD_linear_hinge_loss.algo.trainPerformance'];
-%     SGD_valErr = [valErr ; expSGD_linear_hinge_loss.algo.valPerformance'];
-%     SGD_testErr = [testErr ; expSGD_linear_hinge_loss.algo.testPerformance'];
+    
+    
+    %% SGD, converging step size, hinge loss
+    fil = @SsubGD_primal_hinge_loss;
+    maxiter = 7200;
+    alg = sgdesc( fil , ...
+        'numFilterParGuesses' , maxiter   , ...
+        'verbose' , 0 , ...
+        'storeFullTrainPerf' , storeFullTrainPerf , ...
+        'storeFullValPerf' , storeFullValPerf , ...
+        'storeFullTestPerf' , storeFullTestPerf);
+
+    expSGD_linear_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
+    
+    expSGD_linear_hinge_loss.run();
+    expSGD_linear_hinge_loss.result
+    
+    SGD_trainTime(k) = expSGD_linear_hinge_loss.time.train;
+    SGD_testTime(k) = expSGD_linear_hinge_loss.time.test;
+    SGD_perf(k) = expSGD_linear_hinge_loss.result.perf;
+    SGD_trainErr = [SGD_trainErr ; expSGD_linear_hinge_loss.algo.trainPerformance'];
+    SGD_valErr = [SGD_valErr ; expSGD_linear_hinge_loss.algo.valPerformance'];
+    SGD_testErr = [SGD_testErr ; expSGD_linear_hinge_loss.algo.testPerformance'];
+    
+    
+    
+    %% SGD, fixed step size (eta = 1/T), hinge loss
+    fil = @SsubGD_primal_hinge_loss;
+    maxiter = 7200;
+    alg = sgdesc( fil , ...
+        'numFilterParGuesses' , maxiter   , ...
+        'eta' , 1/maxiter , ...
+        'theta' , 0 , ...
+        'verbose' , 0 , ...
+        'storeFullTrainPerf' , storeFullTrainPerf , ...
+        'storeFullValPerf' , storeFullValPerf , ...
+        'storeFullTestPerf' , storeFullTestPerf);
+
+    expSGD2_linear_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
+    
+    expSGD2_linear_hinge_loss.run();
+    expSGD2_linear_hinge_loss.result
+    
+    SGD2_trainTime(k) = expSGD2_linear_hinge_loss.time.train;
+    SGD2_testTime(k) = expSGD2_linear_hinge_loss.time.test;
+    SGD2_perf(k) = expSGD2_linear_hinge_loss.result.perf;
+    SGD2_trainErr = [SGD2_trainErr ; expSGD2_linear_hinge_loss.algo.trainPerformance'];
+    SGD2_valErr = [SGD2_valErr ; expSGD2_linear_hinge_loss.algo.valPerformance'];
+    SGD2_testErr = [SGD2_testErr ; expSGD2_linear_hinge_loss.algo.testPerformance'];
+    
+    
+    
+    
+    
+    %% SGD, fixed step size (eta = 1/(T^(3/4))), hinge loss
+    fil = @SsubGD_primal_hinge_loss;
+    maxiter = 7200;
+    alg = sgdesc( fil , ...
+        'numFilterParGuesses' , maxiter   , ...
+        'eta' , 1/(maxiter^(3/4)) , ...
+        'theta' , 0 , ...
+        'verbose' , 0 , ...
+        'storeFullTrainPerf' , storeFullTrainPerf , ...
+        'storeFullValPerf' , storeFullValPerf , ...
+        'storeFullTestPerf' , storeFullTestPerf);
+
+    expSGD3_linear_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
+    
+    expSGD3_linear_hinge_loss.run();
+    expSGD3_linear_hinge_loss.result
+    
+    SGD3_trainTime(k) = expSGD3_linear_hinge_loss.time.train;
+    SGD3_testTime(k) = expSGD3_linear_hinge_loss.time.test;
+    SGD3_perf(k) = expSGD3_linear_hinge_loss.result.perf;
+    SGD3_trainErr = [SGD3_trainErr ; expSGD3_linear_hinge_loss.algo.trainPerformance'];
+    SGD3_valErr = [SGD3_valErr ; expSGD3_linear_hinge_loss.algo.valPerformance'];
+    SGD3_testErr = [SGD3_testErr ; expSGD3_linear_hinge_loss.algo.testPerformance'];
+    
+    
+    %% SGD, fixed step size (eta = 1/sqrt(T)), hinge loss
+    fil = @SsubGD_primal_hinge_loss;
+    maxiter = 7200;
+    alg = sgdesc( fil , ...
+        'numFilterParGuesses' , maxiter   , ...
+        'eta' , 1/sqrt(maxiter) , ...
+        'theta' , 0 , ...
+        'verbose' , 0 , ...
+        'storeFullTrainPerf' , storeFullTrainPerf , ...
+        'storeFullValPerf' , storeFullValPerf , ...
+        'storeFullTestPerf' , storeFullTestPerf);
+
+    expSGD4_linear_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
+    
+    expSGD4_linear_hinge_loss.run();
+    expSGD4_linear_hinge_loss.result
+    
+    SGD4_trainTime(k) = expSGD4_linear_hinge_loss.time.train;
+    SGD4_testTime(k) = expSGD4_linear_hinge_loss.time.test;
+    SGD4_perf(k) = expSGD4_linear_hinge_loss.result.perf;
+    SGD4_trainErr = [SGD4_trainErr ; expSGD4_linear_hinge_loss.algo.trainPerformance'];
+    SGD4_valErr = [SGD4_valErr ; expSGD4_linear_hinge_loss.algo.valPerformance'];
+    SGD4_testErr = [SGD4_testErr ; expSGD4_linear_hinge_loss.algo.testPerformance'];
     
     
     
@@ -107,7 +210,7 @@ for k = 1:numRep
     expSGD_IGD_linear_hinge_loss_1 = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
     expSGD_IGD_linear_hinge_loss_1.run();
 
-    maxiter = 5000;
+    maxiter = 4800;
     fil = @IsubGD_primal_hinge_loss;
     alg = gdesc( fil , ...
         'filterParGuesses' , 1:maxiter   , ...
@@ -154,6 +257,95 @@ end
 % ylabel('Relative Error')
 
 %% Plot training vs validation error over iterations
+
+% SGD: converging step size
+% Log scale
+
+% figure
+axes1 = axes('Parent',figure,'YGrid','on','XGrid','on','XScale','log');
+box(axes1,'on');
+hold on;
+if numRep > 1
+    semilogx(mean(SGD_trainErr))
+    semilogx(mean(SGD_valErr))
+else
+    semilogx(SGD_trainErr)
+    semilogx(SGD_valErr)
+end
+set(gca,'XScale', 'log')
+title({'SGD - converging \eta';'Training vs. Validation error'})
+xlabel('Iteration')
+ylabel('Relative Error')
+legend('Training','Validation')
+hold off
+
+
+% SGD: fixed step size (1/T)
+% Log scale
+
+% figure
+axes1 = axes('Parent',figure,'YGrid','on','XGrid','on','XScale','log');
+box(axes1,'on');
+hold on;
+if numRep > 1
+    semilogx(mean(SGD2_trainErr))
+    semilogx(mean(SGD2_valErr))
+else
+    semilogx(SGD2_trainErr)
+    semilogx(SGD2_valErr)
+end
+set(gca,'XScale', 'log')
+title({'SGD - fixed \eta = 1/T';'Training vs. Validation error'})
+xlabel('Iteration')
+ylabel('Relative Error')
+legend('Training','Validation')
+hold off
+
+
+
+% SGD: fixed step size (eta = 1/(T^(3/4)))
+% Log scale
+
+% figure
+axes1 = axes('Parent',figure,'YGrid','on','XGrid','on','XScale','log');
+box(axes1,'on');
+hold on;
+if numRep > 1
+    semilogx(mean(SGD3_trainErr))
+    semilogx(mean(SGD3_valErr))
+else
+    semilogx(SGD3_trainErr)
+    semilogx(SGD3_valErr)
+end
+set(gca,'XScale', 'log')
+title({'SGD - fixed \eta = 1/T^{3/4}';'Training vs. Validation error'})
+xlabel('Iteration')
+ylabel('Relative Error')
+legend('Training','Validation')
+hold off
+
+
+
+% SGD: fixed step size (1/sqrt(T))
+% Log scale
+
+% figure
+axes1 = axes('Parent',figure,'YGrid','on','XGrid','on','XScale','log');
+box(axes1,'on');
+hold on;
+if numRep > 1
+    semilogx(mean(SGD4_trainErr))
+    semilogx(mean(SGD4_valErr))
+else
+    semilogx(SGD4_trainErr)
+    semilogx(SGD4_valErr)
+end
+set(gca,'XScale', 'log')
+title({'SGD - fixed \eta = 1/T^{1/2}';'Training vs. Validation error'})
+xlabel('Iteration')
+ylabel('Relative Error')
+legend('Training','Validation')
+hold off
 
 % IGD
 % Log scale
@@ -287,4 +479,4 @@ hold off
 % %% Save figures
 figsdir = resdir;
 % % mkdir(figsdir);
-% saveAllFigs
+saveAllFigs

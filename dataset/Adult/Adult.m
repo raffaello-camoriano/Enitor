@@ -126,8 +126,7 @@ classdef Adult < dataset
             Ypred(Yscores>0) = 1;
         end
             
-        % Compute performance measure on the given outputs according to the
-        % USPS dataset-specific ranking standard measure
+        % Compute performance measure on the given outputs according to the specified loss
         function perf = performanceMeasure(obj , Y , Yscores , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.

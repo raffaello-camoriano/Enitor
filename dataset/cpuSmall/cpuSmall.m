@@ -47,36 +47,15 @@ classdef cpuSmall < dataset
             
             obj.problemType = 'regression';
         end
+        
+        % Compute performance measure on the given outputs according to the specified loss
+        function perf = performanceMeasure(obj , Y , Yscores , varargin)
             
-        % Compute predictions matrix from real-valued scores matrix
-%         function Ypred = scoresToClasses(obj , Yscores)    
-% 
-%             Ypred = round(Yscores*(obj.maxY-obj.minY)+obj.minY);
-%         end
-%         
-        % Compute performance measure on the given outputs
-        function perf = performanceMeasure(obj , Y , Ypred , varargin)
+            % Check if Ypred is real-valued. If yes, convert it.
+            Ypred = obj.scoresToClasses(Yscores);
+
+            perf = obj.lossFunction(Y, Yscores, Ypred);
             
-            % RMSE
-            perf = sqrt(sum((Y - Ypred).^2)/size(Y,1));
-            
-%             Ypred = obj.scoresToClasses(Ypred);
-% 
-%             % Compute error rate
-%             numCorrect = 0;
-%             for i = 1:size(Y,1)
-%                 if obj.Yclasses(i) == Ypred(i,:)
-%                     numCorrect = numCorrect +1;
-%                 end
-%             end
-% 
-%             perf = 1 - (numCorrect / size(Y,1));       
-%             
-%                 C = transpose(bsxfun(@eq, Y', Ypred'));
-%                 D = sum(C,2);
-%                 E = D == size(Y,2);
-%                 numCorrect = sum(E);
-%                 perf = 1 - (numCorrect / size(Y,1));           
         end
         
         % Scales matrix M between 0 and 1
