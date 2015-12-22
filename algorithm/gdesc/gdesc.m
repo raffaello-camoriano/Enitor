@@ -35,7 +35,8 @@ classdef gdesc < algorithm
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
         
-        eta     % filter step size
+        eta         % filter step size
+        theta       % filter step size sequence exponent
         
         trainIdx % Actual training indexes
         valIdx   % Actual validation indexes
@@ -109,7 +110,13 @@ classdef gdesc < algorithm
             
             % eta    % step size
             defaultEta = [];
-            addParameter(p,'eta',defaultEta);      
+            checkEta = @(x)  x > 0 ;            
+            addParameter(p,'eta',defaultEta,checkEta);         
+            
+            % theta    % Exponent of step size decreasing sequence
+            defaultTheta = [];
+            checkTheta = @(x)  (x <= 0 && x >= -1);            
+            addParameter(p,'theta',defaultTheta,checkTheta);
             
             % stoppingRule
             defaultStoppingRule = [];
@@ -229,12 +236,13 @@ classdef gdesc < algorithm
             if ~isempty(obj.eta)
                 argin = [argin , 'eta' , obj.eta];
             end
+            if ~isempty(obj.theta)
+                argin = [argin , 'theta' , obj.theta];
+            end
             if ~isempty(obj.verbose)
                 argin = [argin , 'verbose' , obj.verbose];
             end
             filter = obj.filter( Xtrain, Ytrain , numSamples , argin{:});
-
-%             obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
 
             while filter.next()
 

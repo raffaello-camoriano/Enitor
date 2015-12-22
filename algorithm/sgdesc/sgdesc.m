@@ -92,10 +92,19 @@ classdef sgdesc < algorithm
             checkStoreFullTestPred = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTestPred',defaultStoreFullTestPred,checkStoreFullTestPred);            
             
+            % filterParGuesses       % filter parameter guesses vector
+            defaultFilterParGuesses = [];
+            checkFilterParGuesses = @(x) ismatrix(x) && size(x,2) > 0 ;            
+            addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                
+            
             % numFilterParGuesses    % Number of filter parameter guesses vector
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x)  x > 0 ;            
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses);         
+            
+            % initialWeights    % initial weights of the filter
+            defaultInitialWeights = [];
+            addParameter(p,'initialWeights',defaultInitialWeights);      
             
             % eta    % step size
             defaultEta = [];
@@ -105,7 +114,7 @@ classdef sgdesc < algorithm
             % theta    % Exponent of step size decreasing sequence
             defaultTheta = [];
             checkTheta = @(x)  (x <= 0 && x >= -1);            
-            addParameter(p,'theta',defaultTheta,checkTheta);         
+            addParameter(p,'theta',defaultTheta,checkTheta);
             
             % stoppingRule
             defaultStoppingRule = [];
@@ -187,6 +196,7 @@ classdef sgdesc < algorithm
                 obj.testPred = zeros(obj.numFilterParGuesses,size(Xte,1));
             end
             
+
             % Normalization factors
             numSamples = size(Xtrain , 1);
 
@@ -195,6 +205,9 @@ classdef sgdesc < algorithm
             end
             argin = {};
             argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
+            if ~isempty(obj.initialWeights)
+                argin = [argin , 'initialWeights' , obj.initialWeights];
+            end
             if ~isempty(obj.eta)
                 argin = [argin , 'eta' , obj.eta];
             end

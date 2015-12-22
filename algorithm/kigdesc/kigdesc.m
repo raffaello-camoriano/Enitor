@@ -1,4 +1,4 @@
-classdef kgdesc < algorithm
+classdef kigdesc < algorithm
     %KGDESC Kernelized gradient descent estimator/algorithm
     %   Also known as Landwaeber algorithm, the kernelized gradient descent
     %   estimator/algorithm optimizes the coefficients c of the expression:
@@ -38,10 +38,9 @@ classdef kgdesc < algorithm
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
         
+        initialWeights  % Initial filter weights
         eta         % filter step size
         theta       % filter step size sequence exponent
-        
-        initialWeights
         
         trainIdx % Actual training indexes
         valIdx   % Actual validation indexes
@@ -53,7 +52,7 @@ classdef kgdesc < algorithm
     
     methods
         
-        function obj = kgdesc(map, filter, varargin)
+        function obj = kigdesc(map, filter, varargin)
             init( obj , map, filter, varargin)
         end
         
@@ -215,7 +214,10 @@ classdef kgdesc < algorithm
             Yte = p.Results.Yte;
             
             % Training/validation sets splitting
+%             shuffledIdx = randperm(size(Xtr,1));
             ntr = floor(size(Xtr,1)*(1-validationPart));
+%             trainIdx = shuffledIdx(1 : tmp1);
+%             valIdx = shuffledIdx(tmp1 + 1 : end);
             obj.trainIdx = 1 : ntr;
             obj.valIdx = ntr + 1 : size(Xtr,1);
             
@@ -284,6 +286,9 @@ classdef kgdesc < algorithm
                 if ~isempty(obj.numFilterParGuesses)
                     argin = [argin , 'numFilterParGuesses' , obj.numFilterParGuesses];
                 end
+                if ~isempty(obj.initialWeights)
+                    argin = [argin , 'initialWeights' , obj.initialWeights];
+                end
                 if ~isempty(obj.eta)
                     argin = [argin , 'eta' , obj.eta];
                 end
@@ -293,9 +298,8 @@ classdef kgdesc < algorithm
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
-                filter = obj.filter( kernelTrain.K, Ytrain , ...
-                    numSamples , argin{:});
-                                
+                filter = obj.filter( obj.map , kernelTrain.currentPar(1) , Xtrain , Ytrain , numSamples , argin{:});
+                
                 obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
                 
                 while filter.next()
