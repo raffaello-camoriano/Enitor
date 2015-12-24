@@ -1,7 +1,7 @@
 setenv('LC_ALL','C');
 addpath(genpath('.'));
 clearAllButBP;
-close all;
+% close all;
 
 % Set experimental results relative directory name
 resdir = 'scripts/hinge_subgradient/plots/';
@@ -17,10 +17,9 @@ storeFullTestPerf = 0;
 verbose = 0;
 saveResult = 0;
 
-epochs = 100;
+epochs = 1000;
 
 map = @gaussianKernel;
-mapParGuesses = 6;
 
 
 %% Storage vars init
@@ -42,16 +41,25 @@ GD_testErr = [];
 for k = 1:numRep
 
     % Load dataset
-%     ds = Adult(7000,16282,'plusMinusOne');
-    ds = Adult(3000,3000,'plusMinusOne');
+%     ds = Adult(7000,162826,'plusMinusOne');
+%     ds = Adult(3000,3000,'plusMinusOne');
+%         mapParGuesses = 6;
+
+
+    ds = breastCancer(400,169,'plusMinusOne');
+%     mapParGuesses = 0.9;
+    mapParGuesses = 0.5;
+    
+    
     ds.lossFunction = @hingeLoss;
 %     ds.lossFunction = @classificationError;
     
+    ntr = floor(ds.nTr * 0.8);
 
     %% IGD, hinge loss
 
     fil = @IsubGD_dual_hinge_loss;
-    maxiter2 = 2400 * epochs;
+    maxiter2 = ntr * epochs;
     alg = kigdesc( map , fil , ...
         'mapParGuesses' , mapParGuesses , ...
         'numFilterParGuesses' , maxiter2   , ...
@@ -239,7 +247,7 @@ hold off
 % f = [ m'+2*sd' , flipdim(m'-2*sd',2)]; 
 % hMean2 = semilogx(1:size(valErr,2) , m , 'r' , 'LineWidth',1);
 % % hold on;
-% h2 = fill([1:size(valErr,2) , size(valErr,2):-1:1] , f, 'red', ...
+% h2 = fill([1:size(valErr,2) , size(valErr,2):-1kernelized_IGD_vs_GD.m:1] , f, 'red', ...
 %     'FaceAlpha', 0.1,'LineStyle','none');
 % semilogx(1:size(valErr,2) , m , 'r' , 'LineWidth',1);    
 % alpha(h2,0.3);
