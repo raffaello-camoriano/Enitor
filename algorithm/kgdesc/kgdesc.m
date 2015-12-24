@@ -35,12 +35,12 @@ classdef kgdesc < algorithm
         filterParGuessesStorage
         isFilterParGuessesFixed
         
-        Xmodel     % Training samples actually used for training. they are part of the learned model
-        c       % Coefficients vector
+        cStar       % best coefficients vector
+        valErrStar  % Best validation error
         
         eta         % filter step size
         theta       % filter step size sequence exponent
-        
+        Xmodel
         initialWeights
         
         trainIdx % Actual training indexes
@@ -240,7 +240,7 @@ classdef kgdesc < algorithm
             obj.mapParGuesses = kernelTrain.mapParGuesses;   % Warning: rename to mapParGuesses
             obj.filterParGuessesStorage = [];
 
-            valM = inf;     % Keeps track of the lowest validation error
+            obj.valErrStar = inf;     % Keeps track of the lowest validation error
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
@@ -307,7 +307,7 @@ classdef kgdesc < algorithm
                     YvalPred = kernelVal.K * filter.weights;
 
                     % Compute performance
-                    valPerf = performanceMeasure( Yval , YvalPred ,obj.valIdx );
+                    valPerf = performanceMeasure( Yval , YvalPred , obj.valIdx );
                     
                     % Apply early stopping criterion
                     stop = 0;
@@ -366,7 +366,7 @@ classdef kgdesc < algorithm
                     %%%%%%%%%%%%%%%%%%%%
                     % Store best model %
                     %%%%%%%%%%%%%%%%%%%%
-                    if valPerf < valM
+                    if valPerf < obj.valErrStar
                         
                         % Update best kernel parameter combination
                         obj.mapParStar = kernelTrain.currentPar;
@@ -375,23 +375,16 @@ classdef kgdesc < algorithm
                         obj.filterParStar = filter.currentPar;
                         
                         %Update best validation performance measurement
-                        valM = valPerf;
+                        obj.valErrStar = valPerf;
                         
-                        if ~recompute
-                            
-                            % Update internal model samples matrix
-                            obj.Xmodel = Xtrain;
-                            
-                            % Update coefficients vector
-                            obj.c = filter.weights;
-                        end
+                        % Update coefficients vector
+                        obj.cStar = filter.weights;
+                        
+                        % Update internal model samples matrix
+                        obj.Xmodel = Xtrain;
                     end
                 end
             end
-            
-            
-            % Plot errors
-%             semilogx(cell2mat(filter.rng),  valPerformance);            
             
             % Print best kernel hyperparameter(s)
             display('Best kernel hyperparameter(s):')
@@ -419,7 +412,7 @@ classdef kgdesc < algorithm
                 obj.Xmodel = Xtr;
                 
                 % Update coefficients vector
-                obj.c = filter.weights;
+                obj.cStar = filter.weights;
             end        
         end
         
@@ -436,7 +429,7 @@ classdef kgdesc < algorithm
             kernelTest.compute();
 
             % Compute scores
-            Ypred = kernelTest.K * obj.c;
+            Ypred = kernelTest.K * obj.cStar;
         end
     end
 end

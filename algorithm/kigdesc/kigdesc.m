@@ -36,7 +36,8 @@ classdef kigdesc < algorithm
         isFilterParGuessesFixed
         
         Xmodel     % Training samples actually used for training. they are part of the learned model
-        c       % Coefficients vector
+        cStar       % Coefficients vector
+        valErrStar
         
         initialWeights  % Initial filter weights
         eta         % filter step size
@@ -242,7 +243,7 @@ classdef kigdesc < algorithm
             obj.mapParGuesses = kernelTrain.mapParGuesses;   % Warning: rename to mapParGuesses
             obj.filterParGuessesStorage = [];
 
-            valM = inf;     % Keeps track of the lowest validation error
+            obj.valErrStar = inf;     % Keeps track of the lowest validation error
             
             % Full matrices for performance storage initialization
             if obj.storeFullTrainPerf == 1
@@ -370,7 +371,7 @@ classdef kigdesc < algorithm
                     %%%%%%%%%%%%%%%%%%%%
                     % Store best model %
                     %%%%%%%%%%%%%%%%%%%%
-                    if valPerf < valM
+                    if valPerf < obj.valErrStar
                         
                         % Update best kernel parameter combination
                         obj.mapParStar = kernelTrain.currentPar;
@@ -379,23 +380,16 @@ classdef kigdesc < algorithm
                         obj.filterParStar = filter.currentPar;
                         
                         %Update best validation performance measurement
-                        valM = valPerf;
+                        obj.valErrStar = valPerf;
                         
-                        if ~recompute
-                            
-                            % Update internal model samples matrix
-                            obj.Xmodel = Xtrain;
-                            
-                            % Update coefficients vector
-                            obj.c = filter.weights;
-                        end
+                        % Update internal model samples matrix
+                        obj.Xmodel = Xtrain;
+
+                        % Update coefficients vector
+                        obj.cStar = filter.weights;
                     end
                 end
             end
-            
-            
-            % Plot errors
-%             semilogx(cell2mat(filter.rng),  valPerformance);            
             
             % Print best kernel hyperparameter(s)
             display('Best kernel hyperparameter(s):')
@@ -423,7 +417,7 @@ classdef kigdesc < algorithm
                 obj.Xmodel = Xtr;
                 
                 % Update coefficients vector
-                obj.c = filter.weights;
+                obj.cStar = filter.weights;
             end        
         end
         
@@ -440,7 +434,7 @@ classdef kigdesc < algorithm
             kernelTest.compute();
 
             % Compute scores
-            Ypred = kernelTest.K * obj.c;
+            Ypred = kernelTest.K * obj.cStar;
         end
     end
 end

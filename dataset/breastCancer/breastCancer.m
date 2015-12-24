@@ -10,7 +10,7 @@ classdef breastCancer < dataset
    methods
         function obj = breastCancer(nTr , nTe, outputFormat)
 
-            if nTr > 522910 || nTe > 58102
+            if nTr > 400 || nTe > 169
                 error('Too many samples required')
             end
 
@@ -93,37 +93,48 @@ classdef breastCancer < dataset
             end            
         end
         
-        % Compute performance measure on the given outputs according to the
-        function perf = performanceMeasure(obj , Y , Ypred , varargin)
+%         % Compute performance measure on the given outputs according to the
+%         function perf = performanceMeasure(obj , Y , Ypred , varargin)
+%             
+%             % Check if Ypred is real-valued. If yes, convert it.
+% %             if obj.hasRealValues(Ypred)
+%                 Ypred = obj.scoresToClasses(Ypred);
+% %             end
+% 
+% %             diff = Y - Ypred;
+% %             sqDiff = diff .* diff;
+% %             sqSumDiff = sum(sqDiff,2);
+% %             eucNrmDiff = sqrt(sqSumDiff);
+% %             
+% %             perf = sqrt(sum(eucNrmDiff.^2)/size(Y,1));
+% 
+%             % Compute error rate
+% %             numCorrect = 0;
+% %             
+% %             for i = 1:size(Y,1)
+% %                 if Y(i) == Ypred(i)
+% %                     numCorrect = numCorrect +1;
+% %                 end
+% %             end
+% %             
+% 
+%             % Much faster
+%             correctIdx = Y == Ypred;
+%             numCorrect = sum(correctIdx);
+%             
+%             perf = 1 - (numCorrect / size(Y,1));
+%         end
+        
+        % Compute performance measure on the given outputs according to the specified loss
+        function perf = performanceMeasure(obj , Y , Yscores , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.
-%             if obj.hasRealValues(Ypred)
-                Ypred = obj.scoresToClasses(Ypred);
-%             end
+            Ypred = obj.scoresToClasses(Yscores);
 
-%             diff = Y - Ypred;
-%             sqDiff = diff .* diff;
-%             sqSumDiff = sum(sqDiff,2);
-%             eucNrmDiff = sqrt(sqSumDiff);
-%             
-%             perf = sqrt(sum(eucNrmDiff.^2)/size(Y,1));
-
-            % Compute error rate
-%             numCorrect = 0;
-%             
-%             for i = 1:size(Y,1)
-%                 if Y(i) == Ypred(i)
-%                     numCorrect = numCorrect +1;
-%                 end
-%             end
-%             
-
-            % Much faster
-            correctIdx = Y == Ypred;
-            numCorrect = sum(correctIdx);
+            perf = obj.lossFunction(Y, Yscores, Ypred);
             
-            perf = 1 - (numCorrect / size(Y,1));
         end
+        
         
         % Scales matrix M between 0 and 1
         function Ms = scale(obj , M)
