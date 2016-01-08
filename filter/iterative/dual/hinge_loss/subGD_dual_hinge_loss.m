@@ -48,15 +48,11 @@ classdef subGD_dual_hinge_loss < filter
             %%%% Optional parameters
             % Optional parameter names:
 
-%             eigmax = eigs(K,[],1);
-
-%             defaultEta = 1/(4*numSamples);
-%             defaultEta = 1/(4*eigmax^2);
             defaultEta = 1/sqrt(2);
             checkEta = @(x) x > 0;
 
-            defaultTheta = -1/2;
-            checkTheta = @(x) (x <= 0 && x >= -1);
+            defaultTheta = 1/2;
+            checkTheta = @(x) (x <= 1 && x >= 0);
             
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x) x >= 0;
@@ -137,15 +133,23 @@ classdef subGD_dual_hinge_loss < filter
                 end
             end
             
+            % Compute current prediction
             Ypred = obj.K * obj.weights;
-            mask = (Ypred .* obj.Y < 1);
             
-            % GD iteration step
-%             step = 1/(obj.n * sqrt(2) * sqrt(obj.currentPar));
-            step = 1/(10000 * sqrt(2) * sqrt(obj.currentPar));
-%             step = 1/(4 * sqrt(obj.currentPar));
+            % Get wrong predictions indexes
+            mask = (Ypred .* obj.Y <= 1);
             
-            obj.weights = obj.weights + step * obj.K * mask .* obj.Y;            
+            % Compute GD iteration step
+%             step = 1/( 4 * obj.n  * sqrt(obj.currentPar));
+            
+            step = (1/obj.n) * obj.eta * obj.currentPar^(-obj.theta);
+            
+            % Update weights
+%             obj.weights = obj.weights + step * obj.K * (mask .* obj.Y);
+            obj.weights = obj.weights + step * mask .* obj.Y;
+            
+%             norm(obj.weights)
+%             plot(obj.weights)
         end
         
         % returns true if the next parameter combination is available and

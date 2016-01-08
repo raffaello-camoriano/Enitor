@@ -54,10 +54,12 @@ classdef IsubGD_dual_hinge_loss < filter
             % Optional parameter names:
 
             
-            defaultEta = 1/(4*numSamples);
+%             defaultEta = 1/sqrt(2);
+            defaultEta = 1/4;
+%             defaultEta = 1/(4*numSamples);
             checkEta = @(x) x > 0;
 
-            defaultTheta = -1/2;
+            defaultTheta = 1/2;
             checkTheta = @(x) (x <= 0 && x >= -1);
 
             defaultNumFilterParGuesses = [];
@@ -163,17 +165,16 @@ classdef IsubGD_dual_hinge_loss < filter
             % Compute kernel according to current hyperparameters
             kernelLine.compute();
             
-            % IGD iteration step
-            step = 1/(sqrt(2) * sqrt(currEpoch));
 
             Ypred = obj.weights' * kernelLine.K;
             
-            if (Ypred * obj.Y(currIdx,:) < 1)
+            if (Ypred * obj.Y(currIdx,:) <= 1)
 
-%                 obj.weights = obj.weights + ...
-%                     obj.eta * currEpoch^obj.theta * kernelLine.K * obj.Y(currIdx,:);
+                % IGD iteration step
+                step = obj.eta * currEpoch^(-obj.theta);
                 
-                obj.weights = obj.weights + step * kernelLine.K * obj.Y(currIdx,:);
+%                 obj.weights = obj.weights + step * kernelLine.K * obj.Y(currIdx,:);
+                obj.weights(currIdx,:) = obj.weights(currIdx,:) + step * obj.Y(currIdx,:);
             end
         end
         % returns true if the next parameter combination is available and

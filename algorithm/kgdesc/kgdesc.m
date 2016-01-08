@@ -239,7 +239,7 @@ classdef kgdesc < algorithm
             
             obj.mapParGuesses = kernelTrain.mapParGuesses;   % Warning: rename to mapParGuesses
             obj.filterParGuessesStorage = [];
-
+            
             obj.valErrStar = inf;     % Keeps track of the lowest validation error
             
             % Full matrices for performance storage initialization
@@ -263,7 +263,7 @@ classdef kgdesc < algorithm
                 
                 % Compute kernel according to current hyperparameters
                 kernelTrain.compute();
-
+                
                 % Initialize TrainVal kernel
                 argin = {};
                 argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar(1))];
@@ -339,6 +339,7 @@ classdef kgdesc < algorithm
                     if obj.storeFullValPerf == 1
                         obj.valPerformance(kernelTrain.currentParIdx , filter.currentParIdx) = valPerf;
                     end
+                    
                     if obj.storeFullTestPerf == 1      
                         
                         % Initialize TrainTest kernel

@@ -1,5 +1,5 @@
 setenv('LC_ALL','C');
-addpath(genpath('.'));
+% addpath(genpath('.'));
 clearAllButBP;
 % close all;
 
@@ -17,7 +17,7 @@ storeFullTestPerf = 0;
 verbose = 0;
 saveResult = 0;
 
-epochs = 1000;
+epochs = 1000000;
 
 map = @gaussianKernel;
 
@@ -38,17 +38,20 @@ GD_trainErr = [];
 GD_valErr = [];
 GD_testErr = [];
 
+%% Loop
+
 for k = 1:numRep
 
     % Load dataset
 %     ds = Adult(7000,162826,'plusMinusOne');
 %     ds = Adult(3000,3000,'plusMinusOne');
 %         mapParGuesses = 6;
+%         mapParGuesses = 100;
 
 
     ds = breastCancer(400,169,'plusMinusOne');
-%     mapParGuesses = 0.9;
-    mapParGuesses = 0.5;
+    mapParGuesses = 0.4;
+%     mapParGuesses = 0.2;
     
     
     ds.lossFunction = @hingeLoss;
@@ -57,30 +60,30 @@ for k = 1:numRep
     ntr = floor(ds.nTr * 0.8);
 
     %% IGD, hinge loss
-
-    fil = @IsubGD_dual_hinge_loss;
-    maxiter2 = ntr * epochs;
-    alg = kigdesc( map , fil , ...
-        'mapParGuesses' , mapParGuesses , ...
-        'numFilterParGuesses' , maxiter2   , ...
-        'verbose' , 0 , ...
-        'storeFullTrainPerf' , storeFullTrainPerf , ...
-        'storeFullValPerf' , storeFullValPerf , ...
-        'storeFullTestPerf' , storeFullTestPerf);
-
-    expIGD_kernel_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
-    
-    expIGD_kernel_hinge_loss.run();
-    expIGD_kernel_hinge_loss.result
-    
-    IGD_trainTime(k) = expIGD_kernel_hinge_loss.time.train;
-    IGD_testTime(k) = expIGD_kernel_hinge_loss.time.test;
-    IGD_perf(k) = expIGD_kernel_hinge_loss.result.perf;
-    IGD_trainErr = [IGD_trainErr ; expIGD_kernel_hinge_loss.algo.trainPerformance'];
-    IGD_valErr = [IGD_valErr ; expIGD_kernel_hinge_loss.algo.valPerformance'];
-    IGD_testErr = [IGD_testErr ; expIGD_kernel_hinge_loss.algo.testPerformance'];
-    
-    
+% 
+%     fil = @IsubGD_dual_hinge_loss;
+%     maxiter2 = ntr * epochs;
+%     alg = kigdesc( map , fil , ...
+%         'mapParGuesses' , mapParGuesses , ...
+%         'numFilterParGuesses' , maxiter2   , ...
+%         'verbose' , 0 , ...
+%         'storeFullTrainPerf' , storeFullTrainPerf , ...
+%         'storeFullValPerf' , storeFullValPerf , ...
+%         'storeFullTestPerf' , storeFullTestPerf);
+% 
+%     expIGD_kernel_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
+%     
+%     expIGD_kernel_hinge_loss.run();
+%     expIGD_kernel_hinge_loss.result
+%     
+%     IGD_trainTime(k) = expIGD_kernel_hinge_loss.time.train;
+%     IGD_testTime(k) = expIGD_kernel_hinge_loss.time.test;
+%     IGD_perf(k) = expIGD_kernel_hinge_loss.result.perf;
+%     IGD_trainErr = [IGD_trainErr ; expIGD_kernel_hinge_loss.algo.trainPerformance'];
+%     IGD_valErr = [IGD_valErr ; expIGD_kernel_hinge_loss.algo.valPerformance'];
+%     IGD_testErr = [IGD_testErr ; expIGD_kernel_hinge_loss.algo.testPerformance'];
+%     
+%     
     %% GD, converging step size, hinge loss
     
     fil = @subGD_dual_hinge_loss;
@@ -91,7 +94,7 @@ for k = 1:numRep
         'storeFullTrainPerf' , storeFullTrainPerf , ...
         'storeFullValPerf' , storeFullValPerf , ...
         'storeFullTestPerf' , storeFullTestPerf);
-
+    
     expGD_kernel_hinge_loss = experiment(alg , ds , 1 , true , saveResult , '' , resdir);
     
     expGD_kernel_hinge_loss.run();
@@ -154,23 +157,22 @@ hold off
 % IGD\
 % Log scale
 
-% figure
-axes1 = axes('Parent',figure,'YGrid','on','XGrid','on','XScale','log');
-box(axes1,'on');
-hold on;
-if numRep > 1
-    semilogx(mean(IGD_trainErr))
-    semilogx(mean(IGD_valErr))
-else
-    semilogx(IGD_trainErr)
-    semilogx(IGD_valErr)
-end
-set(gca,'XScale', 'log')
-title({'IGD';'Training vs. Validation error'})
-xlabel('Iteration')
-ylabel('Relative Error')
-legend('Training','Validation')
-hold off
+% axes1 = axes('Parent',figure,'YGrid','on','XGrid','on','XScale','log');
+% box(axes1,'on');
+% hold on;
+% if numRep > 1
+%     semilogx(mean(IGD_trainErr))
+%     semilogx(mean(IGD_valErr))
+% else
+%     semilogx(IGD_trainErr)
+%     semilogx(IGD_valErr)
+% end
+% set(gca,'XScale', 'log')
+% title({'IGD';'Training vs. Validation error'})
+% xlabel('Iteration')
+% ylabel('Relative Error')
+% legend('Training','Validation')
+% hold off
 
 % linear scale
 
