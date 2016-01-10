@@ -20,14 +20,17 @@ classdef dataset < handle
 
         trainIdx
         testIdx
+        
+        shuffleTraining
+        shuffleTest
 
         lossFunction
    end
    
    methods
         
-        function obj = dataset(fname)
-            if  nargin > 0            
+        function obj = dataset(fname, shuffleTraining, shuffleTest)
+            if  ~isempty(fname)            
                 data = load(fname);
                 obj.X = data.X;
                 obj.Y = data.Y;
@@ -47,7 +50,28 @@ classdef dataset < handle
                     end
                 end
             end
-        end       
+            
+            % Shuffling
+
+            if  ~isempty(shuffleTraining)            
+                obj.shuffleTraining = shuffleTraining;
+            else
+                obj.shuffleTraining = 0;
+            end
+            
+            if  ~isempty(shuffleTest)
+                obj.shuffleTest = shuffleTest;
+            else
+                obj.shuffleTest = 0;
+            end
+            
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+        end
 
         
         % Compute random permutation of the training set indexes

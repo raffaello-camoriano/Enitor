@@ -8,22 +8,14 @@ classdef breastCancer < dataset
    end
    
    methods
-        function obj = breastCancer(nTr , nTe, outputFormat)
+        function obj = breastCancer(nTr , nTe, outputFormat, shuffleTraining, shuffleTest)
 
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest);
+            
             if nTr > 400 || nTe > 169
                 error('Too many samples required')
             end
-
-%             % Set output format
-%             if isempty(outputFormat)
-%                 error('outputFormat not set');
-%             end
-%             if (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
-%                 obj.outputFormat = outputFormat;
-%             else
-%                 display('Wrong or missing output format, set to plusMinusOne by default');
-%                 obj.outputFormat = 'plusMinusOne';
-%             end            
             
             % Set t (number of classes)
             obj.t = 1;
@@ -53,8 +45,16 @@ classdef breastCancer < dataset
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+            
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
                 
             obj.outputFormat = outputFormat;
             if strcmp(obj.outputFormat, 'zeroOne')
@@ -67,12 +67,6 @@ classdef breastCancer < dataset
                 obj.Y(gnd == 1 ) = 1;
             end
             gnd = 0;
-
-%             for i = 1:obj.n
-%                 if gnd(i) == 2
-%                     obj.Y(i) = 1;
-%                 end
-%             end
 
             obj.problemType = 'classification';
         end

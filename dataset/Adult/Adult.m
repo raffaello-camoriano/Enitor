@@ -6,15 +6,11 @@ classdef Adult < dataset
    end
    
    methods
-        function obj = Adult(nTr , nTe, outputFormat)
+        function obj = Adult(nTr , nTe, outputFormat, shuffleTraining, shuffleTest)
             
-%             trainData = readtable('adult.data.csv' , 'Delimiter',',','ReadVariableNames',false );
-%             testData = readtable('adult.test.csv' , 'Delimiter',',','ReadVariableNames',false , 'HeaderLines' , 1);
-%             fid = fopen('adult.attributenames.csv');
-%             attrNames = textscan(fid, '%s');
-%             fclose(fid);
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest);
             
-
             display('This implementation of the Adult dataset considers all the available attributes, (d = 123)');
             obj.d = 123;        % Fixed size for the full dataset
             data = load('adult.mat');
@@ -56,18 +52,12 @@ classdef Adult < dataset
                 
                 obj.nTr = nTr;
                 obj.nTe = nTe;
-                
-%                 tmp = randperm( obj.nTrTot);                            
-%                 obj.trainIdx = tmp(1:obj.nTr);          
+                         
                 obj.trainIdx = 1:obj.nTr;          
                 
-%                 tmp = obj.nTrTot + randperm( obj.nTeTot );
-%                 obj.testIdx = tmp(1:obj.nTe);
                 obj.testIdx = obj.nTrTot + 1:obj.nTe + obj.nTrTot;
             end
             
-%             obj.shuffleTrainIdx();
-%             obj.shuffleTestIdx();
             
             % Reformat output columns
             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
