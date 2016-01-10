@@ -55,7 +55,6 @@ classdef breastCancer < dataset
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
             obj.shuffleTrainIdx();
             obj.shuffleTestIdx();
-%             obj.shuffleAllIdx();
                 
             obj.outputFormat = outputFormat;
             if strcmp(obj.outputFormat, 'zeroOne')
