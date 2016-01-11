@@ -177,7 +177,9 @@ classdef SIsubGD_RR_norep_dual_hinge_loss < filter
                 % SIGD iteration step
                 step = obj.eta * currEpoch^(-obj.theta);
                 
-                obj.weights(currIdx,:) = obj.weights(currIdx,:) + step * obj.Y(currIdx,:);
+                SG = - obj.Y(currIdx,:);
+
+                obj.weights(currIdx,:) = obj.weights(currIdx,:) - step * SG;
 
             end
         end

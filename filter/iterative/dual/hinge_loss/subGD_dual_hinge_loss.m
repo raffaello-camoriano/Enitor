@@ -146,7 +146,9 @@ classdef subGD_dual_hinge_loss < filter
             
             % Update weights
 %             obj.weights = obj.weights + step * obj.K * (mask .* obj.Y);
-            obj.weights = obj.weights + step * mask .* obj.Y;
+
+%             obj.weights = obj.weights + step * mask .* obj.Y;
+            obj.weights = obj.weights + step * (1/obj.n) * mask .* obj.Y;
             
         end
         
