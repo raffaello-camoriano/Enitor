@@ -1,4 +1,4 @@
-classdef stoc_subgdesc_kernel_hinge_loss < filter
+classdef SIsubGD_RR_norep_dual_hinge_loss < filter
     %TIKHONOV Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -19,16 +19,18 @@ classdef stoc_subgdesc_kernel_hinge_loss < filter
         filterParGuesses        % Filter parameter guesses (range)
         numFilterParGuesses     % number of filter hyperparameters guesses
         
-        gamma                   % Step size
         randOrd
-        
+
+        eta                     % Step size
+        theta
+                
         currentParIdx           % Current parameter combination indexes map container
         currentPar              % Current parameter combination map container
     end
     
     methods
       
-        function obj = stoc_subgdesc_kernel_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
+        function obj = SIsubGD_RR_norep_dual_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
 
             obj.init(  map , mapPar , X , Y , numSamples , varargin );            
         end
@@ -52,20 +54,30 @@ classdef stoc_subgdesc_kernel_hinge_loss < filter
             %%%% Optional parameters
             % Optional parameter names:
 
-            defaultGamma = 1/(4*numSamples);
-            checkGamma = @(x) x > 0;
+            
+%             defaultEta = 1/sqrt(2);
+            defaultEta = 1/4;
+%             defaultEta = 1/(4*numSamples);
+            checkEta = @(x) x > 0;
+
+            defaultTheta = 1/2;
+            checkTheta = @(x) (x <= 0 && x >= -1);
 
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x) x >= 0;
 
             defaultFilterParGuesses = [];
             
+            defaultInitialWeights = [];
+
             defaultVerbose = 0;
             checkVerbose = @(x) (x==0) || (x==1);
 
-            addParameter(p,'gamma',defaultGamma,checkGamma)
+            addParameter(p,'eta',defaultEta,checkEta)
+            addParameter(p,'theta',defaultTheta,checkTheta)
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses)
             addParameter(p,'filterParGuesses',defaultFilterParGuesses)
+            addParameter(p,'initialWeights',defaultInitialWeights)
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             
             % Parse function inputs
@@ -101,10 +113,16 @@ classdef stoc_subgdesc_kernel_hinge_loss < filter
                 end
             end
             
-            obj.weights = zeros(obj.n,obj.t);
-            obj.Avec = zeros(obj.n,obj.t);
+            obj.eta = p.Results.eta;
+            obj.theta = p.Results.theta;
             
-            obj.gamma = p.Results.gamma;
+
+            if isempty(p.Results.initialWeights)
+                obj.weights = zeros(obj.n,1);
+            else
+                obj.weights = p.Results.initialWeights;
+            end
+            
             obj.map = p.Results.map;
             obj.mapPar = p.Results.mapPar;
             
@@ -138,23 +156,29 @@ classdef stoc_subgdesc_kernel_hinge_loss < filter
             if mod(obj.currentPar-1,obj.n) == 0
                 obj.randOrd = randperm(size(obj.X,1));
             end
-            randIdx = obj.randOrd(mod(obj.currentPar-1,obj.n) + 1);
+            currIdx = obj.randOrd(mod(obj.currentPar-1,obj.n) + 1);
+            currEpoch = floor(obj.currentPar/obj.n) + 1;
             
-            % Construct Kernel column
+            % Construct Kernel column according to current hyperparameters
             argin = {};
             argin = [argin , 'mapParGuesses' , obj.mapPar];
             if ~isempty(obj.verbose)
                 argin = [argin , 'verbose' , obj.verbose];
             end
-            kernelCol = obj.map( xrand , obj.X , argin{:});
-            kernelCol.next();
-            % Compute kernel according to current hyperparameters
-            kernelCol.compute();
+            kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
+            kernelLine.next();
+            kernelLine.compute();
             
-            Ypred = kernelCol.K * obj.weights;
-            if sign(Ypred) ~= yrand
-                SG = -yrand;                    
-                obj.weights(randIdx,:) = obj.weights(randIdx,:) - obj.gamma * obj.currentPar^(-.5)* SG;
+            % Compute prediction
+            Ypred = obj.weights' * kernelLine.K;
+            
+            if (Ypred * obj.Y(currIdx,:) <= 1)
+                
+                % SIGD iteration step
+                step = obj.eta * currEpoch^(-obj.theta);
+                
+                obj.weights(currIdx,:) = obj.weights(currIdx,:) + step * obj.Y(currIdx,:);
+
             end
         end
         

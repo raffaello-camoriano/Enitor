@@ -1,12 +1,13 @@
-classdef subGD_dual_hinge_loss < filter
-    % Subgradient descent iterative filter for the hinge loss
+classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
+    %TIKHONOV Summary of this class goes here
     %   Detailed explanation goes here
 
     properties
         
-        % Parameters used in the classical formulation
-        K
+        X
         Y
+        map                     % Kernel function in use
+        mapPar                  % Kernel parameter(s)
         
         weights                 % Learned weights vector
         Avec
@@ -18,69 +19,78 @@ classdef subGD_dual_hinge_loss < filter
         filterParGuesses        % Filter parameter guesses (range)
         numFilterParGuesses     % number of filter hyperparameters guesses
         
+        randOrd
+
         eta                     % Step size
-        theta                   % Step size sequence exponent
-        
+        theta
+                
         currentParIdx           % Current parameter combination indexes map container
         currentPar              % Current parameter combination map container
     end
     
     methods
       
-        function obj = subGD_dual_hinge_loss( K , Y , numSamples , varargin)
+        function obj = SIsubGD_RR_yesrep_dual_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
 
-            obj.init(  K , Y , numSamples , varargin );            
+            obj.init(  map , mapPar , X , Y , numSamples , varargin );            
         end
         
-        function init(obj , K , Y , numSamples , varargin)
+        function init(obj , map , mapPar , X , Y , numSamples , varargin)
                  
             p = inputParser;
             
             %%%% Required parameters
             
-            checkK = @(x) size(x,1) == size(x,2);
+            checkMap = @(x) true;
+            checkMapPar = @(x) (x > 0);
             checkNumSamples = @(x) (x > 0);
             
-            addRequired(p,'K',checkK);
+            addRequired(p,'map',checkMap)
+            addRequired(p,'mapPar',checkMapPar)
+            addRequired(p,'X');
             addRequired(p,'Y');
             addRequired(p,'numSamples',checkNumSamples);
-            
+ 
             %%%% Optional parameters
             % Optional parameter names:
 
+            
 %             defaultEta = 1/sqrt(2);
             defaultEta = 1/4;
+%             defaultEta = 1/(4*numSamples);
             checkEta = @(x) x > 0;
 
             defaultTheta = 1/2;
-            checkTheta = @(x) (x <= 1 && x >= 0);
-            
+            checkTheta = @(x) (x <= 0 && x >= -1);
+
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x) x >= 0;
 
             defaultFilterParGuesses = [];
             
+            defaultInitialWeights = [];
+
             defaultVerbose = 0;
             checkVerbose = @(x) (x==0) || (x==1);
-
 
             addParameter(p,'eta',defaultEta,checkEta)
             addParameter(p,'theta',defaultTheta,checkTheta)
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses)
             addParameter(p,'filterParGuesses',defaultFilterParGuesses)
+            addParameter(p,'initialWeights',defaultInitialWeights)
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             
             % Parse function inputs
-            parse(p, K , Y , numSamples , varargin{:}{:})
+            parse(p, map , mapPar , X , Y , numSamples , varargin{:}{:})
                         
             % Get size of kernel/covariance matrix
-            obj.sz = size(p.Results.K,1);
+            obj.sz = size(p.Results.X,1);
             
             % Get number of samples
             obj.n = p.Results.numSamples;
 
             % Store full kernel/covariance matrix
-            obj.K = p.Results.K;
+            obj.X = p.Results.X;
             obj.Y = p.Results.Y;
 
             % Store number of outputs
@@ -103,11 +113,19 @@ classdef subGD_dual_hinge_loss < filter
                 end
             end
             
-            obj.weights = zeros(obj.n,obj.t);            
-
             obj.eta = p.Results.eta;
             obj.theta = p.Results.theta;
-                        
+            
+
+            if isempty(p.Results.initialWeights)
+                obj.weights = zeros(obj.n,1);
+            else
+                obj.weights = p.Results.initialWeights;
+            end
+            
+            obj.map = p.Results.map;
+            obj.mapPar = p.Results.mapPar;
+            
             obj.range();    % Compute range
             obj.currentParIdx = 0;
             obj.currentPar = [];   
@@ -133,21 +151,32 @@ classdef subGD_dual_hinge_loss < filter
                     disp(['Iteration # ' , num2str(obj.currentPar)]);
                 end
             end
+
+            % At each new epoch, draw a new random ordering
+            currIdx = randi(obj.n);
+            currEpoch = floor(obj.currentPar/obj.n) + 1;
             
-            % Compute current prediction
-            Ypred = obj.K * obj.weights;
+            % Construct Kernel column according to current hyperparameters
+            argin = {};
+            argin = [argin , 'mapParGuesses' , obj.mapPar];
+            if ~isempty(obj.verbose)
+                argin = [argin , 'verbose' , obj.verbose];
+            end
+            kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
+            kernelLine.next();
+            kernelLine.compute();
             
-            % Get wrong predictions indexes
-            mask = (Ypred .* obj.Y <= 1);
+            % Compute prediction
+            Ypred = obj.weights' * kernelLine.K;
             
-            % Compute GD iteration step
-%             step = (1/obj.n) * obj.eta * obj.currentPar^(-obj.theta);
-            step = obj.eta * obj.currentPar^(-obj.theta);
-            
-            % Update weights
-%             obj.weights = obj.weights + step * obj.K * (mask .* obj.Y);
-            obj.weights = obj.weights + step * mask .* obj.Y;
-            
+            if (Ypred * obj.Y(currIdx,:) <= 1)
+                
+                % SIGD iteration step
+                step = obj.eta * currEpoch^(-obj.theta);
+                
+                obj.weights(currIdx,:) = obj.weights(currIdx,:) + step * obj.Y(currIdx,:);
+
+            end
         end
         
         % returns true if the next parameter combination is available and

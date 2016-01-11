@@ -17,9 +17,7 @@ classdef IsubGD_dual_hinge_loss < filter
         
         filterParGuesses        % Filter parameter guesses (range)
         numFilterParGuesses     % number of filter hyperparameters guesses
-        
-        gamma                   % Step size
-        
+                
         eta                     % Step size
         theta
         
@@ -154,7 +152,7 @@ classdef IsubGD_dual_hinge_loss < filter
             currIdx = mod(obj.currentPar-1,obj.n) + 1;
             currEpoch = floor(obj.currentPar/obj.n) + 1;
 
-            % Construct Kernel column
+            % Construct Kernel column according to current hyperparameters
             argin = {};
             argin = [argin , 'mapParGuesses' , obj.mapPar];
             if ~isempty(obj.verbose)
@@ -162,10 +160,9 @@ classdef IsubGD_dual_hinge_loss < filter
             end
             kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
             kernelLine.next();
-            % Compute kernel according to current hyperparameters
             kernelLine.compute();
             
-
+            % Compute prediction
             Ypred = obj.weights' * kernelLine.K;
             
             if (Ypred * obj.Y(currIdx,:) <= 1)
