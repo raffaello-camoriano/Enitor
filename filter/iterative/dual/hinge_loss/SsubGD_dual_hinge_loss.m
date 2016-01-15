@@ -169,11 +169,13 @@ classdef SsubGD_dual_hinge_loss < filter
             
             if (Ypred * obj.Y(randIdx,:) <= 1)
                 
+                % Compute step
                 step = obj.eta * obj.currentPar^(-obj.theta);
                 
-%                 SG = - kernelLine.K * obj.Y(randIdx,:);
+                % Compute SubGradient
                 SG = - obj.Y(randIdx,:);
 
+                % Weights update iteration
                 obj.weights = obj.weights - step * SG;
             end
         end

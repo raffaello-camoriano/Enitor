@@ -137,19 +137,15 @@ classdef subGD_dual_hinge_loss < filter
             % Compute current prediction
             Ypred = obj.K * obj.weights;
             
-            % Get wrong predictions indexes
-            mask = (Ypred .* obj.Y <= 1);
+            % Compute SubGradient
+            mask = (Ypred .* obj.Y <= 1);   % Get wrong predictions indexes
+            SG = - mask .* obj.Y;
             
-            % Compute GD iteration step
-%             step = (1/obj.n) * obj.eta * obj.currentPar^(-obj.theta);
-            step = obj.eta * obj.currentPar^(-obj.theta);
+            % Compute GD step
+            step = (1/obj.n) * obj.eta * obj.currentPar^(-obj.theta);
             
             % Update weights
-%             obj.weights = obj.weights + step * obj.K * (mask .* obj.Y);
-
-%             obj.weights = obj.weights + step * mask .* obj.Y;
-            obj.weights = obj.weights + step * (1/obj.n) * mask .* obj.Y;
-            
+            obj.weights = obj.weights - step * SG;
         end
         
         % returns true if the next parameter combination is available and
