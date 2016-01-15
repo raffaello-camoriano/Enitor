@@ -45,6 +45,11 @@ classdef kigdesc < algorithm
         eta         % filter step size
         theta       % filter step size sequence exponent
         
+        ordering                % Ordering of the samples:
+%                                 fixed: ordering is drawn once and kept (no repetitions)
+%                                 reshuffle_norep: ordering is drawn at each epoch (no repetitions)
+%                                 reshuffle_yesrep: ordering is drawn at each epoch (with repetitions)
+
         trainIdx % Actual training indexes
         valIdx   % Actual validation indexes
         
@@ -134,6 +139,11 @@ classdef kigdesc < algorithm
             defaultInitialWeights = [];
             addParameter(p,'initialWeights',defaultInitialWeights);      
             
+            % ordering
+            defaultOrdering = 'fixed';
+            checkOrdering = @(x) sum(strcmp(x,{'fixed','reshuffle_norep','reshuffle_yesrep'})) == 1;
+            addParameter(p,'ordering',defaultOrdering,checkOrdering);              
+
             % eta    % step size
             defaultEta = [];
             addParameter(p,'eta',defaultEta);              

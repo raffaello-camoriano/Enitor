@@ -60,9 +60,10 @@ classdef gaussianKernel < kernel
             end
             
             % Assign parsed parameters to object properties
-            fields = fieldnames(p.Results);
-            fieldsToIgnore = {'X1','X2'};
-            fields = setdiff(fields, fieldsToIgnore);
+            fields = {'mapParGuesses','numMapParGuesses','verbose'};
+%             fields = fieldnames(p.Results);
+%             fieldsToIgnore = {'X1','X2'};
+%             fields = setdiff(fields, fieldsToIgnore);
             for idx = 1:numel(fields)
                 obj.(fields{idx}) = p.Results.(fields{idx});
             end
@@ -115,7 +116,6 @@ classdef gaussianKernel < kernel
             obj.SqDistMat = obj.SqDistMat + repmat(Sx2 , obj.n , 1);
             clear Sx2;
 
-%             Sx1x2 = X1 * X2';
             obj.SqDistMat = obj.SqDistMat -2* X1 * X2';
 
 %             obj.SqDistMat = repmat(Sx1 , 1 , obj.m) -2*Sx1x2 + repmat(Sx2 , obj.n , 1);

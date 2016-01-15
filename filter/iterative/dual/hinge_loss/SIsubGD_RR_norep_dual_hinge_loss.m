@@ -55,9 +55,7 @@ classdef SIsubGD_RR_norep_dual_hinge_loss < filter
             % Optional parameter names:
 
             
-%             defaultEta = 1/sqrt(2);
             defaultEta = 1/4;
-%             defaultEta = 1/(4*numSamples);
             checkEta = @(x) x > 0;
 
             defaultTheta = 1/2;
@@ -157,7 +155,7 @@ classdef SIsubGD_RR_norep_dual_hinge_loss < filter
                 obj.randOrd = randperm(size(obj.X,1));
             end
             currIdx = obj.randOrd(mod(obj.currentPar-1,obj.n) + 1);
-            currEpoch = floor(obj.currentPar/obj.n) + 1;
+%             currEpoch = floor(obj.currentPar/obj.n) + 1;
             
             % Construct Kernel column according to current hyperparameters
             argin = {};
@@ -175,7 +173,7 @@ classdef SIsubGD_RR_norep_dual_hinge_loss < filter
             if (Ypred * obj.Y(currIdx,:) <= 1)
                 
                 % SIGD iteration step
-                step = obj.eta * currEpoch^(-obj.theta);
+                step = obj.eta * obj.currentPar^(-obj.theta);
                 
                 SG = - obj.Y(currIdx,:);
 

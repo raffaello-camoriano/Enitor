@@ -168,10 +168,13 @@ classdef IsubGD_dual_hinge_loss < filter
             if (Ypred * obj.Y(currIdx,:) <= 1)
 
                 % IGD iteration step
-                step = obj.eta * currEpoch^(-obj.theta);
+                step = (1/obj.n) * obj.eta * currEpoch^(-obj.theta);
                 
-%                 obj.weights = obj.weights + step * kernelLine.K * obj.Y(currIdx,:);
-                obj.weights(currIdx,:) = obj.weights(currIdx,:) + step * obj.Y(currIdx,:);
+                % SG
+                SG = - obj.Y(currIdx,:);
+                
+                % Iteration
+                obj.weights(currIdx,:) = obj.weights(currIdx,:) - step * SG;
             end
         end
         % returns true if the next parameter combination is available and

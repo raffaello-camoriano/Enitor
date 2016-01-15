@@ -1,5 +1,5 @@
-classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
-    %TIKHONOV Summary of this class goes here
+classdef SIsubGD_dual_hinge_loss < filter
+    % SIsubGD_dual_hinge_loss Stochastic incremental subgradient descent
     %   Detailed explanation goes here
 
     properties
@@ -11,7 +11,6 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
         
         weights                 % Learned weights vector
         Avec
-        
         n                       % Number of samples
         sz                      % Size of the K or C matrix
         t                       % Number of outputs
@@ -21,8 +20,14 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
         
         randOrd
 
-        eta                     % Step size
-        theta
+        eta                     % Initial step size [eta_1]
+        theta                   % exponent of the step size sequence [eta_t = eta_1 * t^(-theta)]
+        
+        ordering                % Ordering of the samples:
+%                                 fixed: ordering is drawn once and kept (no repetitions)
+%                                 reshuffle_norep: ordering is drawn at each epoch (no repetitions)
+%                                 reshuffle_yesrep: ordering is drawn at each epoch (with repetitions)
+        
                 
         currentParIdx           % Current parameter combination indexes map container
         currentPar              % Current parameter combination map container
@@ -30,7 +35,7 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
     
     methods
       
-        function obj = SIsubGD_RR_yesrep_dual_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
+        function obj = SIsubGD_dual_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
 
             obj.init(  map , mapPar , X , Y , numSamples , varargin );            
         end
@@ -54,6 +59,8 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
             %%%% Optional parameters
             % Optional parameter names:
 
+            defaultOrdering = 'fixed';
+            checkOrdering = @(x) sum(strcmp(x,{'fixed','reshuffle_norep','reshuffle_yesrep'})) == 1;
             
             defaultEta = 1/4;
             checkEta = @(x) x > 0;
@@ -71,6 +78,7 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
             defaultVerbose = 0;
             checkVerbose = @(x) (x==0) || (x==1);
 
+            addParameter(p,'ordering',defaultOrdering,checkOrdering)
             addParameter(p,'eta',defaultEta,checkEta)
             addParameter(p,'theta',defaultTheta,checkTheta)
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses)
@@ -111,10 +119,10 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
                 end
             end
             
+            obj.ordering = p.Results.ordering;
             obj.eta = p.Results.eta;
             obj.theta = p.Results.theta;
             
-
             if isempty(p.Results.initialWeights)
                 obj.weights = zeros(obj.n,1);
             else
@@ -150,9 +158,31 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
                 end
             end
 
-            % At each new epoch, draw a new random ordering
-            currIdx = randi(obj.n);
-%             currEpoch = floor(obj.currentPar/obj.n) + 1;
+            % Check ordering to select the next point
+            switch obj.ordering
+                
+                case 'fixed'
+                    % at the 1st iteration, draw a random ordering. It
+                    % will not be changed
+                    if obj.currentPar == 1
+                        obj.randOrd = randperm(size(obj.X,1));
+                    end
+                    currIdx = obj.randOrd(mod(obj.currentPar-1,obj.n) + 1);
+                    
+                case 'reshuffle_norep'
+                    % At each new epoch, draw a new random ordering
+                    if mod(obj.currentPar-1,obj.n) == 0
+                        obj.randOrd = randperm(size(obj.X,1));
+                    end
+                    currIdx = obj.randOrd(mod(obj.currentPar-1,obj.n) + 1);
+                    
+                case 'reshuffle_yesrep'
+                    % Just pick a random training point, possibly with repetitions
+                    currIdx = randi(obj.n);   
+                    
+                otherwise
+                    error('The specified ordering is not implemented')
+            end
             
             % Construct Kernel column according to current hyperparameters
             argin = {};
@@ -169,12 +199,13 @@ classdef SIsubGD_RR_yesrep_dual_hinge_loss < filter
             
             if (Ypred * obj.Y(currIdx,:) <= 1)
                 
-                % S-IGD iteration step
+                % SIGD iteration step
                 step = obj.eta * obj.currentPar^(-obj.theta);
                 
                 % SG computation
-                SG =  obj.Y(currIdx,:);
-                
+                SG = - obj.Y(currIdx,:);
+
+                % Iteration
                 obj.weights(currIdx,:) = obj.weights(currIdx,:) - step * SG;
 
             end
