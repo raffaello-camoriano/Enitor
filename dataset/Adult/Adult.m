@@ -6,10 +6,10 @@ classdef Adult < dataset
    end
    
    methods
-        function obj = Adult(nTr , nTe, outputFormat, shuffleTraining, shuffleTest)
+        function obj = Adult(nTr , nTe, outputFormat, shuffleTraining, shuffleTest, shuffleAll)
             
             % Call superclass constructor with arguments
-            obj = obj@dataset([], shuffleTraining, shuffleTest);
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             display('This implementation of the Adult dataset considers all the available attributes, (d = 123)');
             obj.d = 123;        % Fixed size for the full dataset

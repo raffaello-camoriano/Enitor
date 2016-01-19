@@ -8,10 +8,10 @@ classdef breastCancer < dataset
    end
    
    methods
-        function obj = breastCancer(nTr , nTe, outputFormat, shuffleTraining, shuffleTest)
+        function obj = breastCancer(nTr , nTe, outputFormat, shuffleTraining, shuffleTest, shuffleAll)
 
             % Call superclass constructor with arguments
-            obj = obj@dataset([], shuffleTraining, shuffleTest);
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             if nTr > 400 || nTe > 169
                 error('Too many samples required')

@@ -327,6 +327,9 @@ classdef kigdesc < algorithm
                 if ~isempty(obj.initialWeights)
                     argin = [argin , 'initialWeights' , obj.initialWeights];
                 end
+                if ~isempty(obj.ordering)
+                    argin = [argin , 'ordering' , obj.ordering];
+                end
                 if ~isempty(obj.eta)
                     argin = [argin , 'eta' , obj.eta];
                 end

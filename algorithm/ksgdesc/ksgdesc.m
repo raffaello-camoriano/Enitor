@@ -132,7 +132,7 @@ classdef ksgdesc < algorithm
             
             % theta    % Exponent of step size decreasing sequence
             defaultTheta = [];
-            checkTheta = @(x)  (x <= 0 && x >= -1);            
+            checkTheta = @(x)  (x <= 1 && x >= 0);            
             addParameter(p,'theta',defaultTheta,checkTheta);
             
             % stoppingRule
@@ -235,7 +235,7 @@ classdef ksgdesc < algorithm
             while kernelTrain.next()
                 
                 % Compute kernel according to current hyperparameters
-%                 kernelTrain.compute();
+                kernelTrain.compute();
                 
                 % Initialize TrainVal kernel
                 argin = {};
@@ -298,7 +298,7 @@ classdef ksgdesc < algorithm
                     if obj.storeFullTrainPerf == 1         
 
                         % Compute training predictions matrix
-                        YtrainPred = filter.weights' * kernelTrain.K;
+                        YtrainPred = kernelTrain.K * filter.weights;
                         if obj.storeFullTrainPred == 1
                             obj.trainPred(kernelTrain.currentParIdx , filter.currentParIdx,:) = YtrainPred;
                         end

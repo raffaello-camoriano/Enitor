@@ -35,6 +35,7 @@ classdef IsubGD_dual_hinge_loss < filter
         function init(obj , map , mapPar , X , Y , numSamples , varargin)
                  
             p = inputParser;
+            p.KeepUnmatched = true;
             
             %%%% Required parameters
             
@@ -51,10 +52,7 @@ classdef IsubGD_dual_hinge_loss < filter
             %%%% Optional parameters
             % Optional parameter names:
 
-            
-%             defaultEta = 1/sqrt(2);
             defaultEta = 1/4;
-%             defaultEta = 1/(4*numSamples);
             checkEta = @(x) x > 0;
 
             defaultTheta = 1/2;

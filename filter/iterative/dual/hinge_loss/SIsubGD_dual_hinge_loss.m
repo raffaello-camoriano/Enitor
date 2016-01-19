@@ -207,7 +207,6 @@ classdef SIsubGD_dual_hinge_loss < filter
 
                 % Iteration
                 obj.weights(currIdx,:) = obj.weights(currIdx,:) - step * SG;
-
             end
         end
         

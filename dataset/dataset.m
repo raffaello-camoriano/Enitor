@@ -23,13 +23,14 @@ classdef dataset < handle
         
         shuffleTraining
         shuffleTest
+        shuffleAll
 
         lossFunction
    end
    
    methods
         
-        function obj = dataset(fname, shuffleTraining, shuffleTest)
+        function obj = dataset(fname, shuffleTraining, shuffleTest, shuffleAll)
             if  ~isempty(fname)            
                 data = load(fname);
                 obj.X = data.X;
@@ -65,11 +66,20 @@ classdef dataset < handle
                 obj.shuffleTest = 0;
             end
             
+            if  ~isempty(shuffleAll)
+                obj.shuffleAll = shuffleAll;
+            else
+                obj.shuffleAll = 0;
+            end
+            
             if shuffleTraining == 1
                 obj.shuffleTrainIdx();
             end
             if shuffleTest == 1
                 obj.shuffleTestIdx();
+            end
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
             end
         end
 
