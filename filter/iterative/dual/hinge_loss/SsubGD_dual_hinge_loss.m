@@ -58,7 +58,7 @@ classdef SsubGD_dual_hinge_loss < filter
             checkEta = @(x) x > 0;
 
             defaultTheta = 1/2;
-            checkTheta = @(x) (x <= 0 && x >= -1);
+            checkTheta = @(x) (x <= 1 && x >= 0);
 
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x) x >= 0;
@@ -162,9 +162,9 @@ classdef SsubGD_dual_hinge_loss < filter
             end
             kernelLine = obj.map( obj.X ,  obj.X(randIdx , :) ,argin{:} );
             kernelLine.next();
-            % Compute kernel according to current hyperparameters
             kernelLine.compute();
             
+            % Compute prediction
             Ypred = obj.weights' * kernelLine.K;
             
             if (Ypred * obj.Y(randIdx,:) <= 1)
@@ -176,9 +176,10 @@ classdef SsubGD_dual_hinge_loss < filter
                 SG = - obj.Y(randIdx,:);
 
                 % Weights update iteration
-                obj.weights = obj.weights - step * SG;
+                obj.weights(randIdx,:) = obj.weights(randIdx,:) - step * SG;
             end
         end
+        
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'
         function available = next(obj)
