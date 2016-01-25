@@ -1,4 +1,4 @@
-function [ hMean ] = bandplot( data , color , alpha , log)
+function [ hMean ] = bandplot( data , color , alpha , log , numSD)
 %BANDPLOT Plots mean and standard deviation of the values contained in the
 %n x m 'data' matrix
 %   INPUT
@@ -6,6 +6,7 @@ function [ hMean ] = bandplot( data , color , alpha , log)
 %   color: color of the plot + fill (Standard MATLAB color name, e.g. 'blue' or 'red')
 %   alpha: transparency parameter
 %   log: 1 or 0
+%   numSD: Number of standard deviations to be plotted
 %
 %   OUTPUT
 %   hMean: Returns the handle to the mean value plot
@@ -13,7 +14,7 @@ function [ hMean ] = bandplot( data , color , alpha , log)
 
     m = mean(data)';
     sd = std(data,0)';
-    f = [ m'+sd' , flipdim(m'-sd',2)]; 
+    f = [ m'+numSD*sd' , flipdim(m'-numSD*sd',2)]; 
     hold on;
     if log == 1
         hMean = semilogx(1:size(data,2) , m , 'Color' ,color , 'LineWidth',1);
