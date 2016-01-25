@@ -1,9 +1,4 @@
 classdef kigdesc < algorithm
-    %KGDESC Kernelized gradient descent estimator/algorithm
-    %   Also known as Landwaeber algorithm, the kernelized gradient descent
-    %   estimator/algorithm optimizes the coefficients c of the expression:
-    %   
-    %   $f(x) = \Sigma_{c = 1..n} K(x_i,x)c_i$
     %
     
     properties
@@ -22,6 +17,7 @@ classdef kigdesc < algorithm
         testPred            % Test predictions matrix
         
         errorStorageMode    % 'epochs' or 'iterations'
+        precomputeKernel    % 1 or 0
         
         % Kernel props
         map
@@ -142,7 +138,12 @@ classdef kigdesc < algorithm
             % ordering
             defaultOrdering = 'fixed';
             checkOrdering = @(x) sum(strcmp(x,{'fixed','reshuffle_norep','reshuffle_yesrep'})) == 1;
-            addParameter(p,'ordering',defaultOrdering,checkOrdering);              
+            addParameter(p,'ordering',defaultOrdering,checkOrdering);     
+            
+            % precomputeKernel
+            defaultPrecomputeKernel = 1;
+            checkPrecomputeKernel = @(x) (x == 0) || (x == 1) ;
+            addParameter(p,'precomputeKernel',defaultPrecomputeKernel,checkPrecomputeKernel);              
 
             % eta    % step size
             defaultEta = [];
@@ -239,8 +240,7 @@ classdef kigdesc < algorithm
             Xtrain = Xtr(obj.trainIdx,:);
             Ytrain = Ytr(obj.trainIdx,:);
             Xval = Xtr(obj.valIdx,:);
-            Yval = Ytr(obj.valIdx,:);
-                       
+            Yval = Ytr(obj.valIdx,:);  
             
             % Normalization factors
             numSamples = size(Xtrain , 1);
@@ -305,8 +305,10 @@ classdef kigdesc < algorithm
             while kernelTrain.next()
                 
                 % Compute kernel according to current hyperparameters
-                kernelTrain.compute();
-
+                if obj.precomputeKernel == 1
+                    kernelTrain.compute();
+                end
+                
                 % Initialize TrainVal kernel
                 argin = {};
                 argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar(1))];
@@ -316,6 +318,19 @@ classdef kigdesc < algorithm
                 kernelVal = obj.map(Xval,Xtrain, argin{:});            
                 kernelVal.next();
                 kernelVal.compute(kernelTrain.currentPar);
+                
+                % Initialize TrainTest kernel, if required
+                if obj.storeFullTestPerf == 1      
+
+                    argin = {};
+                    argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar)];
+                    if ~isempty(obj.verbose)
+                        argin = [argin , 'verbose' , obj.verbose];
+                    end                  
+                    kernelTest = obj.map(Xte , Xtrain , argin{:});
+                    kernelTest.next();
+                    kernelTest.compute();     
+                end
                 
                 argin = {};
                 if ~isempty(obj.filterParGuesses)
@@ -339,8 +354,12 @@ classdef kigdesc < algorithm
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
-                filter = obj.filter( obj.map , kernelTrain.currentPar(1) , Xtrain , Ytrain , numSamples , argin{:});
                 
+                if obj.precomputeKernel == 0
+                    filter = obj.filter( obj.map , kernelTrain.currentPar(1) , Xtrain , Ytrain , numSamples , [] , argin{:});
+                else
+                    filter = obj.filter( obj.map , kernelTrain.currentPar(1) , Xtrain , Ytrain , numSamples , kernelTrain.K , argin{:});
+                end
                 obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
                 
                 errStorageIdx = 0;
@@ -392,16 +411,6 @@ classdef kigdesc < algorithm
                             obj.valPerformance(kernelTrain.currentParIdx , errStorageIdx) = valPerf;
                         end
                         if obj.storeFullTestPerf == 1      
-
-                            % Initialize TrainTest kernel
-                            argin = {};
-                            argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar)];
-                            if ~isempty(obj.verbose)
-                                argin = [argin , 'verbose' , obj.verbose];
-                            end                  
-                            kernelTest = obj.map(Xte , Xtrain , argin{:});
-                            kernelTest.next();
-                            kernelTest.compute();
 
                             % Compute scores
                             YtestPred = kernelTest.K * filter.weights;

@@ -247,6 +247,18 @@ classdef ksgdesc < algorithm
                 kernelVal.next();
                 kernelVal.compute(kernelTrain.currentPar);
                 
+                % Initialize TrainTest kernel, if required
+                if obj.storeFullTestPerf == 1                              
+                    argin = {};
+                    argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar)];
+                    if ~isempty(obj.verbose)
+                        argin = [argin , 'verbose' , obj.verbose];
+                    end                  
+                    kernelTest = obj.map(Xte , Xtrain , argin{:});
+                    kernelTest.next();
+                    kernelTest.compute();
+                end
+                
                 % Normalization factors
                 numSamples = size(Xtrain , 1);
                 
@@ -312,17 +324,7 @@ classdef ksgdesc < algorithm
                     if obj.storeFullValPerf == 1
                         obj.valPerformance(kernelTrain.currentParIdx , filter.currentParIdx) = valPerf;
                     end
-                    if obj.storeFullTestPerf == 1      
-                        
-                        % Initialize TrainTest kernel
-                        argin = {};
-                        argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar)];
-                        if ~isempty(obj.verbose)
-                            argin = [argin , 'verbose' , obj.verbose];
-                        end                  
-                        kernelTest = obj.map(Xte , Xtrain , argin{:});
-                        kernelTest.next();
-                        kernelTest.compute();
+                    if obj.storeFullTestPerf == 1
                         
                         % Compute scores
                         YtestPred = kernelTest.K * filter.weights;

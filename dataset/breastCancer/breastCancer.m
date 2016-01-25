@@ -45,7 +45,10 @@ classdef breastCancer < dataset
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
-            
+
+%             % Shuffling
+%             obj = shuffleAllIdx@dataset(obj);
+
             obj.shuffleTraining = shuffleTraining;
             if shuffleTraining == 1
                 obj.shuffleTrainIdx();
@@ -54,6 +57,11 @@ classdef breastCancer < dataset
             obj.shuffleTest = shuffleTest;
             if shuffleTest == 1
                 obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
             end
                 
             obj.outputFormat = outputFormat;

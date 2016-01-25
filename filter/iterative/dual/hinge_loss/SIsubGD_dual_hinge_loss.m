@@ -23,6 +23,7 @@ classdef SIsubGD_dual_hinge_loss < filter
         eta                     % Initial step size [eta_1]
         theta                   % exponent of the step size sequence [eta_t = eta_1 * t^(-theta)]
         
+        trainKernel
         ordering                % Ordering of the samples:
 %                                 fixed: ordering is drawn once and kept (no repetitions)
 %                                 reshuffle_norep: ordering is drawn at each epoch (no repetitions)
@@ -35,17 +36,18 @@ classdef SIsubGD_dual_hinge_loss < filter
     
     methods
       
-        function obj = SIsubGD_dual_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
+        function obj = SIsubGD_dual_hinge_loss(map , mapPar , X , Y  , numSamples , trainKernel , varargin)
 
-            obj.init(  map , mapPar , X , Y , numSamples , varargin );            
+            obj.init(  map , mapPar , X , Y , numSamples , trainKernel , varargin );            
         end
         
-        function init(obj , map , mapPar , X , Y , numSamples , varargin)
+        function init(obj , map , mapPar , X , Y , numSamples , trainKernel , varargin)
                  
             p = inputParser;
             
             %%%% Required parameters
             
+            checkTrainKernel = @(x) (size(trainKernel,1) > 0) && (size(trainKernel,2) > 0);
             checkMap = @(x) true;
             checkMapPar = @(x) (x > 0);
             checkNumSamples = @(x) (x > 0);
@@ -55,6 +57,7 @@ classdef SIsubGD_dual_hinge_loss < filter
             addRequired(p,'X');
             addRequired(p,'Y');
             addRequired(p,'numSamples',checkNumSamples);
+            addRequired(p,'trainKernel',checkTrainKernel)
  
             %%%% Optional parameters
             % Optional parameter names:
@@ -87,7 +90,7 @@ classdef SIsubGD_dual_hinge_loss < filter
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             
             % Parse function inputs
-            parse(p, map , mapPar , X , Y , numSamples , varargin{:}{:})
+            parse(p, map , mapPar , X , Y , numSamples , trainKernel , varargin{:}{:})
                         
             % Get size of kernel/covariance matrix
             obj.sz = size(p.Results.X,1);
@@ -119,6 +122,7 @@ classdef SIsubGD_dual_hinge_loss < filter
                 end
             end
             
+            obj.trainKernel = p.Results.trainKernel;
             obj.ordering = p.Results.ordering;
             obj.eta = p.Results.eta;
             obj.theta = p.Results.theta;
@@ -184,18 +188,26 @@ classdef SIsubGD_dual_hinge_loss < filter
                     error('The specified ordering is not implemented')
             end
             
-            % Construct Kernel column according to current hyperparameters
-            argin = {};
-            argin = [argin , 'mapParGuesses' , obj.mapPar];
-            if ~isempty(obj.verbose)
-                argin = [argin , 'verbose' , obj.verbose];
-            end
-            kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
-            kernelLine.next();
-            kernelLine.compute();
+            if isempty(obj.trainKernel)
+                % Construct Kernel column according to current hyperparameters
+                argin = {};
+                argin = [argin , 'mapParGuesses' , obj.mapPar];
+                if ~isempty(obj.verbose)
+                    argin = [argin , 'verbose' , obj.verbose];
+                end
+                kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
+                kernelLine.next();
+                kernelLine.compute();
             
-            % Compute prediction
-            Ypred = obj.weights' * kernelLine.K;
+                % Compute prediction
+                Ypred = obj.weights' * kernelLine.K;
+            else
+                % Precomputed kernel
+
+                % Compute prediction
+                Ypred = obj.weights' * obj.trainKernel(:,currIdx);
+            end
+            
             
             if (Ypred * obj.Y(currIdx,:) <= 1)
                 
