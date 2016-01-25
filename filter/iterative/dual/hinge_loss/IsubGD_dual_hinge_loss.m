@@ -17,7 +17,8 @@ classdef IsubGD_dual_hinge_loss < filter
         
         filterParGuesses        % Filter parameter guesses (range)
         numFilterParGuesses     % number of filter hyperparameters guesses
-                
+          
+		trainKernel
         eta                     % Step size
         theta
         
@@ -27,18 +28,19 @@ classdef IsubGD_dual_hinge_loss < filter
     
     methods
       
-        function obj = IsubGD_dual_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
+        function obj = IsubGD_dual_hinge_loss(map , mapPar , X , Y  , numSamples , trainKernel , varargin)
 
-            obj.init(  map , mapPar , X , Y , numSamples , varargin );            
+            obj.init(  map , mapPar , X , Y , numSamples , trainKernel , varargin );            
         end
         
-        function init(obj , map , mapPar , X , Y , numSamples , varargin)
+        function init(obj , map , mapPar , X , Y , numSamples , trainKernel , varargin)
                  
             p = inputParser;
             p.KeepUnmatched = true;
             
             %%%% Required parameters
             
+            checkTrainKernel = @(x) (size(trainKernel,1) > 0) && (size(trainKernel,2) > 0);
             checkMap = @(x) true;
             checkMapPar = @(x) (x > 0);
             checkNumSamples = @(x) (x > 0);
@@ -48,7 +50,8 @@ classdef IsubGD_dual_hinge_loss < filter
             addRequired(p,'X');
             addRequired(p,'Y');
             addRequired(p,'numSamples',checkNumSamples);
- 
+            addRequired(p,'trainKernel',checkTrainKernel)
+
             %%%% Optional parameters
             % Optional parameter names:
 
@@ -76,7 +79,7 @@ classdef IsubGD_dual_hinge_loss < filter
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             
             % Parse function inputs
-            parse(p, map , mapPar , X , Y , numSamples , varargin{:}{:})
+            parse(p, map , mapPar , X , Y , numSamples , trainKernel , varargin{:}{:})
                         
             % Get size of kernel/covariance matrix
             obj.sz = size(p.Results.X,1);
@@ -108,7 +111,8 @@ classdef IsubGD_dual_hinge_loss < filter
                 end
             end
             
-            obj.eta = p.Results.eta;
+			obj.trainKernel = p.Results.trainKernel;
+			obj.eta = p.Results.eta;
             obj.theta = p.Results.theta;
             
 
@@ -150,19 +154,26 @@ classdef IsubGD_dual_hinge_loss < filter
             currIdx = mod(obj.currentPar-1,obj.n) + 1;
             currEpoch = floor(obj.currentPar/obj.n) + 1;
 
-            % Construct Kernel column according to current hyperparameters
-            argin = {};
-            argin = [argin , 'mapParGuesses' , obj.mapPar];
-            if ~isempty(obj.verbose)
-                argin = [argin , 'verbose' , obj.verbose];
-            end
-            kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
-            kernelLine.next();
-            kernelLine.compute();
-            
-            % Compute prediction
-            Ypred = obj.weights' * kernelLine.K;
-            
+            if isempty(obj.trainKernel)
+				% Construct Kernel column according to current hyperparameters
+				argin = {};
+				argin = [argin , 'mapParGuesses' , obj.mapPar];
+				if ~isempty(obj.verbose)
+					argin = [argin , 'verbose' , obj.verbose];
+				end
+				kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
+				kernelLine.next();
+				kernelLine.compute();
+				
+				% Compute prediction
+				Ypred = obj.weights' * kernelLine.K;
+			else
+                % Precomputed kernel
+
+                % Compute prediction
+                Ypred = obj.weights' * obj.trainKernel(:,currIdx);
+			end
+			            
             if (Ypred * obj.Y(currIdx,:) <= 1)
 
                 % IGD iteration step

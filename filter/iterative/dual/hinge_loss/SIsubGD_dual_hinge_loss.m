@@ -69,7 +69,7 @@ classdef SIsubGD_dual_hinge_loss < filter
             checkEta = @(x) x > 0;
 
             defaultTheta = 1/2;
-            checkTheta = @(x) (x <= 0 && x >= -1);
+            checkTheta = @(x) (x <= 1 && x >= 0);
 
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x) x >= 0;

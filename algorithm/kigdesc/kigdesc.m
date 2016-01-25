@@ -151,7 +151,7 @@ classdef kigdesc < algorithm
             
             % theta    % Exponent of step size decreasing sequence
             defaultTheta = [];
-            checkTheta = @(x)  (x <= 0 && x >= -1);            
+            checkTheta = @(x)  (x <= 1 && x >= 0);            
             addParameter(p,'theta',defaultTheta,checkTheta);
             
             % stoppingRule
