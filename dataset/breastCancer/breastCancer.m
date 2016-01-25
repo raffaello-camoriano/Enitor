@@ -47,7 +47,6 @@ classdef breastCancer < dataset
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
 
 %             % Shuffling
-%             obj = shuffleAllIdx@dataset(obj);
 
             obj.shuffleTraining = shuffleTraining;
             if shuffleTraining == 1

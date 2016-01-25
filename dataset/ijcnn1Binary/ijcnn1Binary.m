@@ -9,13 +9,16 @@ classdef ijcnn1Binary < dataset
    
    methods
 %         function obj = ijcnn1Binary(nTr , nTe, outputFormat)
-        function obj = ijcnn1Binary(outputFormat)
+%         function obj = ijcnn1Binary(outputFormat)
+        function obj = ijcnn1Binary(nTr , nTe, outputFormat, shuffleTraining, shuffleTest, shuffleAll)
 
-%             if nTr > 49990 || nTe > 91701
-%                 error('Too many samples required')
-%             end
-            nTr = 49990;
-            nTe = 91701;
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
+%             obj = obj@dataset();
+            
+            if nTr > 49990 || nTe > 91701
+                error('Too many samples required')
+            end
             
             % Set output format
             if isempty(outputFormat)
@@ -44,10 +47,12 @@ classdef ijcnn1Binary < dataset
             [tmpGnd, tmpX] = libsvmread([pathstr , '/ijcnn1.val']);
             gnd = [gnd ; tmpGnd];
             obj.X = [obj.X ; tmpX];
+            obj.nTrTot = size(obj.X , 1);
             
             [tmpGnd, tmpX] = libsvmread([pathstr , '/ijcnn1.t']);
             gnd = [gnd ; tmpGnd];
             obj.X = [obj.X ; tmpX];
+            obj.nTeTot = size(tmpX , 1);
             tmpGnd = [];
             tmpX = [];
             
@@ -55,9 +60,8 @@ classdef ijcnn1Binary < dataset
 
             obj.n = size(obj.X , 1);
             obj.nTr = nTr;
-            obj.nTrTot = nTr;
             obj.nTe = nTe;
-            obj.nTeTot = nTe;
+            
             obj.d = size(obj.X , 2);
 
             obj.X = double(obj.X);
@@ -69,9 +73,23 @@ classdef ijcnn1Binary < dataset
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
-%             obj.shuffleTrainIdx();
-%             obj.shuffleTestIdx();
-%             obj.shuffleAllIdx();
+
+            % Shuffling
+
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end            
                 
             if strcmp(obj.outputFormat, 'zeroOne')
                 obj.Y = zeros(obj.n,obj.t);
@@ -81,20 +99,8 @@ classdef ijcnn1Binary < dataset
                 obj.Y = -1/(obj.t - 1) * ones(obj.n,obj.t);
             end
 
-%             for i = 1:obj.n
-%                 if gnd(i) == 2
-%                     obj.Y(i) = 1;
-%                 end
-%             end
-            
             obj.Y(gnd == 1) = 1;
-               
-            % Set problem type
-%             if obj.hasRealValues(obj.Y)
-%                 obj.problemType = 'regression';
-%             else
-                obj.problemType = 'classification';
-%             end
+            obj.problemType = 'classification';
         end
 
         % Compute predictions matrix from real-valued scores matrix
