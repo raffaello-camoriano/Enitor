@@ -1,5 +1,5 @@
 classdef kigdesc < algorithm
-    %
+    % Kernelized incremental (stochastic) gradient descent
     
     properties
                 
