@@ -368,28 +368,29 @@ classdef kigdesc < algorithm
                     
                     % Compute filter according to current hyperparameters
                     filter.compute();
-
-                    % Compute predictions matrix
-                    YvalPred = kernelVal.K * filter.weights;
-
-                    % Compute performance
-                    valPerf = performanceMeasure( Yval , YvalPred ,obj.valIdx );
-                    
-                    % Apply early stopping criterion
-                    stop = 0;
-                    if ~isempty(obj.stoppingRule)
-                        stop = obj.stoppingRule.evaluate(valPerf);
-                    end
-                    
-                    if stop == 1
-                        break;
-                    end
                     
                     if strcmp(obj.errorStorageMode,'iterations') || ...
                             ( strcmp(obj.errorStorageMode,'epochs') && ( mod(filter.currentPar, numSamples) == 0 ) )
                     
                         errStorageIdx = errStorageIdx + 1;
                         
+                        % Compute predictions matrix
+                        YvalPred = kernelVal.K * filter.weights;
+
+                        % Compute performance
+                        valPerf = performanceMeasure( Yval , YvalPred ,obj.valIdx );
+
+                        % Apply early stopping criterion
+                        stop = 0;
+                        if ~isempty(obj.stoppingRule)
+                            stop = obj.stoppingRule.evaluate(valPerf);
+                        end
+
+                        if stop == 1
+                            break;
+                        end
+
+
                         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         %  Store performance matrices  %
                         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
