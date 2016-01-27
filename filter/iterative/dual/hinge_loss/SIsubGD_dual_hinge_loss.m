@@ -57,7 +57,7 @@ classdef SIsubGD_dual_hinge_loss < filter
             addRequired(p,'X');
             addRequired(p,'Y');
             addRequired(p,'numSamples',checkNumSamples);
-            addRequired(p,'trainKernel',checkTrainKernel)
+            addRequired(p,'trainKernel',checkTrainKernel);
  
             %%%% Optional parameters
             % Optional parameter names:
