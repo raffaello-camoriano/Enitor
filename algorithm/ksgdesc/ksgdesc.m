@@ -33,14 +33,14 @@ classdef ksgdesc < algorithm
         filterParGuesses
         numFilterParGuesses       
         filterParGuessesStorage
-        isFilterParGuessesFixed
         
         Xmodel     % Training samples actually used for training. they are part of the learned model
         c       % Coefficients vector
         
-        initialWeights  % Initial filter weights
-        eta         % filter step size
-        theta       % filter step size sequence exponent
+        initialWeights          % Initial filter weights
+        etaGuesses              % filter step size
+        thetaGuesses            % filter step size sequence exponent
+        precomputeKernel        % 1 or 0
         
         trainIdx % Actual training indexes
         valIdx   % Actual validation indexes
@@ -76,6 +76,11 @@ classdef ksgdesc < algorithm
             defaultVerbose = 0;
             checkVerbose = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'verbose',defaultVerbose,checkVerbose);
+            
+            % precomputeKernel
+            defaultPrecomputeKernel = 1;
+            checkPrecomputeKernel = @(x) (x == 0) || (x == 1) ;
+            addParameter(p,'precomputeKernel',defaultPrecomputeKernel,checkPrecomputeKernel);              
 
             % storeFullTrainPerf  % Store full training performance matrix 1/0
             defaultStoreFullTrainPerf = 0;
@@ -126,14 +131,15 @@ classdef ksgdesc < algorithm
             defaultInitialWeights = [];
             addParameter(p,'initialWeights',defaultInitialWeights);      
             
-            % eta    % step size
-            defaultEta = [];
-            addParameter(p,'eta',defaultEta);              
+            % etaGuesses    % step size
+            defaultEtaGuesses = [];
+            checkEtaGuesses = @(x)  ( size(x,1) == 1 ) && (size(x,2) >= 1 ) ;
+            addParameter(p,'etaGuesses',defaultEtaGuesses,checkEtaGuesses);              
             
-            % theta    % Exponent of step size decreasing sequence
-            defaultTheta = [];
-            checkTheta = @(x)  (x <= 1 && x >= 0);            
-            addParameter(p,'theta',defaultTheta,checkTheta);
+            % thetaGuesses    % Exponent of step size decreasing sequence
+            defaultThetaGuesses = [];
+            checkThetaGuesses = @(x)  ( size(x,1) == 1 ) && (size(x,2) >= 1 ) ;
+            addParameter(p,'thetaGuesses',defaultThetaGuesses,checkThetaGuesses);
             
             % stoppingRule
             defaultStoppingRule = [];
@@ -185,10 +191,7 @@ classdef ksgdesc < algorithm
             Yte = p.Results.Yte;
             
             % Training/validation sets splitting
-%             shuffledIdx = randperm(size(Xtr,1));
             ntr = floor(size(Xtr,1)*(1-validationPart));
-%             trainIdx = shuffledIdx(1 : tmp1);
-%             valIdx = shuffledIdx(tmp1 + 1 : end);
             obj.trainIdx = 1 : ntr;
             obj.valIdx = ntr + 1 : size(Xtr,1);
             
@@ -235,7 +238,9 @@ classdef ksgdesc < algorithm
             while kernelTrain.next()
                 
                 % Compute kernel according to current hyperparameters
-                kernelTrain.compute();
+                if obj.precomputeKernel == 1
+                    kernelTrain.compute();
+                end
                 
                 % Initialize TrainVal kernel
                 argin = {};
@@ -270,20 +275,31 @@ classdef ksgdesc < algorithm
                 if ~isempty(obj.initialWeights)
                     argin = [argin , 'initialWeights' , obj.initialWeights];
                 end
-                if ~isempty(obj.eta)
-                    argin = [argin , 'eta' , obj.eta];
+                if ~isempty(obj.etaGuesses)
+                    argin = [argin , 'etaGuesses' , obj.etaGuesses];
                 end
-                if ~isempty(obj.theta)
-                    argin = [argin , 'theta' , obj.theta];
+                if ~isempty(obj.thetaGuesses)
+                    argin = [argin , 'thetaGuesses' , obj.thetaGuesses];
                 end
                 if ~isempty(obj.verbose)
                     argin = [argin , 'verbose' , obj.verbose];
                 end
-                filter = obj.filter( obj.map , kernelTrain.currentPar(1) , Xtrain , Ytrain , numSamples , argin{:});
+                
+                if obj.precomputeKernel == 0
+                    filter = obj.filter( obj.map , kernelTrain.currentPar(1) , Xtrain , Ytrain , numSamples , [] , argin{:});
+                else
+                    filter = obj.filter( obj.map , kernelTrain.currentPar(1) , Xtrain , Ytrain , numSamples , kernelTrain.K , argin{:});
+                end
                 
                 obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
                 
                 while filter.next()
+                    
+                    % Reset weights according to current parameter
+                    % and range
+                    if ~isempty(filter.prevPar) && (filter.prevPar(1) > filter.currentPar(1))
+                        filter.resetWeights();
+                    end
                     
                     % Compute filter according to current hyperparameters
                     filter.compute();

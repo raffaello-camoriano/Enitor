@@ -18,28 +18,36 @@ classdef SsubGD_dual_hinge_loss < filter
         filterParGuesses        % Filter parameter guesses (range)
         numFilterParGuesses     % number of filter hyperparameters guesses
                 
-        eta                     % Step size
-        theta
+        etaGuesses                     % Step size
+        thetaGuesses
+        rng
+        
+        trainKernel
+        initialWeights
         
         currentParIdx           % Current parameter combination indexes map container
+        prevPar                 % Previous parameter
         currentPar              % Current parameter combination map container
-        
+                                % 1: Iteration
+                                % 2: eta
+                                % 3: theta
         randOrd
     end
     
     methods
       
-        function obj = SsubGD_dual_hinge_loss(map , mapPar , X , Y  , numSamples , varargin)
+        function obj = SsubGD_dual_hinge_loss(map , mapPar , X , Y  , numSamples , trainKernel , varargin)
 
-            obj.init(  map , mapPar , X , Y , numSamples , varargin );            
+            obj.init(  map , mapPar , X , Y , numSamples , trainKernel , varargin );            
         end
         
-        function init(obj , map , mapPar , X , Y , numSamples , varargin)
+        function init(obj , map , mapPar , X , Y , numSamples , trainKernel , varargin)
                  
             p = inputParser;
             
             %%%% Required parameters
             
+            checkTrainKernel = @(x) (size(trainKernel,1) > 0) && (size(trainKernel,2) > 0);
             checkMap = @(x) true;
             checkMapPar = @(x) (x > 0);
             checkNumSamples = @(x) (x > 0);
@@ -49,16 +57,14 @@ classdef SsubGD_dual_hinge_loss < filter
             addRequired(p,'X');
             addRequired(p,'Y');
             addRequired(p,'numSamples',checkNumSamples);
- 
+            addRequired(p,'trainKernel',checkTrainKernel);
+
             %%%% Optional parameters
             % Optional parameter names:
 
-            
-            defaultEta = 1/4;
-            checkEta = @(x) x > 0;
+            defaultEtaGuesses = 1/4;
 
-            defaultTheta = 1/2;
-            checkTheta = @(x) (x <= 1 && x >= 0);
+            defaultThetaGuesses = 1/2;
 
             defaultNumFilterParGuesses = [];
             checkNumFilterParGuesses = @(x) x >= 0;
@@ -70,15 +76,15 @@ classdef SsubGD_dual_hinge_loss < filter
             defaultVerbose = 0;
             checkVerbose = @(x) (x==0) || (x==1);
 
-            addParameter(p,'eta',defaultEta,checkEta)
-            addParameter(p,'theta',defaultTheta,checkTheta)
+            addParameter(p,'etaGuesses',defaultEtaGuesses)
+            addParameter(p,'thetaGuesses',defaultThetaGuesses)
             addParameter(p,'numFilterParGuesses',defaultNumFilterParGuesses,checkNumFilterParGuesses)
             addParameter(p,'filterParGuesses',defaultFilterParGuesses)
             addParameter(p,'initialWeights',defaultInitialWeights)
             addParameter(p,'verbose',defaultVerbose,checkVerbose)
             
             % Parse function inputs
-            parse(p, map , mapPar , X , Y , numSamples , varargin{:}{:})
+            parse(p, map , mapPar , X , Y , numSamples , trainKernel , varargin{:}{:})
                         
             % Get size of kernel/covariance matrix
             obj.sz = size(p.Results.X,1);
@@ -110,10 +116,18 @@ classdef SsubGD_dual_hinge_loss < filter
                 end
             end
             
-            obj.eta = p.Results.eta;
-            obj.theta = p.Results.theta;
-            
+            obj.trainKernel = p.Results.trainKernel;
 
+            % Check that only one between etaGuesses and thetaGuesses is an
+            % array
+            obj.etaGuesses = p.Results.etaGuesses;
+            obj.thetaGuesses = p.Results.thetaGuesses;
+            if ( numel(obj.etaGuesses) > 1 ) && ( numel(obj.thetaGuesses) > 1 )
+                error('Only one between theta and eta can be crossvalidated. at least one must be fixed.');
+            end
+
+            % Set initial weights if specified.
+            obj.initialWeights = p.Results.initialWeights;
             if isempty(p.Results.initialWeights)
                 obj.weights = zeros(obj.n,1);
             else
@@ -139,6 +153,34 @@ classdef SsubGD_dual_hinge_loss < filter
             if isempty(obj.filterParGuesses)
                 obj.filterParGuesses = 1:obj.numFilterParGuesses;
             end
+            
+            %% Compute range including eta xor theta guesses
+            
+            % crossvalidation of eta
+            if numel(obj.etaGuesses) > 1
+                
+                [p,q] = meshgrid(obj.etaGuesses , obj.filterParGuesses);
+                r = ones( numel(obj.etaGuesses) * numel(obj.filterParGuesses) , 1) * obj.thetaGuesses;
+                tmp = [ q(:) p(:) r]';
+            
+            % crossvalidation of theta
+            elseif numel(obj.thetaGuesses) > 1
+                
+                [p,q] = meshgrid(obj.thetaGuesses , obj.filterParGuesses);
+                s = ones( numel(obj.thetaGuesses) * numel(obj.filterParGuesses) , 1) * obj.etaGuesses;
+                tmp = [ q(:) s p(:) ]';
+            % No crossvalidation
+            else
+                r = ones( numel(obj.thetaGuesses) * numel(obj.filterParGuesses) , 1) * obj.thetaGuesses;
+                s = ones( numel(obj.thetaGuesses) * numel(obj.filterParGuesses) , 1) * obj.etaGuesses;
+                tmp = [ obj.filterParGuesses' s r ]';
+            end
+            
+            
+            %% Generate all possible parameters combinations            
+            
+            obj.rng = num2cell(tmp , 1);
+                        
         end
         
         function compute(obj)
@@ -152,48 +194,90 @@ classdef SsubGD_dual_hinge_loss < filter
                 end
             end
             
-            randIdx = obj.randOrd(mod(obj.currentPar-1,obj.n) + 1);
+            currIdx = obj.randOrd(mod(obj.currentPar(1)-1,obj.n) + 1);
 
-            % Construct Kernel column
-            argin = {};
-            argin = [argin , 'mapParGuesses' , obj.mapPar];
-            if ~isempty(obj.verbose)
-                argin = [argin , 'verbose' , obj.verbose];
+            if isempty(obj.trainKernel)
+                % Construct Kernel column according to current hyperparameters
+                argin = {};
+                argin = [argin , 'mapParGuesses' , obj.mapPar];
+                if ~isempty(obj.verbose)
+                    argin = [argin , 'verbose' , obj.verbose];
+                end
+                kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
+                kernelLine.next();
+                kernelLine.compute();
+            
+                % Compute prediction
+                Ypred = obj.weights' * kernelLine.K;
+            else
+                % Precomputed kernel
+
+                % Compute prediction
+                Ypred = obj.weights' * obj.trainKernel(:,currIdx);
             end
-            kernelLine = obj.map( obj.X ,  obj.X(randIdx , :) ,argin{:} );
-            kernelLine.next();
-            kernelLine.compute();
             
-            % Compute prediction
-            Ypred = obj.weights' * kernelLine.K;
-            
-            if (Ypred * obj.Y(randIdx,:) <= 1)
+            if (Ypred * obj.Y(currIdx,:) <= 1)
                 
                 % Compute step
-                step = obj.eta * obj.currentPar^(-obj.theta);
+                step = obj.currentPar(2) * obj.currentPar(1)^(-obj.currentPar(3));
                 
                 % Compute SubGradient
-                SG = - obj.Y(randIdx,:);
+                SG = - obj.Y(currIdx,:);
 
                 % Weights update iteration
-                obj.weights(randIdx,:) = obj.weights(randIdx,:) - step * SG;
+                obj.weights(currIdx,:) = obj.weights(currIdx,:) - step * SG;
             end
+        end
+        
+%         % returns true if the next parameter combination is available and
+%         % updates the current parameter combination 'currentPar'
+%         function available = next(obj)
+% 
+%             if isempty(obj.filterParGuesses)
+%                 obj.range();
+%             end
+%             
+%             available = false;
+%             if length(obj.filterParGuesses) > obj.currentParIdx
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.filterParGuesses(:,obj.currentParIdx);
+%                 available = true;
+%             end
+%         end
+        
+        function resetPar(obj)
+            
+            obj.currentParIdx = 0;
+            obj.currentPar = [];
+            
+        end
+        
+        function resetWeights(obj)
+            
+            % Set initial weights if specified.
+            if isempty(obj.initialWeights)
+                obj.weights = zeros(obj.n,1);
+            else
+                obj.weights = obj.initialWeights;
+            end        
         end
         
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'
         function available = next(obj)
 
-            if isempty(obj.filterParGuesses)
+            % If any range for any of the parameters is not available, recompute all ranges.
+            if cellfun(@isempty , obj.rng)
                 obj.range();
             end
-            
+
             available = false;
-            if length(obj.filterParGuesses) > obj.currentParIdx
+            if length(obj.rng) > obj.currentParIdx
+                obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.filterParGuesses(:,obj.currentParIdx);
+                obj.currentPar = obj.rng{obj.currentParIdx};
                 available = true;
             end
-        end
+        end                
     end
 end
