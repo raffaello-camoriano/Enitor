@@ -34,14 +34,16 @@ classdef ksgdesc < algorithm
         numFilterParGuesses       
         filterParGuessesStorage
         
-        Xmodel     % Training samples actually used for training. they are part of the learned model
-        c       % Coefficients vector
+        Xmodel      % Training samples actually used for training. they are part of the learned model
+        cStar       % Coefficients vector
+        valErrStar  % Best validation error
         
         initialWeights          % Initial filter weights
         etaGuesses              % filter step size
         thetaGuesses            % filter step size sequence exponent
         precomputeKernel        % 1 or 0
-        
+        errorStorageMode    % 'epochs' or 'iterations'
+
         trainIdx % Actual training indexes
         valIdx   % Actual validation indexes
         
@@ -76,6 +78,11 @@ classdef ksgdesc < algorithm
             defaultVerbose = 0;
             checkVerbose = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'verbose',defaultVerbose,checkVerbose);
+            
+            % errorStorageMode   % 'epochs' or 'iterations'
+            defaultErrorStorageMode = 'epochs';
+            checkErrorStorageMode = @(x) strcmp(x , 'epochs') || strcmp(x, 'iterations') ;            
+            addParameter(p,'errorStorageMode',defaultErrorStorageMode,checkErrorStorageMode);    
             
             % precomputeKernel
             defaultPrecomputeKernel = 1;
@@ -200,6 +207,9 @@ classdef ksgdesc < algorithm
             Xval = Xtr(obj.valIdx,:);
             Yval = Ytr(obj.valIdx,:);
                                     
+            % Normalization factors
+            numSamples = size(Xtrain , 1);
+
             % Initialize Train kernel
             argin = {};
             if ~isempty(obj.numMapParGuesses)
@@ -216,23 +226,32 @@ classdef ksgdesc < algorithm
             obj.mapParGuesses = kernelTrain.mapParGuesses;   % Warning: rename to mapParGuesses
             obj.filterParGuessesStorage = [];
 
-            valM = inf;     % Keeps track of the lowest validation error
-            
+            obj.valErrStar = inf;     % Keeps track of the lowest validation error
+
             % Full matrices for performance storage initialization
+            if strcmp(obj.errorStorageMode,'iterations')
+                
+                numEval = obj.numFilterParGuesses * numel(obj.etaGuesses) * numel(obj.thetaGuesses);
+             
+            elseif (strcmp(obj.errorStorageMode,'epochs'))
+                
+                numEval = numel(obj.etaGuesses) * numel(obj.thetaGuesses);
+            end
+
             if obj.storeFullTrainPerf == 1
-                obj.trainPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.trainPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
             end
             if obj.storeFullTrainPred == 1
-                obj.trainPred = zeros(obj.numMapParGuesses, obj.numFilterParGuesses,size(Xtrain,1));
+                obj.trainPred = zeros(obj.numMapParGuesses, numEval, size(Xtrain,1));
             end
             if obj.storeFullValPerf == 1
-                obj.valPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.valPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
             end
             if obj.storeFullTestPerf == 1
-                obj.testPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
+                obj.testPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
             end
             if obj.storeFullTestPred == 1
-                obj.testPred = zeros(obj.numMapParGuesses, obj.numFilterParGuesses,size(Xte,1));
+                obj.testPred = zeros(obj.numMapParGuesses, numEval, size(Xte,1));
             end
             
             while kernelTrain.next()
@@ -293,6 +312,8 @@ classdef ksgdesc < algorithm
                 
                 obj.filterParGuessesStorage = [obj.filterParGuessesStorage ; filter.filterParGuesses];
                 
+                errStorageIdx = 0;
+                
                 while filter.next()
                     
                     % Reset weights according to current parameter
@@ -304,77 +325,80 @@ classdef ksgdesc < algorithm
                     % Compute filter according to current hyperparameters
                     filter.compute();
 
-                    % Compute predictions matrix
-                    YvalPred = kernelVal.K * filter.weights;
+                    if strcmp(obj.errorStorageMode,'iterations') || ...
+                        ( strcmp(obj.errorStorageMode,'epochs') && ( mod(filter.currentPar(1), numSamples) == 0 ) )
 
-                    % Compute performance
-                    valPerf = performanceMeasure( Yval , YvalPred ,obj.valIdx );
-                    
-                    % Apply early stopping criterion
-                    stop = 0;
-                    if ~isempty(obj.stoppingRule)
-                        stop = obj.stoppingRule.evaluate(valPerf);
-                    end
-                    
-                    if stop == 1
-                        break;
-                    end
-                    
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    %  Store performance matrices  %
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    if obj.storeFullTrainPerf == 1         
+                        errStorageIdx = errStorageIdx + 1;
 
-                        % Compute training predictions matrix
-                        YtrainPred = kernelTrain.K * filter.weights;
-                        if obj.storeFullTrainPred == 1
-                            obj.trainPred(kernelTrain.currentParIdx , filter.currentParIdx,:) = YtrainPred;
-                        end
-                        
-                        % Compute training performance
-                        trainPerf = performanceMeasure( Ytrain , YtrainPred , obj.trainIdx );
-                        
-                        obj.trainPerformance(kernelTrain.currentParIdx , filter.currentParIdx) = trainPerf;
-                    end
-                    
-                    if obj.storeFullValPerf == 1
-                        obj.valPerformance(kernelTrain.currentParIdx , filter.currentParIdx) = valPerf;
-                    end
-                    if obj.storeFullTestPerf == 1
-                        
-                        % Compute scores
-                        YtestPred = kernelTest.K * filter.weights;
-                        if obj.storeFullTestPred == 1
-                            obj.testPred(kernelTrain.currentParIdx , filter.currentParIdx,:) = YtestPred;
+                        % Compute predictions matrix
+                        YvalPred = kernelVal.K * filter.weights;
+
+                        % Compute performance
+                        valPerf = performanceMeasure( Yval , YvalPred ,obj.valIdx );
+
+                        % Apply early stopping criterion
+                        stop = 0;
+                        if ~isempty(obj.stoppingRule)
+                            stop = obj.stoppingRule.evaluate(valPerf);
                         end
 
-                        % Compute training performance
-                        testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );
-                        
-                        obj.testPerformance(kernelTrain.currentParIdx , filter.currentParIdx) = testPerf;                        
-                    end
-                    
-                    %%%%%%%%%%%%%%%%%%%%
-                    % Store best model %
-                    %%%%%%%%%%%%%%%%%%%%
-                    if valPerf < valM
-                        
-                        % Update best kernel parameter combination
-                        obj.mapParStar = kernelTrain.currentPar;
-                        
-                        %Update best filter parameter
-                        obj.filterParStar = filter.currentPar;
-                        
-                        %Update best validation performance measurement
-                        valM = valPerf;
-                        
-                        if ~recompute
-                            
+                        if stop == 1
+                            break;
+                        end
+
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        %  Store performance matrices  %
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        if obj.storeFullTrainPerf == 1         
+
+                            % Compute training predictions matrix
+                            YtrainPred = kernelTrain.K * filter.weights;
+                            if obj.storeFullTrainPred == 1
+                                obj.trainPred(kernelTrain.currentParIdx , errStorageIdx,:) = YtrainPred;
+                            end
+
+                            % Compute training performance
+                            trainPerf = performanceMeasure( Ytrain , YtrainPred , obj.trainIdx );
+
+                            obj.trainPerformance(kernelTrain.currentParIdx , errStorageIdx) = trainPerf;
+                        end
+
+                        if obj.storeFullValPerf == 1
+                            obj.valPerformance(kernelTrain.currentParIdx , errStorageIdx) = valPerf;
+                        end
+                        if obj.storeFullTestPerf == 1
+
+                            % Compute scores
+                            YtestPred = kernelTest.K * filter.weights;
+                            if obj.storeFullTestPred == 1
+                                obj.testPred(kernelTrain.currentParIdx , errStorageIdx,:) = YtestPred;
+                            end
+
+                            % Compute training performance
+                            testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );
+
+                            obj.testPerformance(kernelTrain.currentParIdx , errStorageIdx) = testPerf;                        
+                        end
+
+                        %%%%%%%%%%%%%%%%%%%%
+                        % Store best model %
+                        %%%%%%%%%%%%%%%%%%%%
+                        if valPerf < obj.valErrStar
+
+                            % Update best kernel parameter combination
+                            obj.mapParStar = kernelTrain.currentPar;
+
+                            %Update best filter parameter
+                            obj.filterParStar = filter.currentPar;
+
+                            %Update best validation performance measurement
+                            obj.valErrStar = valPerf;
+
                             % Update internal model samples matrix
                             obj.Xmodel = Xtrain;
-                            
+
                             % Update coefficients vector
-                            obj.c = filter.weights;
+                            obj.cStar = filter.weights;
                         end
                     end
                 end
@@ -410,7 +434,7 @@ classdef ksgdesc < algorithm
                 obj.Xmodel = Xtr;
                 
                 % Update coefficients vector
-                obj.c = filter.weights;
+                obj.cStar = filter.weights;
             end        
         end
         
@@ -427,7 +451,7 @@ classdef ksgdesc < algorithm
             kernelTest.compute();
 
             % Compute scores
-            Ypred = kernelTest.K * obj.c;
+            Ypred = kernelTest.K * obj.cStar;
         end
     end
 end

@@ -81,6 +81,11 @@ classdef kigdesc < algorithm
             checkVerbose = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'verbose',defaultVerbose,checkVerbose);
 
+            % errorStorageMode   % 'epochs' or 'iterations'
+            defaultErrorStorageMode = 'epochs';
+            checkErrorStorageMode = @(x) strcmp(x , 'epochs') || strcmp(x, 'iterations') ;            
+            addParameter(p,'errorStorageMode',defaultErrorStorageMode,checkErrorStorageMode);    
+            
             % storeFullTrainPerf  % Store full training performance matrix 1/0
             defaultStoreFullTrainPerf = 0;
             checkStoreFullTrainPerf = @(x) (x == 0) || (x == 1) ;            
@@ -100,11 +105,6 @@ classdef kigdesc < algorithm
             defaultStoreFullTestPerf = 0;
             checkStoreFullTestPerf = @(x) (x == 0) || (x == 1) ;            
             addParameter(p,'storeFullTestPerf',defaultStoreFullTestPerf,checkStoreFullTestPerf);            
-            
-            % errorStorageMode   % 'epochs' or 'iterations'
-            defaultErrorStorageMode = 'epochs';
-            checkErrorStorageMode = @(x) strcmp(x , 'epochs') || strcmp(x, 'iterations') ;            
-            addParameter(p,'errorStorageMode',defaultErrorStorageMode,checkErrorStorageMode);    
             
             % storeFullTestPred   % Store full test predictions matrix 1/0
             defaultStoreFullTestPred = 0;
@@ -321,7 +321,6 @@ classdef kigdesc < algorithm
                 
                 % Initialize TrainTest kernel, if required
                 if obj.storeFullTestPerf == 1      
-
                     argin = {};
                     argin = [argin , 'mapParGuesses' , full(kernelTrain.currentPar)];
                     if ~isempty(obj.verbose)
