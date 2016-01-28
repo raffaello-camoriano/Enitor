@@ -226,9 +226,9 @@ classdef SIsubGD_dual_hinge_loss < filter
         % updates the current parameter combination 'currentPar'
         function available = next(obj)
 
-            if isempty(obj.filterParGuesses)
-                obj.range();
-            end
+%             if isempty(obj.filterParGuesses)
+%                 obj.range();
+%             end
             
             available = false;
             if length(obj.filterParGuesses) > obj.currentParIdx

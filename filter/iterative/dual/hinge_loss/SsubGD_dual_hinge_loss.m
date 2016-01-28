@@ -267,9 +267,9 @@ classdef SsubGD_dual_hinge_loss < filter
         function available = next(obj)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-            if cellfun(@isempty , obj.rng)
-                obj.range();
-            end
+%             if cellfun(@isempty , obj.rng)
+%                 obj.range();
+%             end
 
             available = false;
             if length(obj.rng) > obj.currentParIdx
