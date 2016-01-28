@@ -26,11 +26,13 @@ function [ hMean ] = bandplot( X , Y , color , alpha , log , numSD)
         hFill = fill([X , flip(X)] , f, color, ...
             'FaceAlpha', alpha,'LineStyle','none');
         semilogx(X , m , 'Color' , color , 'LineWidth',1);    
+        set(gca, 'xscale', 'log')
     else
         hMean = plot(X , m ,'Color' ,  color , 'LineWidth',1);
         hFill = fill([X , flip(X)] , f, color, ...
             'FaceAlpha', alpha,'LineStyle','none');
         plot(X , m , 'Color' , color , 'LineWidth',1);    
     end
+    hold off
 end
 

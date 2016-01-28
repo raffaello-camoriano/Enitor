@@ -6,9 +6,12 @@ classdef InsuranceCompanyBenchmark < dataset
    end
    
    methods
-        function obj = InsuranceCompanyBenchmark(nTr , nTe, outputFormat)
+        function obj = InsuranceCompanyBenchmark(nTr , nTe, outputFormat, shuffleTraining, shuffleTest, shuffleAll)
 
-            obj.d = 85;        % Fixed size for the full dataset
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
+            
+			obj.d = 85;        % Fixed size for the full dataset
             dataTrain = load('ticdata2000.txt');
                    
             obj.X = dataTrain(:,1:obj.d);
@@ -54,9 +57,22 @@ classdef InsuranceCompanyBenchmark < dataset
             obj.X = obj.scale(obj.X);
 %             obj.X = 2*obj.X -1;
             
+            % Shuffling
+
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
             
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end
             
             % Reformat output columns
             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
