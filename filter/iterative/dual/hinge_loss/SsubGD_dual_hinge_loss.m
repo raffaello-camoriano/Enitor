@@ -196,7 +196,33 @@ classdef SsubGD_dual_hinge_loss < filter
             
             currIdx = obj.randOrd(mod(obj.currentPar(1)-1,obj.n) + 1);
 
-            if isempty(obj.trainKernel)
+%             if isempty(obj.trainKernel)
+%                 % Construct Kernel column according to current hyperparameters
+%                 argin = {};
+%                 argin = [argin , 'mapParGuesses' , obj.mapPar];
+%                 if ~isempty(obj.verbose)
+%                     argin = [argin , 'verbose' , obj.verbose];
+%                 end
+%                 kernelLine = obj.map( obj.X ,  obj.X(currIdx , :) ,argin{:} );
+%                 kernelLine.next();
+%                 kernelLine.compute();
+%             
+%                 % Compute prediction
+%                 Ypred = obj.weights' * kernelLine.K;
+%             else
+%                 % Precomputed kernel
+% 
+%                 % Compute prediction
+%                 Ypred = obj.weights' * obj.trainKernel(:,currIdx);
+%             end
+            
+            try
+                % Precomputed kernel
+
+                % Compute prediction
+                Ypred = obj.weights' * obj.trainKernel(:,currIdx);
+            catch
+                
                 % Construct Kernel column according to current hyperparameters
                 argin = {};
                 argin = [argin , 'mapParGuesses' , obj.mapPar];
@@ -209,12 +235,8 @@ classdef SsubGD_dual_hinge_loss < filter
             
                 % Compute prediction
                 Ypred = obj.weights' * kernelLine.K;
-            else
-                % Precomputed kernel
-
-                % Compute prediction
-                Ypred = obj.weights' * obj.trainKernel(:,currIdx);
-            end
+            end            
+            
             
             if (Ypred * obj.Y(currIdx,:) <= 1)
                 
