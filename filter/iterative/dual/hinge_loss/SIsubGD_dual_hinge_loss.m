@@ -229,12 +229,20 @@ classdef SIsubGD_dual_hinge_loss < filter
 %             if isempty(obj.filterParGuesses)
 %                 obj.range();
 %             end
-            
-            available = false;
-            if length(obj.filterParGuesses) > obj.currentParIdx
-                obj.currentParIdx = obj.currentParIdx + 1;
+%             
+%             available = false;
+%             if length(obj.filterParGuesses) > obj.currentParIdx
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.filterParGuesses(:,obj.currentParIdx);
+%                 available = true;
+%             end
+
+            available = true;
+            obj.currentParIdx = obj.currentParIdx + 1;
+            try
                 obj.currentPar = obj.filterParGuesses(:,obj.currentParIdx);
-                available = true;
+            catch
+                available = false;
             end
         end
     end

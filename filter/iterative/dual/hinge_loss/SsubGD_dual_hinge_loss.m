@@ -271,13 +271,22 @@ classdef SsubGD_dual_hinge_loss < filter
 %                 obj.range();
 %             end
 
-            available = false;
-            if length(obj.rng) > obj.currentParIdx
-                obj.prevPar = obj.currentPar;
-                obj.currentParIdx = obj.currentParIdx + 1;
+%             available = false;
+%             if length(obj.rng) > obj.currentParIdx
+%                 obj.prevPar = obj.currentPar;
+%                 obj.currentParIdx = obj.currentParIdx + 1;
+%                 obj.currentPar = obj.rng{obj.currentParIdx};
+%                 available = true;
+%             end
+            
+            available = true;
+            obj.currentParIdx = obj.currentParIdx + 1;
+            try
                 obj.currentPar = obj.rng{obj.currentParIdx};
-                available = true;
+            catch
+                available = false;
             end
+            
         end                
     end
 end
