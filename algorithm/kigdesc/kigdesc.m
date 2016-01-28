@@ -265,43 +265,29 @@ classdef kigdesc < algorithm
             
             % Full matrices for performance storage initialization
             if strcmp(obj.errorStorageMode,'iterations')
-                if obj.storeFullTrainPerf == 1
-                    obj.trainPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
-                end
-                if obj.storeFullTrainPred == 1
-                    obj.trainPred = zeros(obj.numMapParGuesses, obj.numFilterParGuesses,size(Xtrain,1));
-                end
-                if obj.storeFullValPerf == 1
-                    obj.valPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
-                end
-                if obj.storeFullTestPerf == 1
-                    obj.testPerformance = NaN*zeros(obj.numMapParGuesses, obj.numFilterParGuesses);
-                end
-                if obj.storeFullTestPred == 1
-                    obj.testPred = zeros(obj.numMapParGuesses, obj.numFilterParGuesses,size(Xte,1));
-                end
                 
+                numEval = obj.numFilterParGuesses;
             elseif (strcmp(obj.errorStorageMode,'epochs'))
                 
-                numEval = floor(numSamples / obj.numFilterParGuesses);
-                
-                if obj.storeFullTrainPerf == 1
-                    obj.trainPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
-                end
-                if obj.storeFullTrainPred == 1
-                    obj.trainPred = zeros(obj.numMapParGuesses, numEval,size(Xtrain,1));
-                end
-                if obj.storeFullValPerf == 1
-                    obj.valPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
-                end
-                if obj.storeFullTestPerf == 1
-                    obj.testPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
-                end
-                if obj.storeFullTestPred == 1
-                    obj.testPred = zeros(obj.numMapParGuesses, numEval,size(Xte,1));
-                end
+                numEval = floor(obj.numFilterParGuesses /numSamples);
             end
             
+            if obj.storeFullTrainPerf == 1
+                obj.trainPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
+            end
+            if obj.storeFullTrainPred == 1
+                obj.trainPred = zeros(obj.numMapParGuesses, numEval,size(Xtrain,1));
+            end
+            if obj.storeFullValPerf == 1
+                obj.valPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
+            end
+            if obj.storeFullTestPerf == 1
+                obj.testPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
+            end
+            if obj.storeFullTestPred == 1
+                obj.testPred = zeros(obj.numMapParGuesses, numEval,size(Xte,1));
+            end
+                
             while kernelTrain.next()
                 
                 % Compute kernel according to current hyperparameters
