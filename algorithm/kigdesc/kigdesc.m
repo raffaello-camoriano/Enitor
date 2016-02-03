@@ -2,19 +2,6 @@ classdef kigdesc < algorithm
     % Kernelized incremental (stochastic) gradient descent
     
     properties
-                
-        % I/O options
-        storeFullTrainPerf  % Store full training performance matrix 1/0
-        storeFullTrainPred  % Store full training predictions matrix 1/0
-        storeFullValPerf    % Store full validation performance matrix 1/0
-        storeFullTestPerf   % Store full test performance matrix 1/0
-        storeFullTestPred   % Store full test predictions matrix 1/0
-        
-        valPerformance      % Validation performance matrix
-        trainPerformance    % Training performance matrix
-        trainPred           % Training predictions matrix
-        testPerformance     % Test performance matrix
-        testPred            % Test predictions matrix
         
         errorStorageMode    % 'epochs' or 'iterations'
         precomputeKernel    % 1 or 0
@@ -99,7 +86,13 @@ classdef kigdesc < algorithm
             % storeFullValPerf    % Store full validation performance matrix 1/0
             defaultStoreFullValPerf = 0;
             checkStoreFullValPerf = @(x) (x == 0) || (x == 1) ;            
-            addParameter(p,'storeFullValPerf',defaultStoreFullValPerf,checkStoreFullValPerf);           
+            addParameter(p,'storeFullValPerf',defaultStoreFullValPerf,checkStoreFullValPerf);     
+  
+            % storeFullValPerf    % Store full validation performance matrix 1/0
+            defaultStoreFullValPerf = 0;
+            checkStoreFullValPerf = @(x) (x == 0) || (x == 1) ;            
+            addParameter(p,'storeFullValPred',defaultStoreFullValPerf,checkStoreFullValPerf);           
+        
   
             % storeFullTestPerf   % Store full test performance matrix 1/0
             defaultStoreFullTestPerf = 0;
@@ -281,6 +274,9 @@ classdef kigdesc < algorithm
             if obj.storeFullValPerf == 1
                 obj.valPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
             end
+            if obj.storeFullValPred == 1
+                obj.valPred = zeros(obj.numMapParGuesses, numEval, size(Xval,1));
+            end
             if obj.storeFullTestPerf == 1
                 obj.testPerformance = NaN*zeros(obj.numMapParGuesses, numEval);
             end
@@ -395,6 +391,10 @@ classdef kigdesc < algorithm
 
                         if obj.storeFullValPerf == 1
                             obj.valPerformance(kernelTrain.currentParIdx , errStorageIdx) = valPerf;
+                            
+                            if obj.storeFullValPred == 1
+                                obj.valPred(kernelTrain.currentParIdx , errStorageIdx,:) = YvalPred;
+                            end                                
                         end
                         if obj.storeFullTestPerf == 1      
 
