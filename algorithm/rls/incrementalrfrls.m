@@ -1,26 +1,20 @@
 classdef incrementalrfrls < algorithm
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
+    %incrementalrfrls Incremental random features with gaussian kernel
+    %   At each iteration, adds new features
     
     properties
         
         % I/O options
-        storeFullTrainPerf  % Store full training performance matrix 1/0
-        storeFullValPerf    % Store full validation performance matrix 1/0
-        storeFullTestPerf   % Store full test performance matrix 1/0
-        valPerformance      % Validation performance matrix
-        trainPerformance    % Training performance matrix
-        testPerformance     % Test performance matrix
         storeFullTrainTime  % Store full training time matrix 1/0
         trainTime           % Training time matrix
 
-        
         ntr   % Number of training samples
+        nval   % Number of validation samples
+        nte   % Number of test samples
         
         % Mapped data
         XValTilda
         XTestTilda
-        
         
         % Kernel props
         rfMapper
@@ -225,6 +219,8 @@ classdef incrementalrfrls < algorithm
             Yval = Ytr(valIdx,:);
             
             obj.ntr = size(Xtrain,1);
+            obj.nval = size(Xval,1);
+            obj.nte = size(Xte,1);
             
             % Initialize Random Features Mapper
             argin = {};
@@ -279,6 +275,9 @@ classdef incrementalrfrls < algorithm
                 end
                 obj.rfMapper.filterParGuesses = obj.filterParGuesses(i);
                 
+                obj.XValTilda = zeros( obj.nval , obj.maxRank );
+                obj.XTestTilda = zeros( obj.nte , obj.maxRank );
+                
                 while obj.rfMapper.next()
 
                     if obj.storeFullTrainTime == 1
@@ -293,10 +292,19 @@ classdef incrementalrfrls < algorithm
                         obj.trainTime(obj.rfMapper.currentParIdx , i) = obj.trainTime(obj.rfMapper.currentParIdx - 1 , i) + toc;
                     end
                     
-                    obj.XValTilda = obj.rfMapper.map(Xval);
+%                     obj.XValTilda = obj.rfMapper.map(Xval , []);
                     
+                    % Update the RF mappings of the test points
+                    if isempty(obj.rfMapper.prevPar)
+                        obj.XValTilda(: , 1 : obj.rfMapper.currentPar(1)) = obj.rfMapper.map(Xval, ...
+                            obj.rfMapper.rng(1 , 1 : obj.rfMapper.currentPar(1)));                        
+                    else
+                        obj.XValTilda(: , (obj.rfMapper.prevPar(1) + 1) : obj.rfMapper.currentPar(1)) = ...
+                            obj.rfMapper.map(Xval, obj.rfMapper.rng(1 , (obj.rfMapper.prevPar(1) + 1) : obj.rfMapper.currentPar(1)));
+                    end
+
                     % Compute predictions matrix
-                    YvalPred = obj.XValTilda * obj.rfMapper.alpha{1};
+                    YvalPred = obj.XValTilda(: , 1 : obj.rfMapper.currentPar(1)) * obj.rfMapper.alpha{1};
 
                     % Compute validation performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
@@ -319,7 +327,7 @@ classdef incrementalrfrls < algorithm
                     if obj.storeFullTrainPerf == 1                    
 
                         % Compute training predictions matrix
-                        YtrainPred = obj.rfMapper.Xrf * obj.rfMapper.alpha{1};
+                        YtrainPred = obj.rfMapper.Xs * obj.rfMapper.alpha{1};
 
                         % Compute validation performance
                         trainPerf = performanceMeasure( Ytrain , YtrainPred , trainIdx );                
@@ -333,10 +341,17 @@ classdef incrementalrfrls < algorithm
 
                     if obj.storeFullTestPerf == 1                    
 
-                        obj.XTestTilda = obj.rfMapper.map(Xte);
-
+                        % Update the RF mappings of the test points
+                        if isempty(obj.rfMapper.prevPar)
+                            obj.XTestTilda(: , 1 : obj.rfMapper.currentPar(1)) = obj.rfMapper.map(Xte, ...
+                                obj.rfMapper.rng(1 , 1 : obj.rfMapper.currentPar(1)));                        
+                        else
+                            obj.XTestTilda(: , (obj.rfMapper.prevPar(1) + 1) : obj.rfMapper.currentPar(1)) = ...
+                                obj.rfMapper.map(Xte, obj.rfMapper.rng(1 , (obj.rfMapper.prevPar(1) + 1) : obj.rfMapper.currentPar(1)));
+                        end
+                        
                         % Compute predictions matrix
-                        YtestPred = obj.XTestTilda * obj.rfMapper.alpha{1};
+                        YtestPred = obj.XTestTilda(: , 1 : obj.rfMapper.currentPar(1)) * obj.rfMapper.alpha{1};
 
                         % Compute validation performance
                         testPerf = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );                
@@ -362,7 +377,7 @@ classdef incrementalrfrls < algorithm
                         obj.w = obj.rfMapper.alpha{1};
                     
                         % Update best mapped samples
-                        obj.XrfStar = obj.rfMapper.Xrf;
+                        obj.XrfStar = obj.rfMapper.Xs;
                         
                         % Update best projections matrix
                         obj.rfOmegaStar = obj.rfMapper.omega;
@@ -374,7 +389,7 @@ classdef incrementalrfrls < algorithm
             end
             
             % Free memory
-            obj.rfMapper.M = [];
+            obj.rfMapper.R = [];
             obj.rfMapper.alpha = [];
             
             if obj.verbose == 1
@@ -401,7 +416,7 @@ classdef incrementalrfrls < algorithm
             obj.rfMapper.currentPar = obj.mapParStar;
             
             % Map test data
-            XteRF = obj.rfMapper.map(Xte);
+            XteRF = obj.rfMapper.map(Xte,[]);
 
             % Compute predictions matrix
             Ypred = XteRF * obj.w;

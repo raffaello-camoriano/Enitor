@@ -23,13 +23,15 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         kernelType      % Type of approximated kernel
         SqDistMat       % Squared distances matrix
         Y               % Training outputs
+        Xs              % Sampled points
 %         Xrf               % Current n-by-l matrix, composed of the evaluations of the kernel function for the sampled columns
-        W               % Current l-by-l matrix, s. t. K ~ C * W^{-1} * C^T
-        M
-        alpha
+%         W               % Current l-by-l matrix, s. t. K ~ C * W^{-1} * C^T
+%         M
+%         alpha
         
         s               % Number of new columns
         ntr             % Total number of training samples
+        t
         
         prevPar
         
@@ -38,6 +40,12 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         X2
         Sx1
         Sx2
+        
+        A
+        Aty
+        R
+        alpha        
+        
     end
     
     methods
@@ -141,8 +149,9 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             if size(X,1) ~= size(Y,1)
                 error('X and Y have incompatible sizes');
             end
-            
+
             obj.d = size(X , 2);
+            obj.t = size(Y , 2);            
             
             warning('Kernel used by randomFeaturesGaussianIncremental is set to @gaussianKernel');
             obj.kernelType = @gaussianKernel;
@@ -158,15 +167,22 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             obj.currentPar = [];
         end
 
-        function mappedSample = map(obj , inputSample)
+        function mappedSample = map(obj , inputSample , partialRange)
             
             % [cos sin] mapping
 %             V = inputSample * obj.omega;
 %             mappedSample = sqrt( 2 / obj.currentPar(1) ) * [cos(V) , sin(V)];
             
-            % cos(wx+b) mapping
-            V =  inputSample * obj.omega + repmat(obj.b , size(inputSample,1) , 1);            
-            mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
+            if isempty(partialRange)
+                % Full cos(wx+b) mapping
+                V =  inputSample * obj.omega + repmat(obj.b , size(inputSample,1) , 1);            
+                mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
+            else
+                % Partial cos(wx+b) mapping
+                V =  inputSample * obj.omega(:,partialRange) + repmat(obj.b(partialRange) , size(inputSample,1) , 1);            
+                mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
+                
+            end
         end
         
         function obj = range(obj)
@@ -256,6 +272,101 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 chosenPar = obj.currentPar;
             end
             
+%             %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             % Incremental Update Rule %
+%             %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+%             if (isempty(obj.prevPar) && obj.currentParIdx == 1) || (~isempty(obj.prevPar) && obj.currentPar(1) < obj.prevPar(1))
+%                 
+%                 %%% Initialization (i = 1)
+%                 
+%                 % Preallocate cells of matrices
+%                 
+%                 obj.M = cell(size(obj.filterParGuesses));
+%                 [obj.M{:,:}] = deal(zeros(obj.maxRank));
+%                 
+%                 obj.alpha = cell(size(obj.filterParGuesses));
+%                 [obj.alpha{:,:}] = deal(zeros(obj.maxRank,size(obj.Y,2)));
+%                 
+%                 obj.s = chosenPar(1);
+%                 [obj.omega , obj.b] = obj.generateProj(chosenPar);
+% 
+%                 % cos(wx+b) mapping
+%                 V =  obj.X * obj.omega + repmat(obj.b , size(obj.X,1) , 1);
+%                 A = sqrt( 2 / chosenPar(1) ) * cos(V) /sqrt(obj.ntr);
+% 
+% 
+%                 % Set Xrf_2
+%                 obj.Xrf = A;
+% 
+%                 Aty = A' * obj.Y/sqrt(obj.ntr);
+% 
+%                 for i = 1:size(obj.filterParGuesses,2)
+%                     
+%                     % D_1
+%                     tA = full(A' * A );
+%                     [U, S] = eig((tA + tA')/2);
+%                     ds = diag(S);
+%                     ids = double(ds>0);
+%                     D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+%                     
+% %                     D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
+%                     
+%                     % alpha_2
+%                     obj.alpha{i} = 	D * Aty;
+% 
+%                     
+%                     % M_2
+%                     obj.M{i}(1:chosenPar(1), 1:chosenPar(1)) = D;
+%                 end
+%                 
+%             elseif obj.prevPar(1) ~= chosenPar(1)
+%                
+%                 %%% Generic i-th incremental update step
+% 
+%                 obj.s = chosenPar(1) - obj.prevPar(1);  % Number of new columns
+%      
+%                 % Generate new random projections
+%                 [newOmega , newB] = obj.generateProj([obj.s ; chosenPar(2)]);
+%                 obj.omega = [obj.omega , newOmega];
+%                 obj.b = [obj.b , newB];
+%                 
+%                 % cos(wx+b) mapping
+%                 V =  obj.X * newOmega + repmat(newB , size(obj.X,1) , 1);
+%                 A = sqrt( 2 / chosenPar(1) ) * cos(V) /sqrt(obj.ntr);
+%                 
+%                 % Update B_(t)
+%                 B = obj.Xrf' * A;
+%                 
+%                 % Update Xrf_(t+1)
+%                 obj.Xrf = [obj.Xrf A];
+%                 
+%                 Aty = A' * obj.Y/sqrt(obj.ntr);
+%                 
+%                 % for cycle implementation
+%                 
+%                 for i = 1:size(obj.filterParGuesses,2)
+% 
+%                     MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
+%                     tA = full(A' * A - B' * MB);
+%                     [U, S] = eig((tA + tA')/2);
+%                     ds = diag(S);
+%                     ids = double(ds>0);
+%                     D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+%                     MBD = MB * D;
+%                     df = B' * obj.alpha{i} - Aty;
+%                     obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
+%                     obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
+%                   
+%                     %%%%%%%
+%                     obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
+%                     obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
+%                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
+%                     obj.M{i}((obj.prevPar(1)+1):chosenPar(1), (obj.prevPar(1)+1):chosenPar(1)) = D;
+%                 end
+%             end
+
+
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Incremental Update Rule %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,50 +375,64 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 
                 %%% Initialization (i = 1)
                 
-                % Preallocate cells of matrices
+                % Preallocate matrices
                 
-                obj.M = cell(size(obj.filterParGuesses));
-                [obj.M{:,:}] = deal(zeros(obj.maxRank));
+                obj.A = zeros(obj.ntr , obj.maxRank);
+                obj.Aty = zeros(obj.maxRank , obj.t);
+                
+                obj.R = cell(size(obj.filterParGuesses));
+                [obj.R{:,:}] = deal(zeros(obj.maxRank));
                 
                 obj.alpha = cell(size(obj.filterParGuesses));
                 [obj.alpha{:,:}] = deal(zeros(obj.maxRank,size(obj.Y,2)));
+                
+%                 sampledPoints = 1:chosenPar(1);
+%                 obj.s = chosenPar(1);  % Number of new columns
+%                 obj.Xs = obj.X(sampledPoints,:);
+                
+                
+                
+                
+                
                 
                 obj.s = chosenPar(1);
                 [obj.omega , obj.b] = obj.generateProj(chosenPar);
 
                 % cos(wx+b) mapping
                 V =  obj.X * obj.omega + repmat(obj.b , size(obj.X,1) , 1);
-                A = sqrt( 2 / chosenPar(1) ) * cos(V) /sqrt(obj.ntr);
-
+                U = sqrt( 2 / chosenPar(1) ) * cos(V) ;
 
                 % Set Xrf_2
-                obj.Xrf = A;
+                obj.Xs = U;
 
-                Aty = A' * obj.Y/sqrt(obj.ntr);
+                
+                
+                
+                
+                obj.A(:,1:chosenPar(1)) = U;
+                B = eye(chosenPar(1),chosenPar(1));
+                obj.Aty(1:chosenPar(1),:) = obj.A(:,1:chosenPar(1))' * obj.Y;
 
                 for i = 1:size(obj.filterParGuesses,2)
                     
-                    % D_1
-                    tA = full(A' * A );
-                    [U, S] = eig((tA + tA')/2);
-                    ds = diag(S);
-                    ids = double(ds>0);
-                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+                        chol(full(obj.A(:,1:chosenPar(1))' * obj.A(:,1:chosenPar(1)) ) + ...
+                        obj.ntr * obj.filterParGuesses(i) * B);
                     
-%                     D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
-                    
-                    % alpha_2
-                    obj.alpha{i} = 	D * Aty;
-
-                    
-                    % M_2
-                    obj.M{i}(1:chosenPar(1), 1:chosenPar(1)) = D;
+                    % alpha
+                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
+                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
+                        ( obj.Aty(1:chosenPar(1),:) ) );
                 end
                 
             elseif obj.prevPar(1) ~= chosenPar(1)
                
                 %%% Generic i-th incremental update step
-
+               
+                
+                
+                
+                sampledPoints = (obj.prevPar(1)+1):chosenPar(1);                
                 obj.s = chosenPar(1) - obj.prevPar(1);  % Number of new columns
      
                 % Generate new random projections
@@ -317,36 +442,50 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                 
                 % cos(wx+b) mapping
                 V =  obj.X * newOmega + repmat(newB , size(obj.X,1) , 1);
-                A = sqrt( 2 / chosenPar(1) ) * cos(V) /sqrt(obj.ntr);
+                U = sqrt( 2 / chosenPar(1) ) * cos(V) /sqrt(obj.ntr);
                 
                 % Update B_(t)
-                B = obj.Xrf' * A;
+%                 B = obj.Xs' * U;
                 
                 % Update Xrf_(t+1)
-                obj.Xrf = [obj.Xrf A];
+                obj.Xs = [obj.Xs U];                
                 
-                Aty = A' * obj.Y/sqrt(obj.ntr);
                 
-                % for cycle implementation
                 
-                for i = 1:size(obj.filterParGuesses,2)
+                % Computer a, b, beta
+                a = U ;
+%                 b = a( 1:obj.prevPar(1) , : );
+%                 beta = a( sampledPoints , : );
 
-                    MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
-                    tA = full(A' * A - B' * MB);
-                    [U, S] = eig((tA + tA')/2);
-                    ds = diag(S);
-                    ids = double(ds>0);
-                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
-                    MBD = MB * D;
-                    df = B' * obj.alpha{i} - Aty;
-                    obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
-                    obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
-                  
-                    %%%%%%%
-                    obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
-                    obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
-                    obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
-                    obj.M{i}((obj.prevPar(1)+1):chosenPar(1), (obj.prevPar(1)+1):chosenPar(1)) = D;
+                % Cycle over filter parameter
+                for i = 1:size(obj.filterParGuesses,2)
+                    
+                    % Compute c, gamma
+                    c = obj.A(:,1:obj.prevPar(1))' * a; %+ obj.ntr * obj.filterParGuesses(i) * zeros(size(b));
+                    gamma = a' * a + obj.ntr * obj.filterParGuesses(i) * eye(numel(sampledPoints));
+
+                    % Update A, Aty
+                    obj.A( : , (obj.prevPar(1)+1) : chosenPar(1) ) = a ;
+                    obj.Aty((obj.prevPar(1)+1) : chosenPar(1) , : ) = a' * obj.Y ;
+                    
+                    % Compute u, v
+                    u = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+                                    sqrt( 1 + gamma)               ];
+                    
+                    v = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+                                    -1               ];
+                                
+                    % Update R
+                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+                        cholupdatek( obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , u , '+');
+                    
+                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+                        cholupdatek(obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , v , '-');
+
+                    % Recompute alpha
+                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
+                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
+                        ( obj.Aty(1:chosenPar(1),:) ) );
                 end
             end
         end

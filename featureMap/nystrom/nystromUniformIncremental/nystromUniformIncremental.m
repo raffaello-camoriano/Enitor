@@ -9,7 +9,7 @@ classdef nystromUniformIncremental < nystrom
     properties
         numMapParRangeSamples   % Number of samples of X considered for estimating the maximum and minimum sigmas
         minRank                 % Minimum rank of the kernel approximation
-        maxRank                 % Maximum rank of the kernel approximation
+        maxRank                 % Maximum rank of the kernnystromUniformIncrementalel approximation
         
         filterParGuesses        % Filter parameter guesses
         numFilterParGuesses     % Number of filter parameter guesses
@@ -18,15 +18,14 @@ classdef nystromUniformIncremental < nystrom
         numMapParGuesses        % Number of mapping parameter guesses
         
         kernelType      % Type of approximated kernel
-        sampledPoints   % Current sampled columns
+%         sampledPoints   % Current sampled columns
         SqDistMat       % Squared distances matrix
         Xs              % Sampled points
         Y               % Training outputs
-        C               % Current n-by-l matrix, composed of the evaluations of the kernel function for the sampled columns
-        W               % Current l-by-l matrix, s. t. K ~ C * W^{-1} * C^T
         
         s               % Number of new columns
         ntr             % Total number of training samples
+        t
         
         prevPar
         
@@ -36,7 +35,9 @@ classdef nystromUniformIncremental < nystrom
         Sx1
         Sx2
         
-        M
+        A
+        Aty
+        R
         alpha
     end
     
@@ -115,8 +116,6 @@ classdef nystromUniformIncremental < nystrom
             
             % Assign parsed parameters to object properties
             fields = fieldnames(p.Results);
-%             fieldsToIgnore = {'X1','X2'};
-%             fields = setdiff(fields, fieldsToIgnore);
             for idx = 1:numel(fields)
                 obj.(fields{idx}) = p.Results.(fields{idx});
             end
@@ -143,6 +142,7 @@ classdef nystromUniformIncremental < nystrom
             end
             
             obj.d = size(X , 2);
+            obj.t = size(Y , 2);
             
             warning('Kernel used by nystromUniformIncremental is set to @gaussianKernel');
             obj.kernelType = @gaussianKernel;
@@ -168,24 +168,10 @@ classdef nystromUniformIncremental < nystrom
             if isempty(obj.mapParGuesses)
                 % Compute max and min sigma guesses
 
-                % Extract an even number of samples without replacement                
-
-                % WARNING: not compatible with versions older than 2014
-                %samp = datasample( obj.X(:,:) , obj.numKerParRangeSamples - mod(obj.numKerParRangeSamples,2) , 'Replace', false);
-
-                % WARNING: Alternative to datasample below
-%                 nRows = size(obj.X,1); % number of rows
-%                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
-%                 rndIDX = randperm(nRows); 
-%                 samp = obj.X(rndIDX(1:nSample), :);   
+                % Extract an even number of samples without replacement  
                 
                 nRows = size(obj.X,1); % number of rows
                 nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
-%                 rndIDX = randperm(nRows); 
-%                 rndIDX = randperm(nSample);
-%                 rndIDX = mod( randperm(nSample) , nRows ) + 1;
-%                 rndIDX = randperm(nRows , nSample);
-%                 rndIDX = randi(nRows,1,nSample);
                 
                 rndIDX = [];
                 while length(rndIDX) < nSample
@@ -201,10 +187,6 @@ classdef nystromUniformIncremental < nystrom
                     D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
                 end
                 D = sort(D);
-
-%                 firstPercentile = round(0.01 * numel(D) + 0.5);
-%                 minGuess = sqrt( D(firstPercentile));
-%                 maxGuess = sqrt( max(D) );
 
                 fifthPercentile = round(0.05 * numel(D) + 0.5);
                 ninetyfifthPercentile = round(0.95 * numel(D) - 0.5);
@@ -223,16 +205,9 @@ classdef nystromUniformIncremental < nystrom
                 tmpMapPar = obj.mapParGuesses;
             end
 
-%             % Generate all possible parameters combinations
-%             [p,q] = meshgrid(tmpm, tmpMapPar);
-%             tmp = [p(:) q(:)]';
-% %             obj.rng = num2cell(tmp , 1);
-%             obj.rng = tmp;
-
             % Generate all possible parameters combinations
             [p,q] = meshgrid(tmpMapPar, tmpm);
             tmp = [q(:) p(:)]';
-%             obj.rng = num2cell(tmp , 1);
             obj.rng = tmp;
 
         end
@@ -289,10 +264,13 @@ classdef nystromUniformIncremental < nystrom
                 
                 %%% Initialization (i = 1)
                 
-                % Preallocate cells of matrices
+                % Preallocate matrices
                 
-                obj.M = cell(size(obj.filterParGuesses));
-                [obj.M{:,:}] = deal(zeros(obj.maxRank));
+                obj.A = zeros(obj.ntr , obj.maxRank);
+                obj.Aty = zeros(obj.maxRank , obj.t);
+                
+                obj.R = cell(size(obj.filterParGuesses));
+                [obj.R{:,:}] = deal(zeros(obj.maxRank));
                 
                 obj.alpha = cell(size(obj.filterParGuesses));
                 [obj.alpha{:,:}] = deal(zeros(obj.maxRank,size(obj.Y,2)));
@@ -302,31 +280,20 @@ classdef nystromUniformIncremental < nystrom
                 obj.Xs = obj.X(sampledPoints,:);
                 obj.computeSqDistMat(obj.X , obj.Xs);
                 
-                A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2))/sqrt(obj.ntr);
-
-                
-                % Set C_2
-                obj.C = A;
-
-                Aty = A' * obj.Y/sqrt(obj.ntr);
+                obj.A(:,1:chosenPar(1)) = exp(-obj.SqDistMat / (2 * chosenPar(2)^2));
+                B = obj.A(sampledPoints,1:chosenPar(1));
+                obj.Aty(1:chosenPar(1),:) = obj.A(:,1:chosenPar(1))' * obj.Y;
 
                 for i = 1:size(obj.filterParGuesses,2)
                     
-                    % D_1
-                    tA = full(A' * A );
-                    [U, S] = eig((tA + tA')/2);
-                    ds = diag(S);
-                    ids = double(ds>0);
-                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
+                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+                        chol(full(obj.A(:,1:chosenPar(1))' * obj.A(:,1:chosenPar(1)) ) + ...
+                        obj.ntr * obj.filterParGuesses(i) * B);
                     
-%                     D = inv(A'*A + obj.filterParGuesses(i) * eye(obj.s));
-                    
-                    % alpha_2
-                    obj.alpha{i} = 	D * Aty;
-
-                    
-                    % M_2
-                    obj.M{i}(1:chosenPar(1), 1:chosenPar(1)) = D;
+                    % alpha
+                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
+                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
+                        ( obj.Aty(1:chosenPar(1),:) ) );
                 end
                 
             elseif obj.prevPar(1) ~= chosenPar(1)
@@ -345,36 +312,40 @@ classdef nystromUniformIncremental < nystrom
                     obj.computeSqDistMat([] , XsNew);
                 end
                 
-                A = exp(-obj.SqDistMat / (2 * chosenPar(2)^2))/sqrt(obj.ntr);
+                % Computer a, b, beta
+                a = exp(-obj.SqDistMat / (2 * chosenPar(2)^2)) ;
+                b = a( 1:obj.prevPar(1) , : );
+                beta = a( sampledPoints , : );
 
-                % Update B_(t)
-                B = obj.C' * A;
-                
-                % Update C_(t+1)
-                obj.C = [obj.C A];
-                
-                Aty = A' * obj.Y/sqrt(obj.ntr);
-                
-                % for cycle implementation
-                
+                % Cycle over filter parameter
                 for i = 1:size(obj.filterParGuesses,2)
+                    
+                    % Compute c, gamma
+                    c = obj.A(:,1:obj.prevPar(1))' * a + obj.ntr * obj.filterParGuesses(i) * b;
+                    gamma = a' * a + obj.ntr * obj.filterParGuesses(i) * beta;
 
-                    MB = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) * B;
-                    tA = full(A' * A - B' * MB);
-                    [U, S] = eig((tA + tA')/2);
-                    ds = diag(S);
-                    ids = double(ds>0);
-                    D = U * diag(ids./(abs(ds) + obj.filterParGuesses(i))) * U';
-                    MBD = MB * D;
-                    df = B' * obj.alpha{i} - Aty;
-                    obj.alpha{i}(1:obj.prevPar(1),:) = obj.alpha{i} + MBD * df; 
-                    obj.alpha{i}((obj.prevPar(1)+1):chosenPar(1),:) =  -D * df;
-                  
-                    %%%%%%%
-                    obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) = obj.M{i}(1:obj.prevPar(1), 1:obj.prevPar(1)) + MBD*MB';
-                    obj.M{i}(1:obj.prevPar(1), (obj.prevPar(1)+1):chosenPar(1)) = -MBD;
-                    obj.M{i}((obj.prevPar(1)+1):chosenPar(1), 1:obj.prevPar(1)) = -MBD';
-                    obj.M{i}((obj.prevPar(1)+1):chosenPar(1), (obj.prevPar(1)+1):chosenPar(1)) = D;
+                    % Update A, Aty
+                    obj.A( : , (obj.prevPar(1)+1) : chosenPar(1) ) = a ;
+                    obj.Aty((obj.prevPar(1)+1) : chosenPar(1) , : ) = a' * obj.Y ;
+                    
+                    % Compute u, v
+                    u = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+                                    sqrt( 1 + gamma)               ];
+                    
+                    v = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+                                    -1               ];
+                                
+                    % Update R
+                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+                        cholupdatek( obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , u , '+');
+                    
+                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+                        cholupdatek(obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , v , '-');
+
+                    % Recompute alpha
+                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
+                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
+                        ( obj.Aty(1:chosenPar(1),:) ) );
                 end
             end
         end
@@ -391,19 +362,11 @@ classdef nystromUniformIncremental < nystrom
         function available = next(obj)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-%             if cellfun(@isempty,obj.mapParGuesses)
-%                 obj.range();
-%             end
             if isempty(obj.rng)
                 obj.range();
             end
             
             available = false;
-%             if length(obj.mapParGuesses) > obj.currentParIdx
-%                 obj.currentParIdx = obj.currentParIdx + 1;
-%                 obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
-%                 available = true;
-%             end
             if size(obj.rng,2) > obj.currentParIdx
                 obj.prevPar = obj.currentPar;
                 obj.currentParIdx = obj.currentParIdx + 1;

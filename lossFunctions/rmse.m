@@ -1,7 +1,7 @@
-function perf = classificationError( Y , ~, Ypred )
+function perf = rmse( Y , ~, Ypred )
 %CLASSIFICATIONERROR 
 %   Y: true labels
 %   Ypred: predicted labels
             
-    perf = 1 - (sum(Y == Ypred) / size(Y,1));
+    perf = sqrt(sum((Y - Ypred).^2)/size(Y,1));
 end
