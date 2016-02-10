@@ -12,7 +12,10 @@ classdef cpuSmall < dataset
    end
    
    methods
-        function obj = cpuSmall(nTr , nTe)
+        function obj = cpuSmall(nTr , nTe, ~ , shuffleTraining, shuffleTest, shuffleAll)
+            
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             % Number of samples
             obj.nTrTot = 6554;
@@ -29,7 +32,7 @@ classdef cpuSmall < dataset
             obj.Y = data(:,end);
             
             obj.d = size(obj.X,2);
-            data = [];
+            clear data
             
             % Scale data
             obj.X = obj.scale(obj.X);  
@@ -42,20 +45,32 @@ classdef cpuSmall < dataset
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+            
+            % Shuffling
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end            
             
             obj.problemType = 'regression';
         end
         
         % Compute performance measure on the given outputs according to the specified loss
         function perf = performanceMeasure(obj , Y , Yscores , varargin)
-            
-            % Check if Ypred is real-valued. If yes, convert it.
-            Ypred = obj.scoresToClasses(Yscores);
 
-            perf = obj.lossFunction(Y, Yscores, Ypred);
+            perf = obj.lossFunction(Y, Yscores, []);
             
+%             perf = sqrt(sum((Y - Yscores).^2)/size(Y,1));
         end
         
         % Scales matrix M between 0 and 1

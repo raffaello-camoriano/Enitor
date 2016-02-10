@@ -58,6 +58,21 @@ classdef Adult < dataset
                 obj.testIdx = obj.nTrTot + 1:obj.nTe + obj.nTrTot;
             end
             
+            % Shuffling
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end           
             
             % Reformat output columns
             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
@@ -74,11 +89,11 @@ classdef Adult < dataset
             end
             
             % Set problem type
-            if obj.hasRealValues(obj.Y)
-                obj.problemType = 'regression';
-            else
+%             if obj.hasRealValues(obj.Y)
+%                 obj.problemType = 'regression';
+%             else
                 obj.problemType = 'classification';
-            end
+%             end
         end
         
         % Checks if matrix Y contains real values. Useful for

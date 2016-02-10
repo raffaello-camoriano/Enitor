@@ -1,4 +1,4 @@
-classdef randomFeaturesGaussianIncremental < randomFeatures
+classdef randomFeaturesGaussianIncremental3 < randomFeatures
     % 
     %
     % Input parameters:
@@ -14,8 +14,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
         maxRank                 % Maximum rank of the kernel approximation
         minRank                 % Minimum rank of the kernel approximation
         
-        filterParGuesses        % Filter parameter guesses
-        numFilterParGuesses     % Number of filter parameter guesses
+        filterPar        % Filter parameter guesses
         
         mapParGuesses           % mapping parameter guesses
 %         numMapParGuesses        % Number of mapping parameter guesses
@@ -46,11 +45,11 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
     
     methods
         
-        function obj = randomFeaturesGaussianIncremental( X , Y , ntr , varargin)
-            obj.init( X , Y , ntr , varargin);
+        function o = randomFeaturesGaussianIncremental3( X , Y , ntr , varargin)
+            o.init( X , Y , ntr , varargin);
         end
 
-        function obj = init(obj , X , Y , ntr , varargin)
+        function o = init(o , X , Y , ntr , varargin)
             
             p = inputParser;
             
@@ -68,7 +67,7 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
  
             %%%% Optional parameters
             % Optional parameter names:
-            % numRFParGuesses , maxRank , numMapParGuesses , mapParGuesses , filterParGuesses , numMapParRangeSamples  , verbose
+            % numRFParGuesses , maxRank , numMapParGuesses , mapParGuesses , filterPar , numMapParRangeSamples  , verbose
             
             % numRFParGuesses       % Cardinality of number of samples for Nystrom approximation parameter guesses
             defaultNumRFParGuesses = [];
@@ -95,10 +94,10 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             checkMapParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;      
             addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);        
             
-            % filterParGuesses       % Filter parameter guesses
+            % filterPar       % Filter parameter guesses
             defaultFilterParGuesses = [];
             checkFilterParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;            
-            addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                    
+            addParameter(p,'filterPar',defaultFilterParGuesses,checkFilterParGuesses);                    
             
             % numMapParRangeSamples        % Number of map parameter guesses
             defaultNumMapParRangeSamples = [];
@@ -119,90 +118,86 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
             
             % Assign parsed parameters to object properties
             fields = fieldnames(p.Results);
-%             fieldsToIgnore = {'X1','X2'};
-%             fields = setdiff(fields, fieldsToIgnore);
             for idx = 1:numel(fields)
-                obj.(fields{idx}) = p.Results.(fields{idx});
+                o.(fields{idx}) = p.Results.(fields{idx});
             end
             
             % Joint parameters parsing
-            if obj.minRank > obj.maxRank
+            if o.minRank > o.maxRank
                 error('The specified minimum rank of the kernel approximation is larger than the maximum one.');
             end 
             
-            if isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
+            if isempty(o.mapParGuesses) && isempty(o.numMapParGuesses)
                 error('either mapParGuesses or numMapParGuesses must be specified');
             end    
             
-            if (~isempty(obj.mapParGuesses)) && (~isempty(obj.numMapParGuesses)) && (size(obj.mapParGuesses,2) ~= obj.numMapParGuesses)
+            if (~isempty(o.mapParGuesses)) && (~isempty(o.numMapParGuesses)) && (size(o.mapParGuesses,2) ~= o.numMapParGuesses)
                 error('The size of mapParGuesses and numMapParGuesses are different');
             end
             
-            if ~isempty(obj.mapParGuesses) && isempty(obj.numMapParGuesses)
-                obj.numMapParGuesses = size(obj.mapParGuesses,2);
+            if ~isempty(o.mapParGuesses) && isempty(o.numMapParGuesses)
+                o.numMapParGuesses = size(o.mapParGuesses,2);
             end
             
             if size(X,1) ~= size(Y,1)
                 error('X and Y have incompatible sizes');
             end
 
-            obj.d = size(X , 2);
-            obj.t = size(Y , 2);            
+            o.d = size(X , 2);
+            o.t = size(Y , 2);            
             
             display('Kernel used by randomFeaturesGaussianIncremental is set to @gaussianKernel');
-            obj.kernelType = @gaussianKernel;
+            o.kernelType = @gaussianKernel;
 
             % Conditional range computation
-%             if isempty(obj.mapParGuesses)
-            if obj.verbose == 1
+%             if isempty(o.mapParGuesses)
+            if o.verbose == 1
                 display('Computing range');
             end
-            obj.range();    % Compute range
+            o.range();    % Compute range
 %             end
-            obj.currentParIdx = 0;
-            obj.currentPar = [];
+            o.currentParIdx = 0;
+            o.currentPar = [];
         end
 
-        function mappedSample = map(obj , inputSample , partialRange)
+        function mappedSample = map(o , inputSample , partialRange)
             
             % [cos sin] mapping
-%             V = inputSample * obj.omega;
-%             mappedSample = sqrt( 2 / obj.currentPar(1) ) * [cos(V) , sin(V)];
+%             V = inputSample * o.omega;
+%             mappedSample = sqrt( 2 / o.currentPar(1) ) * [cos(V) , sin(V)];
             
             if isempty(partialRange)
 %                 Full cos(wx+b) mapping
-                V =  inputSample * obj.omega + repmat(obj.b , size(inputSample,1) , 1);            
-%                 mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
+                V =  inputSample * o.omega + repmat(o.b , size(inputSample,1) , 1);            
                 mappedSample = cos(V);
             else
                 % Partial cos(wx+b) mapping
-                V =  inputSample * obj.omega(:,partialRange) + repmat(obj.b(partialRange) , size(inputSample,1) , 1);            
-%                 mappedSample = sqrt( 2 / obj.currentPar(1) ) * cos(V);
+                V =  inputSample * o.omega(:,partialRange) + repmat(o.b(partialRange) , size(inputSample,1) , 1);            
                 mappedSample = cos(V);
             end
         end
         
-        function obj = range(obj)
+        function o = range(o)
                         
             % Range of the number of Random Fourier Features
-            tmpNumRF = round(linspace(obj.minRank, obj.maxRank , obj.numRFParGuesses));   
+            tmpNumRF = round(linspace(o.minRank, o.maxRank , o.numRFParGuesses));   
            
-            if isempty(obj.mapParGuesses)
+            if isempty(o.mapParGuesses)
                 % Compute max and min sigma guesses
 
                 % Extract an even number of samples without replacement                
-                nRows = size(obj.X,1); % number of rows
-                nSample = obj.numMapParRangeSamples - mod(obj.numMapParRangeSamples,2); % number of samples
+                nRows = size(o.X,1); % number of rows
+                nSample = o.numMapParRangeSamples - mod(o.numMapParRangeSamples,2); % number of samples
                 
                 rndIDX = [];
                 while length(rndIDX) < nSample
                     rndIDX = [rndIDX , randperm(nRows , min( [ nSample , nRows , nSample - length(rndIDX) ] ) ) ];
                 end
                 
-                samp = obj.X(rndIDX, :);   
+                samp = o.X(rndIDX, :);   
                 
                 % Compute squared distances  vector (D)
-                numDistMeas = floor(obj.numMapParRangeSamples/2); % Number of distance measurements
+                numDistMeas = floor(o.numMapParRangeSamples/2); % Number of distance measurements
                 D = zeros(1 , numDistMeas);
                 for i = 1:numDistMeas
                     D(i) = sum((samp(2*i-1,:) - samp(2*i,:)).^2);
@@ -221,172 +216,179 @@ classdef randomFeaturesGaussianIncremental < randomFeatures
                     maxGuess = eps;
                 end	
 
-                tmpMapPar = linspace(minGuess, maxGuess , obj.numMapParGuesses);
+                tmpMapPar = linspace(minGuess, maxGuess , o.numMapParGuesses);
             else
-                tmpMapPar = obj.mapParGuesses;
+                tmpMapPar = o.mapParGuesses;
             end
             
             % Generate all possible parameters combinations
             [p,q] = meshgrid(tmpMapPar, tmpNumRF);
             tmp = [q(:) p(:)]';
-            obj.rng = tmp;
+            o.rng = tmp;
 
         end
         
-        function compute(obj , mapPar)
+        function compute(o , mapPar)
             
             if( nargin > 1 )
                 
-                if(obj.verbose == 1)
+                if(o.verbose == 1)
                     disp('Mapping will be computed according to the provided hyperparameter(s)');
                     mapPar
                 end
                 chosenPar = mapPar;
-            elseif (nargin == 1) && (isempty(obj.currentPar))
+            elseif (nargin == 1) && (isempty(o.currentPar))
                 
                 % If any current value for any of the parameters is not available, abort.
                 error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
             else
-                if(obj.verbose == 1)
+                if(o.verbose == 1)
                     disp('Mapping will be computed according to the current internal hyperparameter(s)');
-                    obj.currentPar
+                    o.currentPar
                 end
-                chosenPar = obj.currentPar;
+                chosenPar = o.currentPar;
             end
 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Incremental Update Rule %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            if (isempty(obj.prevPar) && obj.currentParIdx == 1) || (~isempty(obj.prevPar) && obj.currentPar(1) < obj.prevPar(1))
+            if (isempty(o.prevPar) && o.currentParIdx == 1) || ...
+                    (~isempty(o.prevPar) && o.currentPar(1) < o.prevPar(1))
                 
                 %%% Initialization (i = 1)
                 
                 % Preallocate matrices
                 
-                obj.A = zeros(obj.ntr , obj.maxRank);
-                obj.Aty = zeros(obj.maxRank , obj.t);
+                o.A = zeros(o.ntr , o.maxRank);
+                o.Aty = zeros(o.maxRank , o.t);
                 
-                obj.R = cell(size(obj.filterParGuesses));
-                [obj.R{:,:}] = deal(zeros(obj.maxRank));
+                o.R = deal(zeros(o.maxRank));
+                o.alpha = deal(zeros(o.maxRank,size(o.Y,2)));
                 
-                obj.alpha = cell(size(obj.filterParGuesses));
-                [obj.alpha{:,:}] = deal(zeros(obj.maxRank,size(obj.Y,2)));
-                
-                obj.s = chosenPar(1);
-                [obj.omega , obj.b] = obj.generateProj(chosenPar);
+                o.s = chosenPar(1);
+                [o.omega , o.b] = o.generateProj(chosenPar);
 
                 % Set Xs
-                obj.Xs = obj.map(obj.X , []);
+                o.Xs = o.map(o.X , []);
 
-                obj.A(:,1:chosenPar(1)) = obj.Xs;
-                B = eye(chosenPar(1),chosenPar(1));
-                obj.Aty(1:chosenPar(1),:) = obj.A(:,1:chosenPar(1))' * obj.Y;
+                o.A(:,1:chosenPar(1)) = o.Xs;
+                o.Aty(1:chosenPar(1),:) = o.A(:,1:chosenPar(1))' * o.Y;
 
-                for i = 1:size(obj.filterParGuesses,2)
                     
-                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
-                        chol(full(obj.A(:,1:chosenPar(1))' * obj.A(:,1:chosenPar(1)) ) + ...
-                        obj.ntr *  obj.filterParGuesses(i) * B);
-                    
-                    % alpha
-                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
-                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
-                        ( obj.Aty(1:chosenPar(1),:) ) );
-                end
+                % Cholesky factor R
+                o.R(1:chosenPar(1),1:chosenPar(1)) = ...
+                    chol(full(o.A(:,1:chosenPar(1))' * o.A(:,1:chosenPar(1)) ) + ...
+                    o.ntr *  o.filterPar * eye(chosenPar(1)) );
+
+                % alpha
+                o.alpha = 	o.R(1:chosenPar(1),1:chosenPar(1)) \ ...
+                    ( o.R(1:chosenPar(1),1:chosenPar(1))' \ ...
+                    ( o.Aty(1:chosenPar(1),:) ) );
                 
-            elseif obj.prevPar(1) ~= chosenPar(1)
+            elseif o.prevPar(1) ~= chosenPar(1)
                
                 %%% Generic i-th incremental update step
                
-                sampledPoints = (obj.prevPar(1) + 1):chosenPar(1);                
-                obj.s = chosenPar(1) - obj.prevPar(1);  % Number of new columns
+                sampledPoints = (o.prevPar(1) + 1):chosenPar(1);                
+                o.s = chosenPar(1) - o.prevPar(1);  % Number of new columns
      
                 % Generate new random projections
-                [newOmega , newB] = obj.generateProj([obj.s ; chosenPar(2)]);
-                obj.omega = [obj.omega , newOmega];
-                obj.b = [obj.b , newB];
+                [newOmega , newB] = o.generateProj([o.s ; chosenPar(2)]);
+                o.omega = [o.omega , newOmega];
+                o.b = [o.b , newB];
                 
                 % Compute a
-                a = obj.map(obj.X , sampledPoints) ;
+                a = o.map(o.X , sampledPoints) ;
                 
                 % Update Xs_(t+1)
-                obj.Xs = [obj.Xs a];    
+%                 o.Xs = [o.Xs a];    
                 
-                % Cycle over filter parameter
-                for i = 1:size(obj.filterParGuesses,2)
-                    
-                    % Compute c, gamma
-                    c = obj.A(:,1:obj.prevPar(1))' * a; % + obj.ntr * chosenPar(1) * obj.filterParGuesses(i) * zeros(size(b));
-                    gamma = a' * a + obj.ntr * chosenPar(1) * obj.filterParGuesses(i) * eye(numel(sampledPoints));
 
-                    % Update A, Aty
-                    obj.A( : , (obj.prevPar(1)+1) : chosenPar(1) ) = a ;
-                    obj.Aty((obj.prevPar(1)+1) : chosenPar(1) , : ) = a' * obj.Y ;
-                    
-                    % Compute u, v
-                    u = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
-                                    sqrt( 1 + gamma)               ];
-                    
-                    v = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
-                                    -1               ];
-                               
-                    % Update R
-                    obj.R{i}(1:obj.prevPar(1),1:obj.prevPar(1)) = ...
-                        obj.R{i}(1:obj.prevPar(1),1:obj.prevPar(1)) + ...
-                        sqrt(obj.ntr * obj.filterParGuesses(i)) * eye(obj.prevPar(1));
-                    
-                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
-                        cholupdatek( obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , u , '+');
-                    try
-                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
-                        cholupdatek(obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , v , '-');
-                    catch
-                        display('test');
-                    end
-                    % Recompute alpha
-                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
-                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
-                        ( obj.Aty(1:chosenPar(1),:) ) );
-                end
+                % Compute c, gamma
+                c = o.A(:,1:o.prevPar(1))' * a;
+%                     gamma = a' * a + (o.ntr * o.filterPar + 1e-8) * eye(numel(sampledPoints));
+                gamma = a' * a + (o.ntr * o.filterPar) * eye(numel(sampledPoints));
+
+
+                % Update A, Aty
+                o.A( : , (o.prevPar(1)+1) : chosenPar(1) ) = a ;
+                o.Aty((o.prevPar(1)+1) : chosenPar(1) , : ) = a' * o.Y ;
+
+                % Compute u, v
+%                     u = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+%                                     sqrt( 1 + gamma)               ];
+%                     
+%                     v = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+%                                     -1               ];
+% 
+% 
+%                     % Update R
+%                     
+%                     o.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+%                         cholupdatek( o.R{i}(1:chosenPar(1),1:chosenPar(1)) , u , '+');
+% 
+% %                     try
+%                     o.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
+%                         cholupdatek(o.R{i}(1:chosenPar(1),1:chosenPar(1)) , v , '-');
+
+                u = [ 2 * c / ( (sqrt( 3 ) - 1 ) * sqrt(gamma)) ; ...
+                                sqrt( 0.75 * gamma)               ];
+
+                v = [ - 2 * c / ( (sqrt( 3 ) - 1 ) * sqrt(gamma)) ; ...
+                                sqrt( gamma / 4)               ];
+
+
+                % Update R
+
+                o.R(1:chosenPar(1),1:chosenPar(1)) = ...
+                    cholupdatek( o.R(1:chosenPar(1),1:chosenPar(1)) , u , '+');
+
+                o.R(1:chosenPar(1),1:chosenPar(1)) = ...
+                    cholupdatek(o.R(1:chosenPar(1),1:chosenPar(1)) , v , '+');
+
+                % Recompute alpha
+                o.alpha = o.R(1:chosenPar(1),1:chosenPar(1)) \ ...
+                    ( o.R(1:chosenPar(1),1:chosenPar(1))' \ ...
+                    ( o.Aty(1:chosenPar(1),:) ) );
             end
         end
         
-        function resetPar(obj)
+        function resetPar(o)
             
-            obj.currentParIdx = 0;
-            obj.currentPar = [];
+            o.currentParIdx = 0;
+            o.currentPar = [];
         
         end
         
-        function [omega , b] = generateProj(obj , mapPar)
+        function [omega , b] = generateProj(o , mapPar)
 
-            omega =  randn(obj.d, mapPar(1)) / mapPar(2);
+            omega =  randn(o.d, mapPar(1)) / mapPar(2);
             b =  rand(1,mapPar(1))* 2 * pi;
         end
 
         % returns true if the next parameter combination is available and
         % updates the current parameter combination 'currentPar'
-        function available = next(obj)
+        function available = next(o)
 
             % If any range for any of the parameters is not available, recompute all ranges.
-%             if cellfun(@isempty,obj.mapParGuesses)
-%                 obj.range();
+%             if cellfun(@isempty,o.mapParGuesses)
+%                 o.range();
 %             end
-            if isempty(obj.rng)
-                obj.range();
+            if isempty(o.rng)
+                o.range();
             end
             
             available = false;
-%             if length(obj.mapParGuesses) > obj.currentParIdx
-%                 obj.currentParIdx = obj.currentParIdx + 1;
-%                 obj.currentPar = obj.mapParGuesses{obj.currentParIdx};
+%             if length(o.mapParGuesses) > o.currentParIdx
+%                 o.currentParIdx = o.currentParIdx + 1;
+%                 o.currentPar = o.mapParGuesses{o.currentParIdx};
 %                 available = true;
 %             end
-            if size(obj.rng,2) > obj.currentParIdx
-                obj.prevPar = obj.currentPar;
-                obj.currentParIdx = obj.currentParIdx + 1;
-                obj.currentPar = obj.rng(:,obj.currentParIdx);
+            if size(o.rng,2) > o.currentParIdx
+                o.prevPar = o.currentPar;
+                o.currentParIdx = o.currentParIdx + 1;
+                o.currentPar = o.rng(:,o.currentParIdx);
                 available = true;
             end
         end

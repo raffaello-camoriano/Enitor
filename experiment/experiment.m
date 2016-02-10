@@ -183,10 +183,7 @@ classdef experiment < handle
             
             % Save result structure
             if obj.saveResult
-               % Only matlab 2014
-               %dt = datetime('now','TimeZone','local','Format','d-MMM-y HH:mm:ss Z');
-               %fName = ['./' , obj.resdir , '/Exp_' , obj.result.algorithm , '_' , obj.result.dataset , '_' , obj.customStr , '_' , datestr(dt)];
-
+            
                % Compatible version
                dt = clock;
                dt = fix(dt);

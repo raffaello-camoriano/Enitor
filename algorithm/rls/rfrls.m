@@ -1,5 +1,5 @@
 classdef rfrls < algorithm
-    %UNTITLED2 Summary of this class goes here
+    %rfrls Random Features Regularized Least Squares
     %   Detailed explanation goes here
     
     properties

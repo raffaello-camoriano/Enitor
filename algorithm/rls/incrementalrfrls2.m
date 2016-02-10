@@ -1,4 +1,4 @@
-classdef incrementalrfrls < algorithm
+classdef incrementalrfrls2 < algorithm
     %incrementalrfrls Incremental random features with gaussian kernel
     %   At each iteration, adds new features
     
@@ -46,7 +46,7 @@ classdef incrementalrfrls < algorithm
     
     methods
         
-        function o = incrementalrfrls(mapType , maxRank , varargin)
+        function o = incrementalrfrls2(mapType , maxRank , varargin)
             init( o , mapType, maxRank , varargin)
         end
         
@@ -265,7 +265,7 @@ classdef incrementalrfrls < algorithm
                 if ~isempty(o.stoppingRule)
                     o.stoppingRule.reset();
                 end
-                o.rfMapper.filterParGuesses = o.filterParGuesses(i);
+                o.rfMapper.filterPar = o.filterParGuesses(i);
                 
                 o.XValTilda = zeros( o.nval , o.maxRank );
                 o.XTestTilda = zeros( o.nte , o.maxRank );
@@ -278,7 +278,8 @@ classdef incrementalrfrls < algorithm
                     
                     o.rfMapper.compute();
 
-                    if o.storeFullTrainTime == 1 && ((isempty(o.rfMapper.prevPar) && o.rfMapper.currentParIdx == 1) || (~isempty(o.rfMapper.prevPar) && o.rfMapper.currentPar(1) < o.rfMapper.prevPar(1)))
+                    if o.storeFullTrainTime == 1 && ((isempty(o.rfMapper.prevPar) && o.rfMapper.currentParIdx == 1) || ...
+                            (~isempty(o.rfMapper.prevPar) && o.rfMapper.currentPar(1) < o.rfMapper.prevPar(1)))
                         o.trainTime(o.rfMapper.currentParIdx , i) = toc;
                     elseif o.storeFullTrainTime == 1
                         o.trainTime(o.rfMapper.currentParIdx , i) = o.trainTime(o.rfMapper.currentParIdx - 1 , i) + toc;
@@ -287,7 +288,7 @@ classdef incrementalrfrls < algorithm
 %                     o.XValTilda = o.rfMapper.map(Xval , []);
 %                     YvalPred = o.XValTilda * o.rfMapper.alpha{1};
                     
-                    % Update the RF mappings of the validation points
+%                     Update the RF mappings of the validation points
                     if o.rfMapper.currentParIdx == 1
                         
                         o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) = ...
@@ -301,7 +302,7 @@ classdef incrementalrfrls < algorithm
                     end
 
                     % Compute predictions matrix
-                    YvalPred = o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha{1};
+                    YvalPred = o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
 
                     % Compute validation performance
                     valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
@@ -324,7 +325,8 @@ classdef incrementalrfrls < algorithm
                     if o.storeFullTrainPerf == 1                    
 
                         % Compute training predictions matrix
-                        YtrainPred = o.rfMapper.Xs * o.rfMapper.alpha{1};
+                        YtrainPred = ...
+                            o.rfMapper.A(:,1:o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
 
                         % Compute validation performance
                         o.trainPerformance(o.rfMapper.currentParIdx , i) = performanceMeasure( Ytrain , YtrainPred , trainIdx );  
@@ -339,18 +341,20 @@ classdef incrementalrfrls < algorithm
 %                         o.XTestTilda = o.rfMapper.map(Xte , []);
 %                         YtestPred = o.XTestTilda * o.rfMapper.alpha{1};
 
-%                         % Update the RF mappings of the test points
+                        % Update the RF mappings of the test points
                         if o.rfMapper.currentParIdx == 1
+                            
                             o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) = o.rfMapper.map(Xte, ...
                                 o.rfMapper.rng(1 , 1 : o.rfMapper.currentPar(1)));                        
                         else
                             
                             o.XTestTilda(: , (o.rfMapper.prevPar(1) + 1) : o.rfMapper.currentPar(1)) = ...
-                                o.rfMapper.map(Xte, o.rfMapper.rng(1 , (o.rfMapper.prevPar(1) + 1) : o.rfMapper.currentPar(1)));
+                                o.rfMapper.map(Xte, ...
+                                    o.rfMapper.rng(1 , (o.rfMapper.prevPar(1) + 1) : o.rfMapper.currentPar(1)));
                         end
                         
-                        % Compute predictions matrix
-                        YtestPred = o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha{1};
+%                         Compute predictions matrix
+                        YtestPred = o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
 
                         % Compute test performance
                         o.testPerformance(o.rfMapper.currentParIdx , i) = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );       
@@ -365,16 +369,16 @@ classdef incrementalrfrls < algorithm
                         o.mapParStar = o.rfMapper.currentPar;
 
                         % Update best filter parameter
-                        o.filterParStar = o.rfMapper.filterParGuesses;
+                        o.filterParStar = o.rfMapper.filterPar;
 
                         % Update best validation performance measurement
                         valM = valPerf;
 
                         % Update coefficients vector
-                        o.w = o.rfMapper.alpha{1};
+                        o.w = o.rfMapper.alpha;
                     
                         % Update best mapped samples
-                        o.XrfStar = o.rfMapper.Xs;
+                        o.XrfStar = o.rfMapper.A;
                         
                         % Update best projections matrix
                         o.rfOmegaStar = o.rfMapper.omega;

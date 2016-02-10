@@ -11,7 +11,23 @@ classdef pumadyn < dataset
         %     d : An integlue signifying the number of input attributes in each case, for example `32'.
         %     linearity: One of the characters `f' or `n' signifying `fairly linear' or `non-linear', respectively.
         %     noise: One of the charer vaacters `m' or `h' signifying `medium unpredictability/noise' or `high unpredictability/noise', respectively.
-        function obj = pumadyn(nTr , nTe, d , linearity , noise)
+%         function obj = pumadyn(nTr , nTe, d , linearity , noise)
+        function obj = pumadyn(nTr , nTe, ~ , shuffleTraining, shuffleTest, shuffleAll, varargin)
+            
+            if ~isempty(varargin) 
+                d = varargin{1}{1};
+                noise = varargin{1}{2};
+                linearity = varargin{1}{3};
+                display(['Pumadyn dataset. Specified options: d = ',num2str(d),'; noise = ', noise ,'; linearity = ' , linearity , ';']);
+            else
+                display('No preferences on d, noise and linearity have been set. Default: d = 32; noise = ''h''; linearity = ''n'';');
+                d = 32;
+                noise = 'h';
+                linearity = 'n';
+            end
+            
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             if  isvarname('d') && (d == 8 || d == 32)
                 obj.d = d;
@@ -70,22 +86,26 @@ classdef pumadyn < dataset
                 obj.trainIdx = 1:nTr;          
                 obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + nTe;          
                 
-                %tmp = randperm( obj.nTrTot);                            
-                %obj.trainIdx = tmp(1:obj.nTr);          
-                
-                %tmp = obj.nTrTot + randperm( obj.nTeTot );
-                %obj.testIdx = tmp(1:obj.nTe);
             end
             
-%             obj.shuffleTrainIdx();
-%             obj.shuffleTestIdx();
+            % Shuffling
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end         
             
             % Set problem type
-            if obj.hasRealValues(obj.Y)
-                obj.problemType = 'regression';
-            else
-                obj.problemType = 'classification';
-            end
+            obj.problemType = 'regression';
         end
         
         % Checks if matrix Y contains real values. Useful for
