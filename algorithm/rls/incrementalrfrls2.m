@@ -7,6 +7,7 @@ classdef incrementalrfrls2 < algorithm
         % I/O options
         storeFullTrainTime  % Store full training time matrix 1/0
         trainTime           % Training time matrix
+        perfEvalStep		% Evaluate and store the performances every given steps. 1 by default
 
         ntr   % Number of training samples
         nval   % Number of validation samples
@@ -122,8 +123,13 @@ classdef incrementalrfrls2 < algorithm
             % stoppingRule
             defaultStoppingRule = [];
             checkStoppingRule = @(x) isobject(x);
-            addParameter(p,'stoppingRule', defaultStoppingRule , checkStoppingRule);            
+            addParameter(p,'stoppingRule', defaultStoppingRule , checkStoppingRule);       
             
+            % perfEvalStep		% Evaluate and store the performances every given steps. 1 by default
+            defaultPerfEvalStep = 1;
+            checkPerfEvalStep = @(x) (x > 0) || (x <= maxRank);            
+            addParameter(p,'perfEvalStep',defaultPerfEvalStep,checkPerfEvalStep);
+                
             
             % Parse function inputs
             if isempty(varargin{:})
@@ -285,107 +291,110 @@ classdef incrementalrfrls2 < algorithm
                         o.trainTime(o.rfMapper.currentParIdx , i) = o.trainTime(o.rfMapper.currentParIdx - 1 , i) + toc;
                     end
                     
-%                     o.XValTilda = o.rfMapper.map(Xval , []);
-%                     YvalPred = o.XValTilda * o.rfMapper.alpha{1};
-                    
-%                     Update the RF mappings of the validation points
-                    if o.rfMapper.currentParIdx == 1
-                        
-                        o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) = ...
-                            o.rfMapper.map(Xval, ...
-                                o.rfMapper.rng(1 , 1 : o.rfMapper.currentParIdx) );            
-                    
-                    else
-                                     
-                        o.XValTilda(: , (o.rfMapper.prevPar(1) + 1) : o.rfMapper.currentPar(1)) = ...
-                            o.rfMapper.map(Xval, (o.rfMapper.prevPar(1) + 1) : o.rfMapper.currentPar(1));
-                    end
-
-                    % Compute predictions matrix
-                    YvalPred = o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
-
-                    % Compute validation performance
-                    valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
-
-                    % Apply early stopping criterion
-                    stop = 0;
-                    if ~isempty(o.stoppingRule)
-                        stop = o.stoppingRule.evaluate(valPerf);
-                    end
-
-                    if stop == 1
-                        o.rfMapper.resetPar();
-                        break;
-                    end
-
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    %  Store performance matrices  %
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-                    if o.storeFullTrainPerf == 1                    
-
-                        % Compute training predictions matrix
-                        YtrainPred = ...
-                            o.rfMapper.A(:,1:o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
-
-                        % Compute validation performance
-                        o.trainPerformance(o.rfMapper.currentParIdx , i) = performanceMeasure( Ytrain , YtrainPred , trainIdx );  
-                    end
-
-                    if o.storeFullValPerf == 1
-                        o.valPerformance(o.rfMapper.currentParIdx , i) = valPerf;
-                    end
-
-                    if o.storeFullTestPerf == 1                    
-
-%                         o.XTestTilda = o.rfMapper.map(Xte , []);
-%                         YtestPred = o.XTestTilda * o.rfMapper.alpha{1};
-
-                        % Update the RF mappings of the test points
-                        if o.rfMapper.currentParIdx == 1
+                    if (o.perfEvalStep == 1) || ...
+                            ( mod(o.rfMapper.currentPar(1), o.perfEvalStep) == 0 )
                             
-                            o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) = o.rfMapper.map(Xte, ...
-                                o.rfMapper.rng(1 , 1 : o.rfMapper.currentPar(1)));                        
-                        else
-                            
-                            o.XTestTilda(: , (o.rfMapper.prevPar(1) + 1) : o.rfMapper.currentPar(1)) = ...
-                                o.rfMapper.map(Xte, ...
-                                    o.rfMapper.rng(1 , (o.rfMapper.prevPar(1) + 1) : o.rfMapper.currentPar(1)));
-                        end
-                        
-%                         Compute predictions matrix
-                        YtestPred = o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
+	%                     o.XValTilda = o.rfMapper.map(Xval , []);
+	%                     YvalPred = o.XValTilda * o.rfMapper.alpha{1};
+						
+	%                     Update the RF mappings of the validation points
+						if o.rfMapper.currentPar(1) == 1
+							
+							o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) = ...
+								o.rfMapper.map(Xval, ...
+									o.rfMapper.rng(1 , 1 : o.rfMapper.currentParIdx) );            
+						
+						else
+										 
+							o.XValTilda(: , (o.rfMapper.currentPar(1) - o.perfEvalStep + 1) : o.rfMapper.currentPar(1)) = ...
+								o.rfMapper.map(Xval, (o.rfMapper.currentPar(1) - o.perfEvalStep + 1) : o.rfMapper.currentPar(1));
+						end
 
-                        % Compute test performance
-                        o.testPerformance(o.rfMapper.currentParIdx , i) = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );       
-                    end
+						% Compute predictions matrix
+						YvalPred = o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
 
-                    %%%%%%%%%%%%%%%%%%%%
-                    % Store best model %
-                    %%%%%%%%%%%%%%%%%%%%
-                    if valPerf < valM
+						% Compute validation performance
+						valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
 
-                        % Update best kernel parameter combination
-                        o.mapParStar = o.rfMapper.currentPar;
+						% Apply early stopping criterion
+						stop = 0;
+						if ~isempty(o.stoppingRule)
+							stop = o.stoppingRule.evaluate(valPerf);
+						end
 
-                        % Update best filter parameter
-                        o.filterParStar = o.rfMapper.filterPar;
+						if stop == 1
+							o.rfMapper.resetPar();
+							break;
+						end
 
-                        % Update best validation performance measurement
-                        valM = valPerf;
+						%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+						%  Store performance matrices  %
+						%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-                        % Update coefficients vector
-                        o.w = o.rfMapper.alpha;
-                    
-                        % Update best mapped samples
-                        o.XrfStar = o.rfMapper.A;
-                        
-                        % Update best projections matrix
-                        o.rfOmegaStar = o.rfMapper.omega;
-                        
-                        % Update bestb coefficients
-                        o.rfBStar = o.rfMapper.b;
-                    end
+						if o.storeFullTrainPerf == 1                    
+
+							% Compute training predictions matrix
+							YtrainPred = ...
+								o.rfMapper.A(:,1:o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
+
+							% Compute validation performance
+							o.trainPerformance(o.rfMapper.currentParIdx , i) = performanceMeasure( Ytrain , YtrainPred , trainIdx );  
+						end
+
+						if o.storeFullValPerf == 1
+							o.valPerformance(o.rfMapper.currentParIdx , i) = valPerf;
+						end
+
+						if o.storeFullTestPerf == 1                    
+
+	%                         o.XTestTilda = o.rfMapper.map(Xte , []);
+	%                         YtestPred = o.XTestTilda * o.rfMapper.alpha{1};
+
+							% Update the RF mappings of the test points
+							if o.rfMapper.currentPar(1) == 1
+								
+								o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) = o.rfMapper.map(Xte, ...
+									o.rfMapper.rng(1 , 1 : o.rfMapper.currentPar(1)));                        
+							else
+								
+								o.XTestTilda(: , (o.rfMapper.currentPar(1) - o.perfEvalStep + 1) : o.rfMapper.currentPar(1)) = ...
+									o.rfMapper.map(Xte, (o.rfMapper.currentPar(1) - o.perfEvalStep + 1) : o.rfMapper.currentPar(1));
+							end
+							
+	%                         Compute predictions matrix
+							YtestPred = o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
+
+							% Compute test performance
+							o.testPerformance(o.rfMapper.currentParIdx , i) = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );       
+						end
+
+						%%%%%%%%%%%%%%%%%%%%
+						% Store best model %
+						%%%%%%%%%%%%%%%%%%%%
+						if valPerf < valM
+
+							% Update best kernel parameter combination
+							o.mapParStar = o.rfMapper.currentPar;
+
+							% Update best filter parameter
+							o.filterParStar = o.rfMapper.filterPar;
+
+							% Update best validation performance measurement
+							valM = valPerf;
+
+							% Update coefficients vector
+							o.w = o.rfMapper.alpha;
+						
+							% Update best mapped samples
+							o.XrfStar = o.rfMapper.A;
+							
+							% Update best projections matrix
+							o.rfOmegaStar = o.rfMapper.omega;
+							
+							% Update bestb coefficients
+							o.rfBStar = o.rfMapper.b;
+						end
+					end
                 end
             end
             
