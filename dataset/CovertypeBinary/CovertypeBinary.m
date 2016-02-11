@@ -8,8 +8,11 @@ classdef CovertypeBinary < dataset
    end
    
    methods
-        function obj = CovertypeBinary(nTr , nTe, outputFormat)
+        function obj = CovertypeBinary(nTr , nTe, outputFormat, shuffleTraining, shuffleTest, shuffleAll)
 
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
+            
             if nTr > 522910 || nTe > 58102
                 error('Too many samples required')
             end
@@ -56,9 +59,23 @@ classdef CovertypeBinary < dataset
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
-%             obj.shuffleAllIdx();
+            
+            % Shuffling
+
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end
                 
             if strcmp(obj.outputFormat, 'zeroOne')
                 obj.Y = zeros(obj.n,obj.t);
@@ -68,20 +85,9 @@ classdef CovertypeBinary < dataset
                 obj.Y = -1/(obj.t - 1) * ones(obj.n,obj.t);
             end
 
-%             for i = 1:obj.n
-%                 if gnd(i) == 2
-%                     obj.Y(i) = 1;
-%                 end
-%             end
-            
             obj.Y(gnd == 2) = 1;
                
-            % Set problem type
-%             if obj.hasRealValues(obj.Y)
-%                 obj.problemType = 'regression';
-%             else
-                obj.problemType = 'classification';
-%             end
+            obj.problemType = 'classification';
         end
 
         % Compute predictions matrix from real-valued scores matrix

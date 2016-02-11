@@ -13,7 +13,10 @@ classdef CTslices < dataset
    end
    
    methods
-        function obj = CTslices(nTr , nTe)
+        function obj = CTslices(nTr , nTe, ~, shuffleTraining, shuffleTest, shuffleAll)
+
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             % Number of samples
             obj.nTrTot = 42800;
@@ -50,15 +53,27 @@ classdef CTslices < dataset
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+            
+            
+            % Shuffling
+
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end            
             
             % Set problem type
-            if obj.hasRealValues(obj.Y)
-                obj.problemType = 'regression';
-            else
-                obj.problemType = 'classification';
-            end
+            obj.problemType = 'regression';
         end
             
         % Compute predictions matrix from real-valued scores matrix
