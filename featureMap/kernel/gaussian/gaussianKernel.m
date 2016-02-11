@@ -167,10 +167,10 @@ classdef gaussianKernel < kernel
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 error('Kernel parameter(s) not explicitly specified, and no internal current parameter available. Exiting...');
             else
-                if obj.verbose == 1
-                    disp('Kernel will be computed according to the internal current hyperparameter(s)');
-                    obj.currentPar
-                end
+%                 if obj.verbose == 1
+%                     disp('Kernel will be computed according to the internal current hyperparameter(s)');
+%                     obj.currentPar
+%                 end
 
                 obj.K = exp(-obj.SqDistMat / (2 * obj.currentPar(1)^2));
             end
