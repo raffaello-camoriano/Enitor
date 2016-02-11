@@ -235,20 +235,20 @@ classdef nystromUniformIncremental < nystrom
             
             if( nargin > 1 )
                 
-                if(obj.verbose == 1)
-                    disp('Mapping will be computed according to the provided hyperparameter(s)');
-                    mapPar
-                end
+%                 if(obj.verbose == 1)
+%                     disp('Mapping will be computed according to the provided hyperparameter(s)');
+%                     mapPar
+%                 end
                 chosenPar = mapPar;
             elseif (nargin == 1) && (isempty(obj.currentPar))
                 
                 % If any current value for any of the parameters is not available, abort.
                 error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
             else
-                if(obj.verbose == 1)
-                    disp('Mapping will be computed according to the current internal hyperparameter(s)');
-                    obj.currentPar
-                end
+%                 if(obj.verbose == 1)
+%                     disp('Mapping will be computed according to the current internal hyperparameter(s)');
+%                     obj.currentPar
+%                 end
                 chosenPar = obj.currentPar;
             end
             

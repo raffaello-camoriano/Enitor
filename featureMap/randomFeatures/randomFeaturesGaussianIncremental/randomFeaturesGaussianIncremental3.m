@@ -232,20 +232,20 @@ classdef randomFeaturesGaussianIncremental3 < randomFeatures
             
             if( nargin > 1 )
                 
-                if(o.verbose == 1)
-                    disp('Mapping will be computed according to the provided hyperparameter(s)');
-                    mapPar
-                end
+%                 if(o.verbose == 1)
+%                     disp('Mapping will be computed according to the provided hyperparameter(s)');
+%                     mapPar
+%                 end
                 chosenPar = mapPar;
             elseif (nargin == 1) && (isempty(o.currentPar))
                 
                 % If any current value for any of the parameters is not available, abort.
                 error('Mapping parameter(s) not explicitly specified, and some internal current parameters are not available available. Exiting...');
             else
-                if(o.verbose == 1)
-                    disp('Mapping will be computed according to the current internal hyperparameter(s)');
-                    o.currentPar
-                end
+%                 if(o.verbose == 1)
+%                     disp('Mapping will be computed according to the current internal hyperparameter(s)');
+%                     o.currentPar
+%                 end
                 chosenPar = o.currentPar;
             end
 
