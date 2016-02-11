@@ -66,6 +66,7 @@ dsExtraProps = {d,noise,linearity};
 shuffleTraining = 1;
 shuffleTest = 1;
 shuffleAll = 1;
+perfEvalStep = 20;
 
 for k = 1:numRep
 
@@ -81,11 +82,11 @@ for k = 1:numRep
 
     numNysParGuesses = 2000;
 %     filterParGuesses = logspace(0,-9,10);
-    filterParGuesses = logspace(0,-7,8);
+    filterParGuesses = logspace(6,-13,10);
     mapParGuesses = 2.6667;
 %     mapParGuesses = linspace(2,4,10);
 
-    alg = incrementalNkrls(map , 2000 , ...
+    alg = incrementalNkrls2(map , 2000 , ...
                             'minRank' , 1 , ...
                             'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ...
@@ -93,7 +94,8 @@ for k = 1:numRep
                             'verbose' , 0 , ...
                             'storeFullTrainPerf' , storeFullTrainPerf , ...
                             'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf);
+                            'storeFullTestPerf' , storeFullTestPerf, ...
+                            'perfEvalStep' , perfEvalStep);
                         
 %     alg = incrementalNkrls(map , 1000 , ...
 %                             'minRank' , 1 , ...
@@ -123,10 +125,8 @@ for k = 1:numRep
     expNysInc = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
     expNysInc.run();
     
-    if numRep > 1
-        nysValPerformance = [nysValPerformance ; expNysInc.algo.valPerformance'];
-        nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
-    end
+    nysValPerformance = [nysValPerformance ; expNysInc.algo.valPerformance'];
+    nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
     
     
 %     expNysInc.result
@@ -211,15 +211,32 @@ end
 % h = colorbar;
 % h.Label.String = 'RMSE';
 
+%% Interpolation
+
+m = expNysInc.algo.nyMapper.rng(1,perfEvalStep:perfEvalStep:end);
+l = expNysInc.algo.filterParGuesses;
+
+Xdata = repmat(m, size(nysTestPerformance,1) , 1);
+Ydata = repmat(l', 1, size(nysTestPerformance, 2));
+Zdata = mean(nysTestPerformance,3);
+
+% Generate query points
+Xq = m;
+Yq = 1e-9 ./ m;
+
+
+Vq = interp2(Xdata,Ydata,Zdata,Xq,Yq,'cubic');
+
+
+
 
 %%
 
 % INCREMENTAL
 
 figure
-m = cell2mat(expNysInc.algo.nyMapper.rng(1,:));
-l = expNysInc.algo.filterParGuesses;
-pcolor(m(1,:),l,mean(nysTestPerformance,3))
+% pcolor(m,l,mean(nysTestPerformance,3))
+contourf(m,l,mean(nysTestPerformance,3))
 % Create ylabel
 ylabel('\lambda','FontSize',36,'Rotation',0);
 % Create xlabel

@@ -53,7 +53,7 @@ classdef incrementalrfrls2 < algorithm
         
         function init( o , mapType, maxRank , varargin)
 
-            display('Note that incrementalrfrls can only use the Tikhonov filter in this implementation.');
+            display('Note that incrementalrfrls uses the Tikhonov filter in this implementation.');
             p = inputParser;
             
             %%%% Required parameters
@@ -267,7 +267,11 @@ classdef incrementalrfrls2 < algorithm
             
             for i = 1:size(o.filterParGuesses,2)
                 
-                o.rfMapper.resetPar();
+                if(o.verbose)
+                    display(['Filter guess ' , num2str(i) , ' of ' , num2str(size(o.filterParGuesses,2))]);
+                end
+                
+				o.rfMapper.resetPar();
                 if ~isempty(o.stoppingRule)
                     o.stoppingRule.reset();
                 end
@@ -278,7 +282,11 @@ classdef incrementalrfrls2 < algorithm
                 
                 while o.rfMapper.next()
 
-                    if o.storeFullTrainTime == 1
+                    if(o.verbose)
+                        display(['rfMapper guess ' , num2str(o.rfMapper.currentParIdx) , ' of ' , num2str(size(o.rfMapper.rng,2))]);
+                    end
+                    
+					if o.storeFullTrainTime == 1
                         tic
                     end
                     
@@ -294,10 +302,7 @@ classdef incrementalrfrls2 < algorithm
                     if (o.perfEvalStep == 1) || ...
                             ( mod(o.rfMapper.currentPar(1), o.perfEvalStep) == 0 )
                             
-	%                     o.XValTilda = o.rfMapper.map(Xval , []);
-	%                     YvalPred = o.XValTilda * o.rfMapper.alpha{1};
-						
-	%                     Update the RF mappings of the validation points
+%                     	Update the RF mappings of the validation points
 						if o.rfMapper.currentPar(1) == 1
 							
 							o.XValTilda(: , 1 : o.rfMapper.currentPar(1)) = ...
@@ -347,9 +352,6 @@ classdef incrementalrfrls2 < algorithm
 
 						if o.storeFullTestPerf == 1                    
 
-	%                         o.XTestTilda = o.rfMapper.map(Xte , []);
-	%                         YtestPred = o.XTestTilda * o.rfMapper.alpha{1};
-
 							% Update the RF mappings of the test points
 							if o.rfMapper.currentPar(1) == 1
 								
@@ -365,7 +367,8 @@ classdef incrementalrfrls2 < algorithm
 							YtestPred = o.XTestTilda(: , 1 : o.rfMapper.currentPar(1)) * o.rfMapper.alpha;
 
 							% Compute test performance
-							o.testPerformance(o.rfMapper.currentParIdx , i) = performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );       
+							o.testPerformance(o.rfMapper.currentParIdx , i) = ...
+								performanceMeasure( Yte , YtestPred , 1:size(Yte,1) );       
 						end
 
 						%%%%%%%%%%%%%%%%%%%%
