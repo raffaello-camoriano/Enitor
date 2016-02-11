@@ -273,7 +273,7 @@ classdef incrementalNkrls2 < algorithm
                 if ~isempty(o.stoppingRule)
                     o.stoppingRule.reset();
                 end
-                o.nyMapper.filterParGuesses = o.filterParGuesses(i);
+                o.nyMapper.filterPar = o.filterParGuesses(i);
                 
                 o.KVal = zeros( o.nval , o.maxRank );
                 o.KTest = zeros( o.nte , o.maxRank );
@@ -332,7 +332,7 @@ classdef incrementalNkrls2 < algorithm
 						end
 
 						% Compute predictions matrix
-						YvalPred = o.KVal(: , 1 : o.nyMapper.currentPar(1)) * o.nyMapper.alpha{1};
+						YvalPred = o.KVal(: , 1 : o.nyMapper.currentPar(1)) * o.nyMapper.alpha;
 
 						% Compute validation performance
 						valPerf = performanceMeasure( Yval , YvalPred , valIdx );                
@@ -356,10 +356,11 @@ classdef incrementalNkrls2 < algorithm
 
 							% Compute training predictions matrix
 							YtrainPred = ...
-								o.nyMapper.A(:,1:o.nyMapper.currentPar(1))* o.nyMapper.alpha{1};
+								o.nyMapper.A(:,1:o.nyMapper.currentPar(1))* o.nyMapper.alpha;
 
 							% Compute training performance
-							o.trainPerformance(o.nyMapper.currentParIdx , i) =performanceMeasure( Ytrain , YtrainPred , trainIdx );
+							o.trainPerformance(o.nyMapper.currentParIdx , i) = ...
+                                performanceMeasure( Ytrain , YtrainPred , trainIdx );
 						end
 
 						if o.storeFullValPerf == 1
@@ -399,7 +400,7 @@ classdef incrementalNkrls2 < algorithm
 							end
 
 							% Compute scores
-							YtestPred = o.KTest(: , 1 : o.nyMapper.currentPar(1)) * o.nyMapper.alpha{1};
+							YtestPred = o.KTest(: , 1 : o.nyMapper.currentPar(1)) * o.nyMapper.alpha;
 
 							% Compute test performance
 							o.testPerformance(o.nyMapper.currentParIdx , i) = ...
@@ -418,7 +419,7 @@ classdef incrementalNkrls2 < algorithm
 							o.mapParStarIdx = o.nyMapper.currentParIdx;
 
 							%Update best filter parameter
-							o.filterParStar = o.nyMapper.filterParGuesses(1);
+							o.filterParStar = o.nyMapper.filterPar;
 							
 							%Update best filter parameter index
 							o.filterParStarIdx = i;
@@ -430,7 +431,7 @@ classdef incrementalNkrls2 < algorithm
 							o.Xmodel = o.nyMapper.Xs;
 
 							% Update coefficients vector
-							o.c = o.nyMapper.alpha{1};
+							o.c = o.nyMapper.alpha;
 						end
 					end
                 end

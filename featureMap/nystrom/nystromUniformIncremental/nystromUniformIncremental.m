@@ -11,14 +11,12 @@ classdef nystromUniformIncremental < nystrom
         minRank                 % Minimum rank of the kernel approximation
         maxRank                 % Maximum rank of the kernnystromUniformIncrementalel approximation
         
-        filterParGuesses        % Filter parameter guesses
-        numFilterParGuesses     % Number of filter parameter guesses
+        filterPar               % Filter parameter (lambda)
         
         mapParGuesses           % mapping parameter guesses
         numMapParGuesses        % Number of mapping parameter guesses
         
         kernelType      % Type of approximated kernel
-%         sampledPoints   % Current sampled columns
         SqDistMat       % Squared distances matrix
         Xs              % Sampled points
         Y               % Training outputs
@@ -93,9 +91,9 @@ classdef nystromUniformIncremental < nystrom
             addParameter(p,'mapParGuesses',defaultMapParGuesses,checkMapParGuesses);        
             
             % filterParGuesses       % Filter parameter guesses
-            defaultFilterParGuesses = [];
-            checkFilterParGuesses = @(x) size(x,1) > 0 && size(x,2) > 0 ;            
-            addParameter(p,'filterParGuesses',defaultFilterParGuesses,checkFilterParGuesses);                    
+            defaultFilterPar = [];
+            checkFilterPar = @(x) x > 0;            
+            addParameter(p,'filterPar',defaultFilterPar,checkFilterPar);                    
             
             % numMapParRangeSamples        % Number of map parameter guesses
             defaultNumMapParRangeSamples = [];
@@ -148,12 +146,10 @@ classdef nystromUniformIncremental < nystrom
             obj.kernelType = @gaussianKernel;
 
             % Conditional range computation
-%             if isempty(obj.mapParGuesses)
             if obj.verbose == 1
                 display('Computing range');
             end
             obj.range();    % Compute range
-%             end
             obj.currentParIdx = 0;
             obj.currentPar = [];
         end
@@ -269,11 +265,8 @@ classdef nystromUniformIncremental < nystrom
                 obj.A = zeros(obj.ntr , obj.maxRank);
                 obj.Aty = zeros(obj.maxRank , obj.t);
                 
-                obj.R = cell(size(obj.filterParGuesses));
-                [obj.R{:,:}] = deal(zeros(obj.maxRank));
-                
-                obj.alpha = cell(size(obj.filterParGuesses));
-                [obj.alpha{:,:}] = deal(zeros(obj.maxRank,size(obj.Y,2)));
+                obj.R = zeros(obj.maxRank);
+                obj.alpha = zeros(obj.maxRank,size(obj.Y,2));
                 
                 sampledPoints = 1:chosenPar(1);
                 obj.s = chosenPar(1);  % Number of new columns
@@ -284,17 +277,14 @@ classdef nystromUniformIncremental < nystrom
                 B = obj.A(sampledPoints,1:chosenPar(1));
                 obj.Aty(1:chosenPar(1),:) = obj.A(:,1:chosenPar(1))' * obj.Y;
 
-                for i = 1:size(obj.filterParGuesses,2)
-                    
-                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
-                        chol(full(obj.A(:,1:chosenPar(1))' * obj.A(:,1:chosenPar(1)) ) + ...
-                        obj.ntr * obj.filterParGuesses(i) * B);
-                    
-                    % alpha
-                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
-                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
-                        ( obj.Aty(1:chosenPar(1),:) ) );
-                end
+                obj.R(1:chosenPar(1),1:chosenPar(1)) = ...
+                    chol(full(obj.A(:,1:chosenPar(1))' * obj.A(:,1:chosenPar(1)) ) + ...
+                    obj.ntr * obj.filterPar * B);
+
+                % alpha
+                obj.alpha = obj.R(1:chosenPar(1),1:chosenPar(1)) \ ...
+                    ( obj.R(1:chosenPar(1),1:chosenPar(1))' \ ...
+                    ( obj.Aty(1:chosenPar(1),:) ) );
                 
             elseif obj.prevPar(1) ~= chosenPar(1)
                
@@ -317,36 +307,32 @@ classdef nystromUniformIncremental < nystrom
                 b = a( 1:obj.prevPar(1) , : );
                 beta = a( sampledPoints , : );
 
-                % Cycle over filter parameter
-                for i = 1:size(obj.filterParGuesses,2)
-                    
-                    % Compute c, gamma
-                    c = obj.A(:,1:obj.prevPar(1))' * a + obj.ntr * obj.filterParGuesses(i) * b;
-                    gamma = a' * a + obj.ntr * obj.filterParGuesses(i) * beta;
+                % Compute c, gamma
+                c = obj.A(:,1:obj.prevPar(1))' * a + obj.ntr * obj.filterPar * b;
+                gamma = a' * a + obj.ntr * obj.filterPar * beta;
 
-                    % Update A, Aty
-                    obj.A( : , (obj.prevPar(1)+1) : chosenPar(1) ) = a ;
-                    obj.Aty((obj.prevPar(1)+1) : chosenPar(1) , : ) = a' * obj.Y ;
-                    
-                    % Compute u, v
-                    u = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
-                                    sqrt( 1 + gamma)               ];
-                    
-                    v = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
-                                    -1               ];
-                                
-                    % Update R
-                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
-                        cholupdatek( obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , u , '+');
-                    
-                    obj.R{i}(1:chosenPar(1),1:chosenPar(1)) = ...
-                        cholupdatek(obj.R{i}(1:chosenPar(1),1:chosenPar(1)) , v , '-');
+                % Update A, Aty
+                obj.A( : , (obj.prevPar(1)+1) : chosenPar(1) ) = a ;
+                obj.Aty((obj.prevPar(1)+1) : chosenPar(1) , : ) = a' * obj.Y ;
 
-                    % Recompute alpha
-                    obj.alpha{i} = 	obj.R{i}(1:chosenPar(1),1:chosenPar(1)) \ ...
-                        ( obj.R{i}(1:chosenPar(1),1:chosenPar(1))' \ ...
-                        ( obj.Aty(1:chosenPar(1),:) ) );
-                end
+                % Compute u, v
+                u = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+                                sqrt( 1 + gamma)               ];
+
+                v = [ c / ( 1 + sqrt( 1 + gamma) ) ; ...
+                                -1               ];
+
+                % Update R
+                obj.R(1:chosenPar(1),1:chosenPar(1)) = ...
+                    cholupdatek( obj.R(1:chosenPar(1),1:chosenPar(1)) , u , '+');
+
+                obj.R(1:chosenPar(1),1:chosenPar(1)) = ...
+                    cholupdatek(obj.R(1:chosenPar(1),1:chosenPar(1)) , v , '-');
+
+                % Recompute alpha
+                obj.alpha = obj.R(1:chosenPar(1),1:chosenPar(1)) \ ...
+                    ( obj.R(1:chosenPar(1),1:chosenPar(1))' \ ...
+                    ( obj.Aty(1:chosenPar(1),:) ) );
             end
         end
         
