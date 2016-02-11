@@ -5,12 +5,6 @@ classdef incrementalNkrls < algorithm
     properties
         
         % I/O options
-        storeFullTrainPerf  % Store full training performance matrix 1/0
-        storeFullValPerf    % Store full validation performance matrix 1/0
-        storeFullTestPerf   % Store full test performance matrix 1/0
-        valPerformance      % Validation performance matrix
-        trainPerformance    % Training performance matrix
-        testPerformance     % Test performance matrix
         storeFullTrainTime  % Store full training time matrix 1/0
         trainTime           % Training time matrix
 

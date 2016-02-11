@@ -144,7 +144,7 @@ classdef nystromUniformIncremental < nystrom
             obj.d = size(X , 2);
             obj.t = size(Y , 2);
             
-            warning('Kernel used by nystromUniformIncremental is set to @gaussianKernel');
+            display('Kernel used by nystromUniformIncremental is set to @gaussianKernel');
             obj.kernelType = @gaussianKernel;
 
             % Conditional range computation

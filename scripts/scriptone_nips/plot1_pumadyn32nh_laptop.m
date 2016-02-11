@@ -11,10 +11,10 @@ mkdir(resdir);
 
 %% Initialization
 
-numRep = 10;
+numRep = 1;
 storeFullTrainPerf = 0;
-storeFullValPerf = 1;
-storeFullTestPerf = 0;
+storeFullValPerf = 0;
+storeFullTestPerf = 1;
 verbose = 0;
 saveResult = 0;
 
@@ -57,25 +57,35 @@ nysTrainTime = [];
 nysTestPerformance = [];
 nysValPerformance  = [];
 
+ntrds = 4096; % max 4096
+nteds = 4096; % max 4096
+d = 32;
+linearity = 'n';
+noise = 'h';
+dsExtraProps = {d,noise,linearity};
+shuffleTraining = 1;
+shuffleTest = 1;
+shuffleAll = 1;
+
 for k = 1:numRep
 
     display([ 'Repetition #', num2str(k)])
      
     % Load dataset
-    ds = pumadyn(4096,4096, 32 , 'n' , 'h');
+    ds = pumadyn(ntrds, nteds, [] , shuffleTraining, shuffleTest, shuffleAll, dsExtraProps);
     
 
     %% Incremental Nystrom KRLS
 
     map = @nystromUniformIncremental;
 
-    numNysParGuesses = 20;
+    numNysParGuesses = 2000;
 %     filterParGuesses = logspace(0,-9,10);
     filterParGuesses = logspace(0,-7,8);
     mapParGuesses = 2.6667;
 %     mapParGuesses = linspace(2,4,10);
 
-    alg = incrementalNkrls(map , 1000 , ...
+    alg = incrementalNkrls(map , 2000 , ...
                             'minRank' , 1 , ...
                             'numNysParGuesses' , numNysParGuesses ,...
                             'mapParGuesses' , mapParGuesses ,  ...
@@ -115,6 +125,7 @@ for k = 1:numRep
     
     if numRep > 1
         nysValPerformance = [nysValPerformance ; expNysInc.algo.valPerformance'];
+        nysTestPerformance = [nysTestPerformance ; expNysInc.algo.testPerformance'];
     end
     
     
@@ -126,50 +137,50 @@ for k = 1:numRep
 
     % incrementalnkrls_plots
 
-    %% Batch Nystrom KRLS
-
-    map = @nystromUniform;
-    filter = @tikhonov;
-    
-    filterParGuesses = 1e-7;
-    mapParGuesses = 2.6667;
-
-    alg = nrls(map , filter , 1000 , ...
-                            'mapParGuesses' , mapParGuesses ,  ... 
-                            'filterParGuesses', filterParGuesses , ...
-                            'verbose' , 0 , ...
-                            'storeFullTrainPerf' , storeFullTrainPerf , ...
-                            'storeFullValPerf' , storeFullValPerf , ...
-                            'storeFullTestPerf' , storeFullTestPerf );
-
-%     alg.mapParStar = [ 0 , 5.7552];
-%     alg.filterParStar = 1e-9;
-    
-%     tic
-%     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
-%     trTime = toc;
+%     %% Batch Nystrom KRLS
+% 
+%     map = @nystromUniform;
+%     filter = @tikhonov;
 %     
-%     YtePred = alg.test(ds.X(ds.testIdx,:));   
-%       
-%     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
-%     nysTrainTime = [nysTrainTime ; trTime];
-%     nysTestPerformance = [nysTestPerformance ; perf'];
-
-    expNysBat = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
-    expNysBat.run();
-    expNysBat.result
-
-%     nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
-    nysTestPerformance = [nysTestPerformance ; expNysBat.algo.testPerformance'];
-
-    NysBat_cumulative_training_time(k) = expNysBat.time.train;
-    NysBat_cumulative_testing_time(k) = expNysBat.time.test;
-    NysBat_cumulative_test_perf(k) = expNysBat.result.perf;
-
-    % incrementalnkrls_plots
-
-
-    
+%     filterParGuesses = 1e-7;
+%     mapParGuesses = 2.6667;
+% 
+%     alg = nrls(map , filter , 1000 , ...
+%                             'mapParGuesses' , mapParGuesses ,  ... 
+%                             'filterParGuesses', filterParGuesses , ...
+%                             'verbose' , 0 , ...
+%                             'storeFullTrainPerf' , storeFullTrainPerf , ...
+%                             'storeFullValPerf' , storeFullValPerf , ...
+%                             'storeFullTestPerf' , storeFullTestPerf );
+% 
+% %     alg.mapParStar = [ 0 , 5.7552];
+% %     alg.filterParStar = 1e-9;
+%     
+% %     tic
+% %     alg.justTrain(ds.X(ds.trainIdx,:) , ds.Y(ds.trainIdx));
+% %     trTime = toc;
+% %     
+% %     YtePred = alg.test(ds.X(ds.testIdx,:));   
+% %       
+% %     perf = abs(ds.performanceMeasure( ds.Y(ds.testIdx,:) , YtePred , ds.testIdx));
+% %     nysTrainTime = [nysTrainTime ; trTime];
+% %     nysTestPerformance = [nysTestPerformance ; perf'];
+% 
+%     expNysBat = experiment(alg , ds , 1 , true , saveResult , '' , resdir , 0);
+%     expNysBat.run();
+%     expNysBat.result
+% 
+% %     nysTrainTime = [nysTrainTime ; expNysInc.algo.trainTime'];
+%     nysTestPerformance = [nysTestPerformance ; expNysBat.algo.testPerformance'];
+% 
+%     NysBat_cumulative_training_time(k) = expNysBat.time.train;
+%     NysBat_cumulative_testing_time(k) = expNysBat.time.test;
+%     NysBat_cumulative_test_perf(k) = expNysBat.result.perf;
+% 
+%     % incrementalnkrls_plots
+% 
+% 
+%     
 end
 
 % save('wspace_plot1_adult_laptop.mat' , '-v7.3');
@@ -203,10 +214,12 @@ end
 
 %%
 
+% INCREMENTAL
+
 figure
-m = cell2mat(expNysBat.algo.nyMapper.rng(1,:));
-l = expNysBat.algo.filterParGuesses;
-pcolor(m(1,:),l,mean(valPerf,3))
+m = cell2mat(expNysInc.algo.nyMapper.rng(1,:));
+l = expNysInc.algo.filterParGuesses;
+pcolor(m(1,:),l,mean(nysTestPerformance,3))
 % Create ylabel
 ylabel('\lambda','FontSize',36,'Rotation',0);
 % Create xlabel
@@ -216,6 +229,25 @@ set(gca,'YScale','log')
 h = colorbar('FontSize',14);
 h.Label.String = 'RMSE';
 h.Label.FontSize = 20;
+
+
+
+% BATCH
+
+% figure
+% m = cell2mat(expNysBat.algo.nyMapper.rng(1,:));
+% l = expNysBat.algo.filterParGuesses;
+% pcolor(m(1,:),l,mean(valPerf,3))
+% % Create ylabel
+% ylabel('\lambda','FontSize',36,'Rotation',0);
+% % Create xlabel
+% xlabel('m','FontSize',36);
+% set(gca,'FontSize',14);
+% set(gca,'YScale','log')
+% h = colorbar('FontSize',14);
+% h.Label.String = 'RMSE';
+% h.Label.FontSize = 20;
+
 
 
 
