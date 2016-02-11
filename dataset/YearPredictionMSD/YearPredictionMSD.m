@@ -13,10 +13,10 @@ classdef YearPredictionMSD < dataset
    end
    
    methods
-        %     d : An integlue signifying the number of input attributes in each case, for example `32'.
-        %     linearity: One of the characters `f' or `n' signifying `fairly linear' or `non-linear', respectively.
-        %     noise: One of the charer vaacters `m' or `h' signifying `medium unpredictability/noise' or `high unpredictability/noise', respectively.
-        function obj = YearPredictionMSD(nTr , nTe)
+       function obj = YearPredictionMSD(nTr , nTe, ~, shuffleTraining, shuffleTest, shuffleAll)
+
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             % Number of samples
             obj.nTrTot = 463715;
@@ -49,15 +49,30 @@ classdef YearPredictionMSD < dataset
             % Set training and test indexes
             obj.trainIdx = 1:obj.nTr;
             obj.testIdx = obj.nTrTot + 1 : obj.nTrTot + obj.nTe;
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+            
+            % Shuffling
+
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
+            end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end
             
             % Set problem type
-            if obj.hasRealValues(obj.Y)
+%             if obj.hasRealValues(obj.Y)
                 obj.problemType = 'regression';
-            else
-                obj.problemType = 'classification';
-            end
+%             else
+%                 obj.problemType = 'classification';
+%             end
         end
             
         % Compute predictions matrix from real-valued scores matrix
