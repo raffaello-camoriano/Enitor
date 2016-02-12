@@ -16,6 +16,7 @@ classdef experiment < handle
         memoryProfiler  % Flag for memory profiling
         verbose         % Verbosity flag
         recompute
+        validationPart
         
         %name
         customStr
@@ -25,7 +26,7 @@ classdef experiment < handle
     
     methods
         
-        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir , verbose , recompute)
+        function obj = experiment( algo , ds , numRep , measureTime , saveResult , customStr , resdir , verbose , recompute, validationPart)
             
             assert(isa(algo,'algorithm') , '1st argument is not of class algorithm');
             assert(isa(ds,'dataset') , '2nd argument is not of class dataset');
@@ -71,6 +72,13 @@ classdef experiment < handle
                 obj.recompute = recompute;
             else
                 obj.recompute = 0;
+            end
+            
+            
+            if nargin > 9
+                obj.validationPart = validationPart;
+            else
+                obj.validationPart = 0.2;
             end            
 
             if obj.memoryProfiler && obj.measureTime
@@ -111,7 +119,7 @@ classdef experiment < handle
                 profile -memory on
             end
 
-                obj.algo.train( Xtr , Ytr, obj.performanceMeasure , obj.recompute , 0.2, 'Xte' , Xte, 'Yte' , Yte);
+            obj.algo.train( Xtr , Ytr, obj.performanceMeasure , obj.recompute , obj.validationPart, 'Xte' , Xte, 'Yte' , Yte);
                 
             if obj.measureTime
                 obj.time.train = toc;
