@@ -12,7 +12,6 @@ classdef iCubWorld28 < dataset
    end
    
    methods
-%         function obj = iCubWorld28(nTrPerClass , nTePerClass, outputFormat , classes)
         function obj = iCubWorld28(nTr , nTe, outputFormat , shuffleTraining, shuffleTest, shuffleAll, varargin)
             
             % Call superclass constructor with arguments
@@ -102,7 +101,7 @@ classdef iCubWorld28 < dataset
                 obj.nTe = obj.nTeTot;
             end
             obj.n = obj.nTrTot + obj.nTeTot ;
-            obj.d = size(obj.X , 2);
+            obj.d = size(Xtr , 2);
             
             % Select consecutive samples
             obj.trainIdx = 1:obj.nTr;          
@@ -115,16 +114,16 @@ classdef iCubWorld28 < dataset
 
             if obj.t == 2
                 if strcmp(obj.outputFormat, 'zeroOne')
-                    obj.Y = zeros(size(Ytmp,1),1);
+                    obj.Y = zeros(obj.n,1);
                 elseif strcmp(obj.outputFormat, 'plusMinusOne')
-                    obj.Y = - ones(size(Ytmp,1),1);
+                    obj.Y = - ones(obj.n,1);
                 elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
-                    obj.Y = - ones(size(Ytmp,1),1)/(obj.t-1);
+                    obj.Y = - ones(obj.n,1)/(obj.t-1);
                 end
-                obj.Y(Ytmp(:,classes(2)) == 1,1) = 1;
+                obj.Y(Ytmp(:,obj.classes(1)) == 1,1) = 1;
             else
                 if strcmp(obj.outputFormat, 'zeroOne')
-                    obj.Y = (Ytmp+1) / 2;
+                    obj.Y = (Ytmp + 1) / 2;
                 elseif strcmp(obj.outputFormat, 'plusMinusOne')
                     obj.Y = Ytmp;
                 elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
@@ -180,13 +179,6 @@ classdef iCubWorld28 < dataset
                 elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
                     Ypred = -1/(obj.t - 1) * ones(size(Yscores));
                 end
-
-    %             for i = 1:size(Ypred,1)
-    %                 if Yscores(i) > 0
-    %                     Ypred(i) = 1;
-    %                 end
-    %             end
-
                 Ypred(Yscores>0) = 1;
             else
                 if strcmp(obj.outputFormat, 'zeroOne')

@@ -3,9 +3,6 @@ function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, te
 
     ICUBWORLDopts = ICUBWORLDinit('iCubWorld30');
     obj_names = keys(ICUBWORLDopts.objects)';
-    % dataroot = '/home/kammo/Repos/ior/data/caffe_centralcrop_meanimagenet2012/';
-    % iorroot = '/home/kammo/Repos/ior/';
-
     numClasses = numel(classes); % number of classes
 
     if (numel(trainClassFreq) ~= numel(testClassFreq))  || (numel(trainClassFreq) ~= numClasses)
@@ -48,6 +45,10 @@ function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, te
         Xte = [ Xte ; XteTmp(classIdxTe{i},:)];
         Ytr = [ Ytr ; YtrTmp(classIdxTr{i},:)];
         Yte = [ Yte ; YteTmp(classIdxTe{i},:)];
+        
+        classIdxTr{i} = size(Ytr,1) - numel(classIdxTr{i}) + 1 : size(Ytr,1);
+        classIdxTe{i} = size(Ytr,1) - numel(classIdxTe{i}) + 1 : size(Yte,1);
+        
     end
 
     % Apply training class frequencies
@@ -56,17 +57,16 @@ function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, te
         trainClassNum = [trainClassNum , round((trainClassFreq(i) * numel(classIdxTr{i}))/max(trainClassFreq)) ];
     end
 
-    if ~isempty(nte) && ntr > size(Xte,1)
+    if ~isempty(nte) && nte > size(Xte,1)
         error( ['Maximum nte = ' , num2str(size(Xte,1))] );
     elseif isempty(nte)
         nte = size(Xte,1);
-%         display( ['nte set to ' , num2str(size(Xte,1))] );
     end
     
     % Shuffle idx
     trainIdx = cell(1,numClasses);
     for i = 1:numClasses
-        trainIdx{i} = classIdxTr{i}(randperm(numel(classIdxTr{i}) , trainClassNum(i)));
+        trainIdx{i} = classIdxTr{i}(randperm(numel(classIdxTr{i}),trainClassNum(i)));
     end
 
     testIdx = randperm(size(Yte,1),nte);
