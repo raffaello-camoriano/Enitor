@@ -3,25 +3,73 @@ classdef MNIST < dataset
    
    properties
         outputFormat
+
+        classes
+        trainClassFreq 
+        testClassFreq 
    end
    
    methods
-        function obj = MNIST(nTr , nTe, outputFormat)
+        function obj = MNIST(nTr , nTe, outputFormat , shuffleTraining, shuffleTest, shuffleAll, varargin)
+            
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
+            
+%            Optional parameters: classes, trainClassFreq, testClassFreq            
+
+            if ~isempty(varargin) && ~isempty(varargin{1}{1}) 
+                classes = varargin{1}{1};
+            else
+                classes = 0:9;
+                display('Classes set to 0 to 9 by default');
+            end
+
+            if ~isempty(varargin) && ~isempty(varargin{1}{2}) 
+                obj.trainClassFreq = varargin{1}{2};
+            else
+                obj.trainClassFreq = 1/numel(classes) * ones(size(classes));
+                display('Balanced training classes');
+            end
+
+            if ~isempty(varargin) && ~isempty(varargin{1}{3}) 
+                obj.testClassFreq = varargin{1}{3};
+            else
+                obj.testClassFreq = 1/numel(classes) * ones(size(classes));
+                display('Balanced test classes');
+            end
+
+            % Set t (number of classes)
+            classes = unique(classes);
+            obj.classes = classes;
+            obj.t = numel(classes);
+            
+            % Set output format
+            if isempty(outputFormat)
+                error('outputFormat not set');
+            end
+            if (strcmp(outputFormat, 'zeroOne') || ...
+                    strcmp(outputFormat, 'plusMinusOne') || ...
+                    strcmp(outputFormat, 'plusOneMinusBalanced'))
+                obj.outputFormat = outputFormat;
+            else
+                display('Wrong or missing output format, set to plusMinusOne by default');
+                obj.outputFormat = 'plusMinusOne';
+            end
+            
             
             data = load('mnist_all.mat');
             
             gnd = [];
             
-            for i = 0:9
+            for i = obj.classes
                 currentFieldStr = strcat('train' , num2str(i));
                 obj.X = [ obj.X ; data.(currentFieldStr) ];
                 gnd = [gnd ; i * ones(size(data.(currentFieldStr),1) , 1) ];
             end
                 
-            obj.nTr = size(obj.X,1);
-            obj.nTrTot = obj.nTr;
+            obj.nTrTot = size(obj.X,1);
             
-            for i = 0:9
+            for i = obj.classes
                 currentFieldStr = strcat('test' , num2str(i));
                 obj.X = [ obj.X ; data.(currentFieldStr) ];
                 gnd = [gnd ; i * ones(size(data.(currentFieldStr),1) , 1) ];
@@ -31,35 +79,70 @@ classdef MNIST < dataset
             obj.X = obj.scale(obj.X);
             
             obj.n = size(obj.X , 1);
-            obj.nTe = obj.n - obj.nTr;
-            obj.nTeTot = obj.nTe;
+            obj.nTeTot = obj.n - obj.nTrTot;
             
             obj.d = size(obj.X , 2);
-            obj.t = 10;
-                
-            if nargin == 0
+            obj.t = numel(obj.classes);
+            
 
-                obj.trainIdx = 1:obj.nTr;
-                obj.testIdx = obj.nTr + 1 : obj.nTr + obj.nTe;
+            % Find class indices
+            classIdxTr = cell(1,obj.t);
+            classIdxTe = cell(1,obj.t);
+            for i = 1:obj.t
+                classIdxTr{i} = find(gnd(1:obj.nTrTot) == classes(i));
+                classIdxTe{i} = obj.nTrTot + find(gnd(obj.nTrTot+1:obj.n) == classes(i));
+            end
+
+
+            % Compute number of points for each class (for training and
+            % test sets
+            trainClassNum = zeros(1,obj.t);
+            testClassNum = zeros(1,obj.t);
+            for i = 1:obj.t    
+                trainClassNum(i) = ...
+                    round((obj.trainClassFreq(i) * numel(classIdxTr{i}))/max(obj.trainClassFreq));
                 
-            elseif (nargin >1)
+                testClassNum(i) = ...
+                    round((obj.testClassFreq(i) * numel(classIdxTe{i}))/max(obj.testClassFreq));
+            end
                 
-                if (nTr < 2) || (nTe < 1) ||(nTr > obj.nTrTot) || (nTe > obj.nTeTot)
-                    error('(nTr > obj.nTrTot) || (nTe > obj.nTeTot)');
-                end
-                
-                obj.nTr = nTr;
-                obj.nTe = nTe;
-                
-                tmp = randperm( obj.nTrTot);                            
-                obj.trainIdx = tmp(1:obj.nTr);          
-                
-                tmp = obj.nTrTot + randperm( obj.nTeTot );
-                obj.testIdx = tmp(1:obj.nTe);
+            % Subsample training set
+            obj.trainIdx =[];
+            if isempty(nTr)
+                obj.nTr = sum(trainClassNum);
+            else
+                obj.nTr = nTr;        
             end
             
-            obj.shuffleTrainIdx();
-            obj.shuffleTestIdx();
+            if obj.nTr > sum(trainClassNum)
+                error('nTr > obj.nTrTot');
+            end
+
+            sumTrainClassNum = sum(trainClassNum);
+            for i = 1:obj.t                       
+                trainClassNum(i) = round(trainClassNum(i) / sumTrainClassNum  * obj.nTr);
+                obj.trainIdx = [obj.trainIdx ; classIdxTr{i}(randperm( numel(classIdxTr{i}), trainClassNum(i)))];
+            end
+            
+            
+            % Subsample test set
+            obj.testIdx =[];
+            if isempty(nTe)
+                obj.nTe = sum(testClassNum);
+            else
+                obj.nTe = nTe;        
+            end
+            
+            if obj.nTe > sum(testClassNum)
+                error('nTe > obj.nTeTot');
+            end
+
+            sumTestClassNum = sum(testClassNum);
+            for i = 1:obj.t                       
+                testClassNum(i) = round(testClassNum(i) / sumTestClassNum  * obj.nTe);
+                obj.testIdx = [obj.testIdx ; classIdxTe{i}(randperm( numel(classIdxTe{i}), testClassNum(i)))];
+            end
+            
             
             % Reformat output columns
             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
@@ -68,25 +151,50 @@ classdef MNIST < dataset
                 display('Wrong or missing output format, set to plusMinusOne by default');
                 obj.outputFormat = 'plusMinusOne';
             end
+
             
-            if strcmp(obj.outputFormat, 'zeroOne')
-                obj.Y = zeros(obj.n,obj.t);
-            elseif strcmp(obj.outputFormat, 'plusMinusOne')
-                obj.Y = -1 * ones(obj.n,obj.t);
-            elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
-                obj.Y = -1/(obj.t - 1) * ones(obj.n,obj.t);
+            if obj.t == 2
+                if strcmp(obj.outputFormat, 'zeroOne')
+                    obj.Y = zeros(obj.n,1);
+                elseif strcmp(obj.outputFormat, 'plusMinusOne')
+                    obj.Y = - ones(obj.n,1);
+                elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
+                    obj.Y = - ones(obj.n,1)/(obj.t-1);
+                end
+                obj.Y(gnd == obj.classes(1),1) = 1;
+            else
+                if strcmp(obj.outputFormat, 'zeroOne')
+                    obj.Y = zeros(obj.n,obj.t);
+                elseif strcmp(obj.outputFormat, 'plusMinusOne')
+                    obj.Y = -1 * ones(obj.n,obj.t);
+                elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
+                    obj.Y = -1/(obj.t - 1) * ones(obj.n,obj.t);
+                end
+
+                for i = 1:obj.n
+                    obj.Y(i , gnd(i) + 1) = 1;
+                end
+            end            
+            
+            
+            % Shuffling
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
             end
-               
-            for i = 1:obj.n
-                obj.Y(i , gnd(i) + 1) = 1;
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
             end
             
             % Set problem type
-            if obj.hasRealValues(obj.Y)
-                obj.problemType = 'regression';
-            else
-                obj.problemType = 'classification';
-            end
+            obj.problemType = 'classification';
         end
         
         % Checks if matrix Y contains real values. Useful for
@@ -126,9 +234,8 @@ classdef MNIST < dataset
         function perf = performanceMeasure(obj , Y , Ypred , varargin)
             
             % Check if Ypred is real-valued. If yes, convert it.
-            if obj.hasRealValues(Ypred)
-                Ypred = obj.scoresToClasses(Ypred);
-            end
+            Ypred = obj.scoresToClasses(Ypred);
+            
             
             % Compute error rate
             numCorrect = 0;
