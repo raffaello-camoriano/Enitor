@@ -7,6 +7,9 @@ classdef MNIST < dataset
         classes
         trainClassFreq 
         testClassFreq 
+        
+        trainClassNum
+        testClassNum
    end
    
    methods
@@ -24,6 +27,11 @@ classdef MNIST < dataset
                 display('Classes set to 0 to 9 by default');
             end
 
+            % Set t (number of classes)
+            classes = unique(classes);
+            obj.classes = classes;
+            obj.t = numel(classes);
+            
             if ~isempty(varargin) && ~isempty(varargin{1}{2}) 
                 obj.trainClassFreq = varargin{1}{2};
             else
@@ -38,14 +46,11 @@ classdef MNIST < dataset
                 display('Balanced test classes');
             end
 
-            % Set t (number of classes)
-            classes = unique(classes);
-            obj.classes = classes;
-            obj.t = numel(classes);
             
             % Set output format
             if isempty(outputFormat)
-                error('outputFormat not set');
+                display('outputFormat not specified. plusMinusOne by default');
+                obj.outputFormat = 'plusMinusOne';
             end
             if (strcmp(outputFormat, 'zeroOne') || ...
                     strcmp(outputFormat, 'plusMinusOne') || ...
@@ -92,55 +97,61 @@ classdef MNIST < dataset
                 classIdxTr{i} = find(gnd(1:obj.nTrTot) == classes(i));
                 classIdxTe{i} = obj.nTrTot + find(gnd(obj.nTrTot+1:obj.n) == classes(i));
             end
+            
+            
 
 
             % Compute number of points for each class (for training and
-            % test sets
-            trainClassNum = zeros(1,obj.t);
-            testClassNum = zeros(1,obj.t);
-            for i = 1:obj.t    
-                trainClassNum(i) = ...
-                    round((obj.trainClassFreq(i) * numel(classIdxTr{i}))/max(obj.trainClassFreq));
-                
-                testClassNum(i) = ...
-                    round((obj.testClassFreq(i) * numel(classIdxTe{i}))/max(obj.testClassFreq));
+            % test sets)
+            
+            % Training
+            N_c = cellfun(@numel,classIdxTr);
+            [m_max, ~] = max(N_c .* obj.trainClassFreq/max(obj.trainClassFreq));   % Determine class with max number of pts
+            M_c = floor(m_max * obj.trainClassFreq / max(obj.trainClassFreq));
+            [~,q] = min(N_c - M_c);
+            M_c = round(M_c / M_c(q) * N_c(q)) ;    % Realign
+            
+            if ~isempty(nTr) && nTr > sum(M_c)
+                error('nTr > sum(obj.trainClassNum)');
+            elseif ~isempty(nTr) && nTr <= sum(M_c)
+                obj.nTr = nTr; 
+                obj.trainClassNum = round(M_c * obj.nTr / sum(M_c));
+            elseif  isempty(nTr)      
+                obj.nTr = sum(M_c);
+                obj.trainClassNum = M_c;
             end
-                
+            
             % Subsample training set
             obj.trainIdx =[];
-            if isempty(nTr)
-                obj.nTr = sum(trainClassNum);
-            else
-                obj.nTr = nTr;        
-            end
-            
-            if obj.nTr > sum(trainClassNum)
-                error('nTr > obj.nTrTot');
-            end
-
-            sumTrainClassNum = sum(trainClassNum);
             for i = 1:obj.t                       
-                trainClassNum(i) = round(trainClassNum(i) / sumTrainClassNum  * obj.nTr);
-                obj.trainIdx = [obj.trainIdx ; classIdxTr{i}(randperm( numel(classIdxTr{i}), trainClassNum(i)))];
+                obj.trainIdx = [obj.trainIdx ; ...
+                    classIdxTr{i}(randperm( numel(classIdxTr{i}), obj.trainClassNum(i)))];
             end
             
             
-            % Subsample test set
+            
+            % Test
+            N_c = cellfun(@numel,classIdxTe);
+            [m_max, ~] = max(N_c .* obj.testClassFreq/max(obj.testClassFreq));   % Determine class with max number of pts
+            M_c = floor(m_max * obj.testClassFreq / max(obj.testClassFreq));
+            [~,q] = min(N_c - M_c);
+            M_c = round(M_c / M_c(q) * N_c(q)) ;    % Realign
+            
+            if ~isempty(nTe) && nTe > sum(M_c)
+                error('nTe > sum(obj.testClassNum)');
+            elseif ~isempty(nTe) && nTe <= sum(M_c)
+                obj.nTe = nTe; 
+                obj.testClassNum = round(M_c * obj.nTe / sum(M_c));
+            elseif  isempty(nTe)      
+                obj.nTe = sum(M_c);
+                obj.testClassNum = M_c;
+            end
+            
+            % Subsample training set
             obj.testIdx =[];
-            if isempty(nTe)
-                obj.nTe = sum(testClassNum);
-            else
-                obj.nTe = nTe;        
-            end
-            
-            if obj.nTe > sum(testClassNum)
-                error('nTe > obj.nTeTot');
-            end
-
-            sumTestClassNum = sum(testClassNum);
             for i = 1:obj.t                       
-                testClassNum(i) = round(testClassNum(i) / sumTestClassNum  * obj.nTe);
-                obj.testIdx = [obj.testIdx ; classIdxTe{i}(randperm( numel(classIdxTe{i}), testClassNum(i)))];
+                obj.testIdx = [obj.testIdx ; ...
+                    classIdxTe{i}(randperm( numel(classIdxTe{i}), obj.testClassNum(i)))];
             end
             
             
@@ -178,20 +189,21 @@ classdef MNIST < dataset
             
             
             % Shuffling
-            obj.shuffleTraining = shuffleTraining;
-            if shuffleTraining == 1
-                obj.shuffleTrainIdx();
-            end
-            
-            obj.shuffleTest = shuffleTest;
-            if shuffleTest == 1
-                obj.shuffleTestIdx();
-            end
-            
-            obj.shuffleAll = shuffleAll;
-            if shuffleAll == 1
-                obj.shuffleAllIdx();
-            end
+            display('shuffling to be reimplemented')
+%             obj.shuffleTraining = shuffleTraining;
+%             if shuffleTraining == 1
+%                 obj.shuffleTrainIdx();
+%             end
+%             
+%             obj.shuffleTest = shuffleTest;
+%             if shuffleTest == 1
+%                 obj.shuffleTestIdx();
+%             end
+%             
+%             obj.shuffleAll = shuffleAll;
+%             if shuffleAll == 1
+%                 obj.shuffleAllIdx();
+%             end
             
             % Set problem type
             obj.problemType = 'classification';

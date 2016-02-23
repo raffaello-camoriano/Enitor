@@ -4,7 +4,6 @@ function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, te
     ICUBWORLDopts = ICUBWORLDinit('iCubWorld30');
     obj_names = keys(ICUBWORLDopts.objects)';
     numClasses = numel(classes); % number of classes
-
     if (numel(trainClassFreq) ~= numel(testClassFreq))  || (numel(trainClassFreq) ~= numClasses)
         error('Number of classes and class frequencies specifications differ')
     end
@@ -39,12 +38,12 @@ function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, te
     Xte = [];
     Ytr = [];
     Yte = [];
-
+ 
     for i = 1:numClasses
         Xtr = [ Xtr ; XtrTmp(classIdxTr{i},:)];
         Xte = [ Xte ; XteTmp(classIdxTe{i},:)];
-        Ytr = [ Ytr ; YtrTmp(classIdxTr{i},:)];
-        Yte = [ Yte ; YteTmp(classIdxTe{i},:)];
+        Ytr = [ Ytr ; YtrTmp(classIdxTr{i},classes)];
+        Yte = [ Yte ; YteTmp(classIdxTe{i},classes)];
         
         classIdxTr{i} = size(Ytr,1) - numel(classIdxTr{i}) + 1 : size(Ytr,1);
         classIdxTe{i} = size(Ytr,1) - numel(classIdxTe{i}) + 1 : size(Yte,1);

@@ -108,5 +108,16 @@ classdef dataset < handle
             obj.trainIdx = tmp2(1:obj.nTr);
             obj.testIdx = tmp2(obj.nTr+1:obj.nTr+obj.nTe);
         end
-    end % methods
+        
+        % Mixes up randomly the already sampled training indexes.
+        function mixUpTrainIdx(obj)
+            obj.trainIdx = obj.trainIdx(randperm(numel(obj.trainIdx)));
+        end
+        
+        % Mixes up randomly the already sampled test indexes.
+        function mixUpTestIdx(obj)
+            obj.testIdx = obj.testIdx(randperm(numel(obj.testIdx)));
+        end
+
+   end % methods
 end % classdef

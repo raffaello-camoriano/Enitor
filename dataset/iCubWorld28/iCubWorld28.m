@@ -9,6 +9,8 @@ classdef iCubWorld28 < dataset
         dataRoot
         trainFolder 
         testFolder
+        trainClassNum
+        testClassNum
    end
    
    methods
@@ -109,6 +111,17 @@ classdef iCubWorld28 < dataset
             
             obj.X = [Xtr ; Xte];
             Ytmp = [Ytr ; Yte];
+            
+            % Compute trainClassNum and testClassNum
+            [~,gnd] = max(Ytmp(obj.trainIdx,:),[],2);
+            for k = 1:obj.t
+                obj.trainClassNum(k) = sum(gnd==k);
+            end
+            [~,gnd] = max(Ytmp(obj.testIdx,:),[],2);
+            for k = 1:obj.t
+                obj.testClassNum(k) = sum(gnd==k);
+            end
+            
             
             clear Xtr Xte Ytr Yte
 
