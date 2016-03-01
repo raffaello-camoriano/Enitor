@@ -95,10 +95,12 @@ classdef USPS < dataset
                 Ypred = -1/(obj.t - 1) * ones(size(Yscores));
             end
             
-            for i = 1:size(Ypred,1)
-                [~,maxIdx] = max(Yscores(i,:));
-                Ypred(i,maxIdx) = 1;
-            end
+%                 for i = 1:size(Ypred,1)
+%                     [~,maxIdx] = max(Yscores(i,:));
+%                     Ypred(i,maxIdx) = 1;
+%                 end
+                [~,maxIdx] = max(Yscores , [] , 2);
+                Ypred(:,maxIdx) = 1;
         end
             
         % Compute performance measure on the given outputs according to the
