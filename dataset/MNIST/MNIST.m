@@ -240,7 +240,8 @@ classdef MNIST < dataset
 %                     Ypred(i,maxIdx) = 1;
 %                 end
                 [~,maxIdx] = max(Yscores , [] , 2);
-                Ypred(:,maxIdx) = 1;
+                indices = sub2ind(size(Ypred), 1:numel(maxIdx), maxIdx');
+                Ypred(indices) = 1;
         end
             
         % Compute performance measure on the given outputs according to the
