@@ -1,5 +1,5 @@
 
-classdef Higgs < dataset
+classdef HiggsUCI < dataset
    
    properties
         %outputFormat
@@ -10,7 +10,7 @@ classdef Higgs < dataset
    end
    
    methods
-        function obj = Higgs(nTr , nTe)
+        function obj = HiggsUCI(nTr , nTe)
             
             warning('Test labels not available!');
             
