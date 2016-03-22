@@ -88,12 +88,7 @@ classdef Adult < dataset
                 obj.Y = obj.Y*2-1;
             end
             
-            % Set problem type
-%             if obj.hasRealValues(obj.Y)
-%                 obj.problemType = 'regression';
-%             else
-                obj.problemType = 'classification';
-%             end
+            obj.problemType = 'classification';
         end
         
         % Checks if matrix Y contains real values. Useful for

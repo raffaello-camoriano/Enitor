@@ -10,94 +10,86 @@ classdef HiggsUCI < dataset
    end
    
    methods
-        function obj = HiggsUCI(nTr , nTe)
-            
-            warning('Test labels not available!');
-            
-            trainTab = readtable('training.csv');
-            testTab = readtable('test.csv');
+        function obj = HiggsUCI(nTr , nTe, outputFormat, shuffleTraining, shuffleTest, shuffleAll)
                         
-            % Store event ids
-            obj.EventId = [ trainTab{:,1} ; testTab{:,1} ];
+            % Call superclass constructor with arguments
+            obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             % Store samples
-            Xtr = trainTab{:,2:end-2};
-            Xte = testTab{:,2:31};
+            MF = matfile('HiggsUCI.mat');
             
-            tmp = trainTab{:,end};
+            if isempty(nTr)
+                
+                obj.nTr = 2^23;
+                display('Default number of training points = 2^23');
+                
+                obj.nTe = 2^21;
+                display('Default number of test points = 2^21');
+                
+            else
+                
+                obj.nTr = 2^floor(log2(nTr));
+                if log2(nTr) > 23
+                   error('Max number of training points = 2^23');
+                end
+                display([ 'Number of training points = ' , num2str(obj.nTr) ]);
+                
+                obj.nTe = 2^floor(log2(nTe));
+                if log2(nTe) > 21
+                   error('Max number of test points = 2^21');
+                end
+                display([ 'Number of test points = ' , num2str(obj.nTe) ]);
+            end
             
-            Ytr = zeros(size(tmp));
-            Ytr(strcmp(tmp,'b')) = -1;
-            Ytr(strcmp(tmp,'s')) = 1;
-            
-            obj.Y = Ytr;    % NO Yte available!
+            obj.n = obj.nTr + obj.nTe;
+                        
+            obj.X = MF.X(1:obj.n,2:end);
+            obj.Y = MF.X(1:obj.n,1);
             
             % If necessary, balance obj.Y
 %             if (abs(sum(obj.Y))/length(obj.Y)) > 0.5 % NOTE: arbitrary threshold
 %                 obj.Y = obj.balanceLabels(obj.Y);
 %             end
             
-            obj.X = [Xtr ; Xte];
-            
-            % Store weights vector
-            obj.weights = trainTab{:,end - 1};
-
-            %obj.n = size(Xtr , 1) + size(Xte , 1);
-            obj.n = size(Xtr , 1);
-            
             obj.d = size(Xtr , 2);
             obj.t = size(Ytr , 2);
                 
-            if nargin == 0
                 
-%                 obj.nTr = size(Xtr , 1);
-%                 obj.nTe = size(Xte , 1);
-
-                obj.nTr = 200000;
-                obj.nTe = 50000;
-                
-                obj.trainIdx = 1:obj.nTr;
-                obj.testIdx = obj.nTr + 1 : obj.nTr + obj.nTe;
-                
-            elseif (nargin > 1) && (nTr > 1) && (nTe > 0)
-                
-                if (nTr > 200000) || (nTe > 50000)
-                    error('(nTr > 200000) || (nTe > 50000)');
-                end
-                
-                obj.nTr = nTr;
-                obj.nTe = nTe;
-                
-                obj.trainIdx = 1:obj.nTr;
-                obj.testIdx = 200001 : 200000 + obj.nTe;
+            obj.trainIdx = 1:obj.nTr;
+            obj.testIdx = obj.nTr + 1 : obj.n;
+                        
+            % Shuffling
+            obj.shuffleTraining = shuffleTraining;
+            if shuffleTraining == 1
+                obj.shuffleTrainIdx();
             end
+            
+            obj.shuffleTest = shuffleTest;
+            if shuffleTest == 1
+                obj.shuffleTestIdx();
+            end
+            
+            obj.shuffleAll = shuffleAll;
+            if shuffleAll == 1
+                obj.shuffleAllIdx();
+            end           
             
             % Reformat output columns
-%             if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
-%                 obj.outputFormat = outputFormat;
-%             else
-%                 display('Wrong or missing output format, set to plusMinusOne by default');
-%                 obj.outputFormat = 'plusMinusOne';
-%             end
+            if (nargin > 2) && (strcmp(outputFormat, 'zeroOne') ||strcmp(outputFormat, 'plusMinusOne') ||strcmp(outputFormat, 'plusOneMinusBalanced'))
+                obj.outputFormat = outputFormat;
+            else
+                display('Wrong or missing output format, set to plusMinusOne by default');
+                obj.outputFormat = 'plusMinusOne';
+            end
             
-%             if strcmp(obj.outputFormat, 'zeroOne')
-%                 obj.Y = zeros(obj.n,obj.t);
-%             elseif strcmp(obj.outputFormat, 'plusMinusOne')
-%                 obj.Y = -1 * ones(obj.n,obj.t);
-%             elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
-%                 obj.Y = -1/(obj.t - 1) * ones(obj.n,obj.t);
-%             end
-%                
-%             for i = 1:obj.n
-%                 obj.Y(i , data.gnd(i)) = 1;
-%             end
+            if strcmp(obj.outputFormat, 'plusMinusOne')
+                obj.Y = obj.Y*2-1;
+            elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
+                obj.Y = obj.Y*2-1;
+            end
             
             % Set problem type
-            if obj.hasRealValues(obj.Y)
-                obj.problemType = 'regression';
-            else
-                obj.problemType = 'classification';
-            end
+            obj.problemType = 'classification';
         end
         
         % Checks if matrix Y contains real values. Useful for
@@ -135,15 +127,17 @@ classdef HiggsUCI < dataset
         % Compute predictions matrix from real-valued scores matrix
         function Ypred = scoresToClasses(obj , Yscores)    
             
-%             if strcmp(obj.outputFormat, 'zeroOne')
-%                 Ypred = zeros(size(Yscores));
-%             elseif strcmp(obj.outputFormat, 'plusMinusOne')
-%                 Ypred = -1 * ones(size(Yscores));
-%             elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
-%                 Ypred = -1/(obj.t - 1) * ones(size(Yscores));
-%             end
+            if strcmp(obj.outputFormat, 'zeroOne')
+                Ypred = zeros(size(Yscores));
+            elseif strcmp(obj.outputFormat, 'plusMinusOne')
+                Ypred = -1 * ones(size(Yscores));
+            elseif strcmp(obj.outputFormat, 'plusOneMinusBalanced')
+                Ypred = -1/(obj.t - 1) * ones(size(Yscores));
+            end
+            
+            Ypred(Yscores>0) = 1;
 
-            Ypred = sign(Yscores);
+%             Ypred = sign(Yscores);
 
         end
             
@@ -160,63 +154,17 @@ classdef HiggsUCI < dataset
             end
                
             % Check if Ypred is real-valued. If yes, convert it.
-            if obj.hasRealValues(Ypred)
+%             if obj.hasRealValues(Ypred)
                 %Yscores = Ypred;
                 Ypred = obj.scoresToClasses(Ypred);
-            end
-            
-            %YpredChar = 
-            
-            % Check if Y is real-valued. If yes, convert it.
-            if obj.hasRealValues(Y)
-                Y = obj.scoresToClasses(Y);
-            end
-            
-            localWeights = obj.weights(Yidx);
-            localEventId = obj.EventId(Yidx);
-            
-            warning('RankOrder not computed properly. TODO');
-%             localRankOrder = ones(length(Yidx),1);
-%             
-            localRankOrder = (1:length(Yidx))';
-
-            
-            % Get current dir
-            current_dir = cd;
-            target_dir = [current_dir , '/dataset/Higgs/tmp/' ];
-            
-            %Create submission table and save it to file
-            submissionTable = table(localEventId , localRankOrder , Ypred, ...
-                         'VariableNames',{'EventId' 'RankOrder' 'Class'});
-            
-%             writetable(submissionTable, 'dataset/Higgs/tmp/submissionFile.csv');
-            writetable(submissionTable, [target_dir , 'submissionFile.csv']);
-            
-            %Create solution table and save it to file
-            solutionTable = table(localEventId , Y , localWeights, ...
-                         'VariableNames',{ 'EventId', 'Class', 'Weight'});
-            
-            writetable(solutionTable , [ target_dir , 'solutionFile.csv' ] );
-            
-            % Compute AMS
-            [status, perf]  = system('python dataset/Higgs/HiggsBosonCompetition_AMSMetric_rev1.py tmp/solutionFile.csv tmp/submissionFile.csv');
-            
-            perf = - str2double(perf);
-            
-            if status ~= 0
-                error('Python AMS computation failed');
-            end  
-            
-%             % Compute error rate
-%             numCorrect = 0;
-%             
-%             for i = 1:size(Y,1)
-%                 if Y(i) == Ypred(i)
-%                     numCorrect = numCorrect +1;
-%                 end
 %             end
-%             
-%             perf = 1 - (numCorrect / size(Y,1));            
+                        
+%             % Check if Y is real-valued. If yes, convert it.
+%             if obj.hasRealValues(Y)
+%                 Y = obj.scoresToClasses(Y);
+%             end
+            
+            [~,~,~,perf] = perfcurve(Y,Ypred,+1);  
 
         end
     end % methods
