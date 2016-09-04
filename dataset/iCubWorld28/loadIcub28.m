@@ -1,12 +1,22 @@
-function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, testClassFreq, dataRoot, trainFolder, testFolder)
+function [Xtr, Ytr, Xte, Yte] = ...
+    loadIcub28(ntr, nte, classes, trainClassFreq, testClassFreq, trainClassNum, testClassNum, dataRoot, trainFolder, testFolder)
 
 
     ICUBWORLDopts = ICUBWORLDinit('iCubWorld30');
     obj_names = keys(ICUBWORLDopts.objects)';
     numClasses = numel(classes); % number of classes
-    if (numel(trainClassFreq) ~= numel(testClassFreq))  || (numel(trainClassFreq) ~= numClasses)
-        error('Number of classes and class frequencies specifications differ')
+%     if (numel(trainClassFreq) ~= numel(testClassFreq))  || (numel(trainClassFreq) ~= numClasses)
+%         error('Number of classes and class frequencies specifications differ.')
+%     end
+    
+    if ( ~isempty(trainClassFreq) && ~isempty(trainClassNum) ) || (~isempty(testClassFreq) && ~isempty(testClassNum) )
+        error('Only  frequency or number of samples can be specified at the same time.');
     end
+    
+    if ( isempty(trainClassFreq) && isempty(trainClassNum) ) || (isempty(testClassFreq) && isempty(testClassNum) )
+        error('Either frequency or number of samples must be specified.');
+    end
+    
 
     dataset_train = Features.GenericFeature();
     dataset_test = Features.GenericFeature();
@@ -39,6 +49,7 @@ function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, te
     Ytr = [];
     Yte = [];
  
+    minNumSamplesPerClass = inf;
     for i = 1:numClasses
         Xtr = [ Xtr ; XtrTmp(classIdxTr{i},:)];
         Xte = [ Xte ; XteTmp(classIdxTe{i},:)];
@@ -48,12 +59,21 @@ function [Xtr, Ytr, Xte, Yte] = loadIcub28(ntr, nte, classes, trainClassFreq, te
         classIdxTr{i} = size(Ytr,1) - numel(classIdxTr{i}) + 1 : size(Ytr,1);
         classIdxTe{i} = size(Ytr,1) - numel(classIdxTe{i}) + 1 : size(Yte,1);
         
+        if numel(classIdxTr{i}) < minNumSamplesPerClass
+            
+            minNumSamplesPerClass = numel(classIdxTr{i});
+        end
     end
-
-    % Apply training class frequencies
-    trainClassNum = [];
-    for i = 1:numClasses    
-        trainClassNum = [trainClassNum , round((trainClassFreq(i) * numel(classIdxTr{i}))/max(trainClassFreq)) ];
+    
+    % Compute number of training points per class for training set
+    if ~isempty(trainClassFreq) && isempty(trainClassNum)
+        % Apply training class frequencies
+        trainClassNum = [];
+        for i = 1:numClasses    
+            trainClassNum = [trainClassNum , round((trainClassFreq(i) * minNumSamplesPerClass)/max(trainClassFreq)) ];
+        end
+    elseif isempty(trainClassNum) && isempty(trainClassFreq) 
+        error('Specify either trainClassFreq or trainClassNum');
     end
 
     if ~isempty(nte) && nte > size(Xte,1)

@@ -34,37 +34,62 @@ classdef iCubWorld28 < dataset
             if ~isempty(varargin) && ~isempty(varargin{1}{2}) 
                 obj.trainClassFreq = varargin{1}{2};
             else
-                obj.trainClassFreq = 1/numel(classes) * ones(size(classes));
-                display('Balanced training classes');
+                obj.trainClassFreq = [];
             end
 
             if ~isempty(varargin) && ~isempty(varargin{1}{3}) 
                 obj.testClassFreq = varargin{1}{3};
             else
-                obj.testClassFreq = 1/numel(classes) * ones(size(classes));
-                display('Balanced test classes');
+                obj.testClassFreq = [];
+            end
+            
+            if ~isempty(varargin) && ~isempty(varargin{1}{4}) 
+                obj.trainClassNum = varargin{1}{4};
+            else
+                obj.trainClassNum = [];
             end
 
-            if ~isempty(varargin) && ~isempty(varargin{1}{4}) 
-                obj.dataRoot = varargin{1}{4};
+            if ~isempty(varargin) && ~isempty(varargin{1}{5}) 
+                obj.testClassNum = varargin{1}{5};
+            else
+                obj.testClassNum = [];
+            end
+
+            if ~isempty(varargin) && ~isempty(varargin{1}{6}) 
+                obj.dataRoot = varargin{1}{6};
             else
                 obj.dataRoot = 'data/caffe_centralcrop_meanimagenet2012/';
                 display(['dataRoot set to: ' , obj.dataRoot]);
             end
 
-            if ~isempty(varargin) && ~isempty(varargin{1}{5}) 
-                obj.trainFolder = varargin{1}{5};
+            if ~isempty(varargin) && ~isempty(varargin{1}{7}) 
+                obj.trainFolder = varargin{1}{7};
             else
                 obj.trainFolder = 'lunedi22';
                 display(['trainFolder set to: ' , obj.trainFolder]);
             end
                 
-            if ~isempty(varargin) && ~isempty(varargin{1}{6}) 
-                obj.testFolder = varargin{1}{6};
+            if ~isempty(varargin) && ~isempty(varargin{1}{8}) 
+                obj.testFolder = varargin{1}{8};
             else                
                 obj.testFolder = 'martedi23';
                 display(['testFolder set to: ' , obj.testFolder]);
             end 
+            
+            
+            % Sanity check freq vs num
+            if isempty(obj.trainClassFreq) && isempty(obj.trainClassNum) 
+                obj.trainClassFreq = 1/numel(classes) * ones(size(classes));
+                display('Balanced training classes');
+            elseif ~isempty(obj.trainClassFreq) && ~isempty(obj.trainClassNum) 
+                error('Only class frequencies or number of samples can be specified at the same time.');
+            end
+            if isempty(obj.testClassFreq) && isempty(obj.testClassNum) 
+                obj.testClassFreq = 1/numel(classes) * ones(size(classes));
+                display('Balanced test classes');
+            elseif ~isempty(obj.testClassFreq) && ~isempty(obj.testClassNum) 
+                error('Only class frequencies or number of samples can be specified at the same time.');
+            end
 
             % Set t (number of classes)
             classes = unique(classes);
@@ -95,6 +120,8 @@ classdef iCubWorld28 < dataset
                                                 obj.classes, ...
                                                 obj.trainClassFreq, ...
                                                 obj.testClassFreq, ...
+                                                obj.trainClassNum, ...
+                                                obj.testClassNum, ...
                                                 obj.dataRoot, ...
                                                 obj.trainFolder{i}, ...
                                                 obj.testFolder{i});                        
@@ -104,6 +131,13 @@ classdef iCubWorld28 < dataset
                 Yte = [Yte ; Yte1];
             end
             clear Xtr1 Ytr1 Xte1 Yte1;
+            
+            if isempty(obj.trainClassFreq)
+                obj.trainClassFreq = obj.trainClassNum / sum(obj.trainClassNum);
+            end
+            if isempty(obj.testClassFreq)
+                obj.testClassFreq = obj.testClassNum / sum(obj.testClassNum);
+            end
             
             obj.nTrTot = size(Xtr,1);
             obj.nTeTot = size(Xte,1);
@@ -216,7 +250,9 @@ classdef iCubWorld28 < dataset
 %                     Ypred(i,maxIdx) = 1;
 %                 end
                 [~,maxIdx] = max(Yscores , [] , 2);
-                indices = sub2ind(size(Ypred), 1:numel(maxIdx), maxIdx');
+                indices = sub2ind(size(Ypred), 1:numel(maxIdx), maxIdx'); % To
+%                 be removed
+%                 indices = 1:numel(maxIdx) + (maxIdx'-1)*size(Ypred,1);
                 Ypred(indices) = 1;
             end
         end
