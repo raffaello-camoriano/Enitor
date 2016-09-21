@@ -12,10 +12,10 @@ function [Xtr, Ytr, Xte, Yte] = ...
     if ( ~isempty(trainClassFreq) && ~isempty(trainClassNum) ) || (~isempty(testClassFreq) && ~isempty(testClassNum) )
         error('Only  frequency or number of samples can be specified at the same time.');
     end
-    
-    if ( isempty(trainClassFreq) && isempty(trainClassNum) ) || (isempty(testClassFreq) && isempty(testClassNum) )
-        error('Either frequency or number of samples must be specified.');
-    end
+%     
+%     if ( isempty(trainClassFreq) && isempty(trainClassNum) ) || (isempty(testClassFreq) && isempty(testClassNum) )
+% 
+%     end
     
 
     dataset_train = Features.GenericFeature();
@@ -73,14 +73,17 @@ function [Xtr, Ytr, Xte, Yte] = ...
             trainClassNum = [trainClassNum , round((trainClassFreq(i) * minNumSamplesPerClass)/max(trainClassFreq)) ];
         end
     elseif isempty(trainClassNum) && isempty(trainClassFreq) 
-        error('Specify either trainClassFreq or trainClassNum');
+        
+        display('trainClassFreq and trainClassNum not specified. All the raw training points of all classes will be loaded.');
+        trainClassFreq = ones(1,numClasses) * 1/numel(classes);
+        
+        % Apply training class frequencies
+        trainClassNum = [];
+        for i = 1:numClasses    
+            trainClassNum = [trainClassNum , round((trainClassFreq(i) * numel(classIdxTr{i}))/max(trainClassFreq)) ];
+        end
     end
 
-    if ~isempty(nte) && nte > size(Xte,1)
-        error( ['Maximum nte = ' , num2str(size(Xte,1))] );
-    elseif isempty(nte)
-        nte = size(Xte,1);
-    end
     
     % Shuffle idx
     trainIdx = cell(1,numClasses);
@@ -88,6 +91,14 @@ function [Xtr, Ytr, Xte, Yte] = ...
         trainIdx{i} = classIdxTr{i}(randperm(numel(classIdxTr{i}),trainClassNum(i)));
     end
 
+    
+
+    if ~isempty(nte) && nte > size(Xte,1)
+        error( ['Maximum nte = ' , num2str(size(Xte,1))] );
+    elseif isempty(nte)
+        nte = size(Xte,1);
+    end
+    
     testIdx = randperm(size(Yte,1),nte);
 
     Xtrtmp = [];

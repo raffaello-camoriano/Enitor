@@ -79,14 +79,16 @@ classdef iCubWorld28 < dataset
             
             % Sanity check freq vs num
             if isempty(obj.trainClassFreq) && isempty(obj.trainClassNum) 
-                obj.trainClassFreq = 1/numel(classes) * ones(size(classes));
-                display('Balanced training classes');
+%                 obj.trainClassFreq = 1/numel(classes) * ones(size(classes));
+                display('trainClassFreq and trainClassNum not specified. All the raw training points of all classes will be loaded.');
+%                 display('Balanced training classes');
             elseif ~isempty(obj.trainClassFreq) && ~isempty(obj.trainClassNum) 
                 error('Only class frequencies or number of samples can be specified at the same time.');
             end
             if isempty(obj.testClassFreq) && isempty(obj.testClassNum) 
-                obj.testClassFreq = 1/numel(classes) * ones(size(classes));
-                display('Balanced test classes');
+%                 obj.testClassFreq = 1/numel(classes) * ones(size(classes));
+                display('testClassFreq and testClassNum not specified. All the raw test points of all classes will be loaded.');
+%                 display('Balanced test classes');
             elseif ~isempty(obj.testClassFreq) && ~isempty(obj.testClassNum) 
                 error('Only class frequencies or number of samples can be specified at the same time.');
             end
@@ -132,12 +134,7 @@ classdef iCubWorld28 < dataset
             end
             clear Xtr1 Ytr1 Xte1 Yte1;
             
-            if isempty(obj.trainClassFreq)
-                obj.trainClassFreq = obj.trainClassNum / sum(obj.trainClassNum);
-            end
-            if isempty(obj.testClassFreq)
-                obj.testClassFreq = obj.testClassNum / sum(obj.testClassNum);
-            end
+
             
             obj.nTrTot = size(Xtr,1);
             obj.nTeTot = size(Xte,1);
@@ -167,7 +164,17 @@ classdef iCubWorld28 < dataset
                 obj.testClassNum(k) = sum(gnd==k);
             end
             clear Xtr Xte Ytr Yte
-
+            
+            if isempty(obj.trainClassFreq)
+                obj.trainClassFreq = obj.trainClassNum / sum(obj.trainClassNum);
+            end
+            if isempty(obj.testClassFreq)
+                obj.testClassFreq = obj.testClassNum / sum(obj.testClassNum);
+            end
+            
+            
+            
+            
             if obj.t == 2
                 if strcmp(obj.outputFormat, 'zeroOne')
                     obj.Y = zeros(obj.n,1);
