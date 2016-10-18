@@ -16,6 +16,9 @@ classdef CovertypeBinary < dataset
             if nTr > 522910 || nTe > 58102
                 error('Too many samples required')
             end
+            
+            obj.lossFunction = @classificationError;
+%             obj.lossFunction = @rmse;
 
             % Set output format
             if isempty(outputFormat)

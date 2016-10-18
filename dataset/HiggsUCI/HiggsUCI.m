@@ -6,6 +6,7 @@ classdef HiggsUCI < dataset
         
         weights
         EventId
+        outputFormat
         
    end
    
@@ -16,7 +17,7 @@ classdef HiggsUCI < dataset
             obj = obj@dataset([], shuffleTraining, shuffleTest, shuffleAll);
             
             % Store samples
-            MF = matfile('HiggsUCI.mat');
+            MF = matfile('Higgs.mat');
             
             if isempty(nTr)
                 
@@ -51,8 +52,8 @@ classdef HiggsUCI < dataset
 %                 obj.Y = obj.balanceLabels(obj.Y);
 %             end
             
-            obj.d = size(Xtr , 2);
-            obj.t = size(Ytr , 2);
+            obj.d = size(obj.X , 2);
+            obj.t = size(obj.Y , 2);
                 
                 
             obj.trainIdx = 1:obj.nTr;
