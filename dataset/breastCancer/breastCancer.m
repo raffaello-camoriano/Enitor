@@ -1,7 +1,5 @@
 classdef breastCancer < dataset  
 
-   
-   % Define an event
    properties
         outputFormat
         classes

@@ -6,13 +6,6 @@ classdef nrls < algorithm
         
         ntr
         
-        % I/O options
-        storeFullTrainPerf  % Store full training performance matrix 1/0
-        storeFullValPerf    % Store full validation performance matrix 1/0
-        storeFullTestPerf   % Store full test performance matrix 1/0
-        valPerformance      % Validation performance matrix
-        trainPerformance    % Training performance matrix
-        testPerformance     % Test performance matrix
         storeFullTrainTime  % Store full training time matrix 1/0
         trainTime           % Training time matrix
         
@@ -48,7 +41,6 @@ classdef nrls < algorithm
         function init( obj ,  mapType, filterType , maxRank , varargin)
 
 
-            display('Note that incrementalNkrls can only use the Tikhonov filter in this implementation.');
             p = inputParser;
             
             %%%% Required parameters
@@ -260,12 +252,6 @@ classdef nrls < algorithm
                 else
                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , obj.nyMapper.W , 'verbose' , obj.verbose);
                 end
-                     
-%                 if ~isempty(obj.filterParGuesses)
-%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'filterParGuesses' , obj.filterParGuesses , 'verbose' , obj.verbose);
-%                 else
-%                     filter = obj.filterType( obj.nyMapper.C' * obj.nyMapper.C, obj.nyMapper.C' * Ytrain, obj.ntr , 'numFilterParGuesses' , obj.numFilterParGuesses, 'M' , eye(size(obj.nyMapper.W,1)) , 'verbose' , obj.verbose);
-%                 end
                 
                 while filter.next()
                     
@@ -402,7 +388,8 @@ classdef nrls < algorithm
             if ~isempty(obj.verbose)
                 argin = [argin , 'verbose' , obj.verbose];
             end
-            obj.nyMapper = obj.mapType(Xtr, 1 , [] ,[] , obj.mapParStar(1) , full(obj.mapParStar(2)) , obj.verbose);
+            
+            obj.nyMapper = obj.mapType(Xtr, 1 , [] ,[] , [], obj.mapParStar(1) , full(obj.mapParStar(2)) , obj.verbose);
             obj.nyMapper.next();
             obj.nyMapper.compute();
             
