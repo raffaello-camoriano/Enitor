@@ -9,7 +9,7 @@ Enitor
     I climb, ascend
 
 
-Enitor provides the MATLAB implementation of several large-scale machine kernel methods.
+Enitor provides the MATLAB implementation of several large-scale kernel methods.
 
 **Note: This packge is currently discontinued**
 
