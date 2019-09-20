@@ -11,7 +11,7 @@ Enitor
 
 Enitor provides the MATLAB implementation of several large-scale kernel methods.
 
-**Hic abundant leones - This packge is currently discontinued**
+**[Hic abundant leones](http://4.bp.blogspot.com/_EQDVIsq4TaM/S4u4AbYdOfI/AAAAAAAAAQY/ub10He7RRbY/s320/Cotton_leones.jpg) - This packge is currently discontinued**
 
 
 Implemented methods:
